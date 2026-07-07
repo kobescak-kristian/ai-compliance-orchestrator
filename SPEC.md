@@ -57,6 +57,11 @@ proceed into the next phase in the same session unless explicitly told.
 | 6 | Official gate run (Sonnet 4.6) + EVAL_RESULTS.md + FI suite full green | GATE GREEN or honest FAIL with miss-pattern analysis committed |
 | 7 | README (house structure, '## System' heading) + architecture diagram + demo recording | Stop conditions met |
 
+**Amendment (2026-07-07):** Phase 1 split by Kristian's decision — **1a**
+= contracts + ledger schema + eval config + FI test skeletons
+(authorship-independent); **1b** = rule sets + seeded pages + answer key
+(BLOCKED on §10.7 authorship-split decision — do not touch until resolved).
+
 Phase 2 is deliberate: orchestration is proven deterministically before any
 model is invoked — the multi-agent claim is tested at its own layer,
 cheaply, and the stubs remain as fixtures for the FI suite forever.

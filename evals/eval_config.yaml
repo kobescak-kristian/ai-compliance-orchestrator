@@ -1,0 +1,39 @@
+# Gate thresholds verbatim from BLUEPRINT.md §7. Gates never adjusted
+# post-run (Context-engine precedent): report FAIL honestly rather than
+# gate-shop. Dated runs + any miss-pattern analysis go in EVAL_RESULTS.md.
+
+violation_detection:
+  precision_min: 0.95
+  recall_min: 0.90
+  scope: "pooled AND per jurisdiction -- a jurisdiction-blind system must not pass on averages"
+
+not_applicable_handling:
+  correct_min: 0.90
+  purpose: "guards against a checker that flags everything"
+
+orchestration_invariants:
+  target: 1.00
+  requires:
+    - "every task reaches a terminal state"
+    - "zero lost tasks"
+    - "FI-1..FI-7 green"
+    - "idempotent re-run (full re-run on identical input produces zero duplicate findings/proposals)"
+
+result: "GATE GREEN iff violation_detection AND not_applicable_handling AND orchestration_invariants all pass; otherwise honest FAIL with miss-pattern analysis in evals/EVAL_RESULTS.md"
+
+# --- Model routing (house pattern; Max plan auth, no per-token key) ---
+model_routing:
+  dev: claude-haiku-4-5-20251001
+  official_gate: claude-sonnet-4-6
+
+# --- Cost + turns recorded per run, not gated ---
+recorded_not_gated:
+  - cost_usd_per_run
+  - turns_per_run
+
+# --- Dataset (BLUEPRINT.md §7). PENDING-1b: blocked on SPEC.md §10.7
+# answer-key authorship split -- do not populate until that decision lands.
+dataset:
+  rulesets_dir: PENDING-1b
+  pages_dir: PENDING-1b
+  answer_key: PENDING-1b
