@@ -59,6 +59,18 @@ class ProposalStatus(str, Enum):
     ESCALATED = "ESCALATED"
 
 
+class AdjudicationVerdict(str, Enum):
+    """The verifier's three adjudication verdicts (policy/ADJUDICATION_
+    POLICY.md §3). Maps from the shipped agent's native verdict schema
+    per policy §14: SUPPORTED -> CONFIRMED, CONTRADICTED -> REJECTED,
+    UNVERIFIABLE -> DISPUTED.
+    """
+
+    CONFIRMED = "CONFIRMED"
+    REJECTED = "REJECTED"
+    DISPUTED = "DISPUTED"
+
+
 class TaskState(str, Enum):
     """Terminal-state machine (BLUEPRINT.md §3): QUEUED -> RUNNING ->
     DONE | FAILED | DEAD_LETTER | ESCALATED.
@@ -104,6 +116,11 @@ class AccuracyFinding(StrictModel):
     (claim, verdict, source, evidence) plus task linkage -- the contract
     adapts to the shipped agent, not the other way around
     (BLUEPRINT.md §5).
+
+    Superseded by AdjudicationRecord as of Phase 4 (policy/ADJUDICATION_
+    POLICY.md): the verifier adjudicates checker VIOLATION findings
+    rather than running as an independent 4th checker. Retained,
+    unused, as the Phase 2/3 scaffolding record of that earlier design.
     """
 
     claim: str
@@ -111,6 +128,22 @@ class AccuracyFinding(StrictModel):
     source: str
     evidence: str
     task_id: str
+
+
+class AdjudicationRecord(StrictModel):
+    """The verifier's ruling on one VIOLATION finding (policy/
+    ADJUDICATION_POLICY.md §3, §6). Every verdict -- CONFIRMED, REJECTED,
+    or DISPUTED -- writes one of these; rows are retained forever, never
+    overwritten (a finding's assertion status changes only through an
+    adjudication row).
+    """
+
+    finding_id: str
+    verdict: AdjudicationVerdict
+    citation: str
+    model: str
+    timestamp: datetime
+    run_id: str
 
 
 class SeverityReport(StrictModel):

@@ -16,6 +16,13 @@ real agent does. path_access_log is the same pattern for path-taking
 tools (fetch_page, Phase 3): written synchronously inside the tool call
 itself, so it is testable without a live agent run and unconditionally
 precedes any use of the tool's result.
+adjudication_log holds one row per adjudicated finding (Phase 4,
+policy/ADJUDICATION_POLICY.md §6): CONFIRMED/REJECTED/DISPUTED verdicts,
+retained forever. UNIQUE(finding_id) plus INSERT OR IGNORE at the
+insert site (mirroring findings/proposals) makes a second adjudication
+of the same finding a no-op rather than an overwrite -- "a finding's
+assertion status changes only through an adjudication row" holds because
+no code path ever issues an UPDATE or DELETE against this table.
 """
 import sqlite3
 
@@ -102,6 +109,19 @@ CREATE TABLE IF NOT EXISTS path_access_log (
 );
 """
 
+ADJUDICATION_LOG_DDL = """
+CREATE TABLE IF NOT EXISTS adjudication_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    finding_id TEXT NOT NULL,
+    verdict TEXT NOT NULL CHECK (verdict IN ('CONFIRMED', 'REJECTED', 'DISPUTED')),
+    citation TEXT NOT NULL,
+    model TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (finding_id)
+);
+"""
+
 
 def create_db(db_path: str) -> sqlite3.Connection:
     """Create every table at db_path if absent; return an open connection.
@@ -114,5 +134,6 @@ def create_db(db_path: str) -> sqlite3.Connection:
     conn.execute(PROPOSALS_DDL)
     conn.execute(AUDIT_LOG_DDL)
     conn.execute(PATH_ACCESS_LOG_DDL)
+    conn.execute(ADJUDICATION_LOG_DDL)
     conn.commit()
     return conn
