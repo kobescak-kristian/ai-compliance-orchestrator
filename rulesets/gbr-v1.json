@@ -1,0 +1,10 @@
+[
+  {"jurisdiction":"GBR","rule_id":"GBR-BT-01","category":"BONUS_TERMS","severity":"CRITICAL","rule_text":"Significant bonus terms (wagering, minimum deposit, expiry) must appear together with the headline offer, not only behind a link.","ruleset_version":"v1.0"},
+  {"jurisdiction":"GBR","rule_id":"GBR-BT-02","category":"BONUS_TERMS","severity":"MAJOR","rule_text":"An offer must not be described as free if claiming it requires a deposit or spend.","ruleset_version":"v1.0"},
+  {"jurisdiction":"GBR","rule_id":"GBR-RG-01","category":"RG_MESSAGING","severity":"CRITICAL","rule_text":"The page must display all three: a responsible-gambling notice, an 18+ statement, and a link or reference to a gambling-help resource.","ruleset_version":"v1.0"},
+  {"jurisdiction":"GBR","rule_id":"GBR-RG-02","category":"RG_MESSAGING","severity":"MINOR","rule_text":"Pages promoting a gambling offer must carry a safer-gambling tagline.","ruleset_version":"v1.0"},
+  {"jurisdiction":"GBR","rule_id":"GBR-PC-01","category":"PROHIBITED_CLAIMS","severity":"CRITICAL","rule_text":"No claims of guaranteed winnings or risk-free gambling in any wording.","ruleset_version":"v1.0"},
+  {"jurisdiction":"GBR","rule_id":"GBR-PC-02","category":"PROHIBITED_CLAIMS","severity":"MAJOR","rule_text":"Gambling offers must not use urgency pressure such as countdowns, last-chance, or ends-soon wording.","ruleset_version":"v1.0"},
+  {"jurisdiction":"GBR","rule_id":"GBR-PC-03","category":"PROHIBITED_CLAIMS","severity":"MAJOR","rule_text":"Content must not use language, characters, or references with primary appeal to under-18s.","ruleset_version":"v1.0"},
+  {"jurisdiction":"GBR","rule_id":"GBR-GE-01","category":"GEO_ELIGIBILITY","severity":"MAJOR","rule_text":"A page targeting the GBR market and promoting operators or offers must display a GBR licence reference line.","ruleset_version":"v1.0"}
+]

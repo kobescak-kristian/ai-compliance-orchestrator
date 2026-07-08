@@ -1,0 +1,10 @@
+[
+  {"jurisdiction":"DEU","rule_id":"DEU-PC-01","category":"PROHIBITED_CLAIMS","severity":"CRITICAL","rule_text":"Bonus offers for casino-style or slot games must not be promoted to the DEU market; sports-betting bonuses are permitted subject to terms rules.","ruleset_version":"v1.0"},
+  {"jurisdiction":"DEU","rule_id":"DEU-PC-02","category":"PROHIBITED_CLAIMS","severity":"CRITICAL","rule_text":"No claims of guaranteed winnings or risk-free gambling in any wording.","ruleset_version":"v1.0"},
+  {"jurisdiction":"DEU","rule_id":"DEU-PC-03","category":"PROHIBITED_CLAIMS","severity":"MAJOR","rule_text":"Live-casino products must not be promoted to the DEU market.","ruleset_version":"v1.0"},
+  {"jurisdiction":"DEU","rule_id":"DEU-BT-01","category":"BONUS_TERMS","severity":"MAJOR","rule_text":"Any permitted sports-betting bonus must state its wagering requirement and expiry.","ruleset_version":"v1.0"},
+  {"jurisdiction":"DEU","rule_id":"DEU-BT-02","category":"BONUS_TERMS","severity":"MINOR","rule_text":"Odds boosts must state the base odds alongside the boosted odds.","ruleset_version":"v1.0"},
+  {"jurisdiction":"DEU","rule_id":"DEU-RG-01","category":"RG_MESSAGING","severity":"CRITICAL","rule_text":"The page must display an addiction-help notice and a minimum-age statement (18+).","ruleset_version":"v1.0"},
+  {"jurisdiction":"DEU","rule_id":"DEU-RG-02","category":"RG_MESSAGING","severity":"MAJOR","rule_text":"Pages promoting deposit-based play must reference the cross-operator monthly deposit limit.","ruleset_version":"v1.0"},
+  {"jurisdiction":"DEU","rule_id":"DEU-GE-01","category":"GEO_ELIGIBILITY","severity":"MAJOR","rule_text":"A page targeting the DEU market and promoting operators or offers must display a DEU licence reference line.","ruleset_version":"v1.0"}
+]

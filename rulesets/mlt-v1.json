@@ -1,0 +1,10 @@
+[
+  {"jurisdiction":"MLT","rule_id":"MLT-BT-01","category":"BONUS_TERMS","severity":"MAJOR","rule_text":"Where a bonus offer is presented, its wagering requirement must be stated in the same section as the offer, not only behind a link.","ruleset_version":"v1.0"},
+  {"jurisdiction":"MLT","rule_id":"MLT-BT-02","category":"BONUS_TERMS","severity":"MINOR","rule_text":"Every bonus offer must state its expiry or validity period.","ruleset_version":"v1.0"},
+  {"jurisdiction":"MLT","rule_id":"MLT-BT-03","category":"BONUS_TERMS","severity":"MINOR","rule_text":"Every deposit-linked bonus offer must state the minimum qualifying deposit.","ruleset_version":"v1.0"},
+  {"jurisdiction":"MLT","rule_id":"MLT-RG-01","category":"RG_MESSAGING","severity":"CRITICAL","rule_text":"The page must display a responsible-gambling notice and a minimum-age statement (18+).","ruleset_version":"v1.0"},
+  {"jurisdiction":"MLT","rule_id":"MLT-RG-02","category":"RG_MESSAGING","severity":"MAJOR","rule_text":"Where gambling is promoted, the page must reference at least one help or self-exclusion resource.","ruleset_version":"v1.0"},
+  {"jurisdiction":"MLT","rule_id":"MLT-PC-01","category":"PROHIBITED_CLAIMS","severity":"CRITICAL","rule_text":"No claims of guaranteed winnings or risk-free gambling in any wording.","ruleset_version":"v1.0"},
+  {"jurisdiction":"MLT","rule_id":"MLT-PC-02","category":"PROHIBITED_CLAIMS","severity":"MAJOR","rule_text":"Gambling must not be presented as a source of income or a solution to financial problems.","ruleset_version":"v1.0"},
+  {"jurisdiction":"MLT","rule_id":"MLT-GE-01","category":"GEO_ELIGIBILITY","severity":"MAJOR","rule_text":"A page targeting the MLT market and promoting operators or offers must display an MLT licence reference line.","ruleset_version":"v1.0"}
+]
