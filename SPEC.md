@@ -68,6 +68,12 @@ Phase 2 is deliberate: orchestration is proven deterministically before any
 model is invoked — the multi-agent claim is tested at its own layer,
 cheaply, and the stubs remain as fixtures for the FI suite forever.
 
+**Amendment (Phase 2 rulings):** DEAD_LETTER is task-atomic — any
+schema-invalid payload in a batch dead-letters the whole task. Intake
+resolves geo-applicability deterministically (one CheckTask per targeted
+page×jurisdiction); Phase 6 scoring reconstructs geo-N/A cells from
+intake skip records (184 judged + 104 derived = 288).
+
 ## Decisions (BLUEPRINT §10, resolved 2026-07-07 unless overridden at Phase 0 paste)
 
 1. **Branch:** B — compliance surveillance. LOCKED (rule fired).

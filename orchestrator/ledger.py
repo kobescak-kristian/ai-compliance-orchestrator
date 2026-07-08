@@ -12,7 +12,10 @@ re-run cannot create duplicates (FI-6) even if ledger-resume is bypassed.
 audit_log records every rule-set access attempt, allowed or rejected
 (FI-7) -- the deterministic analogue of the shipped verifier's
 PreToolUse/PostToolUse audit hooks, for boundaries that exist before any
-real agent does.
+real agent does. path_access_log is the same pattern for path-taking
+tools (fetch_page, Phase 3): written synchronously inside the tool call
+itself, so it is testable without a live agent run and unconditionally
+precedes any use of the tool's result.
 """
 import sqlite3
 
@@ -88,6 +91,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 """
 
+PATH_ACCESS_LOG_DDL = """
+CREATE TABLE IF NOT EXISTS path_access_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tool_name TEXT NOT NULL,
+    requested_path TEXT NOT NULL,
+    allowed INTEGER NOT NULL,
+    reason TEXT,
+    created_at TEXT NOT NULL
+);
+"""
+
 
 def create_db(db_path: str) -> sqlite3.Connection:
     """Create every table at db_path if absent; return an open connection.
@@ -99,5 +113,6 @@ def create_db(db_path: str) -> sqlite3.Connection:
     conn.execute(FINDINGS_DDL)
     conn.execute(PROPOSALS_DDL)
     conn.execute(AUDIT_LOG_DDL)
+    conn.execute(PATH_ACCESS_LOG_DDL)
     conn.commit()
     return conn

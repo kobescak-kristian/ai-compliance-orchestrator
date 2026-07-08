@@ -7,5 +7,8 @@ Tool whitelist (BLUEPRINT.md §4): fetch_page, read_ruleset (own
 jurisdiction only), emit_finding. May never see another jurisdiction's
 rules, write files, or reach the network.
 
-Implemented Phase 3, replacing its stub from Phase 2 (BLUEPRINT.md §9).
+Real agent implemented Phase 3 (harness.py, tools.py, config.py, pages.py,
+audit.py, prompts.py). stub.py from Phase 2 remains the pipeline default;
+the real checker is opt-in behind a switch until Phase 6's gate run
+(BLUEPRINT.md §9).
 """
