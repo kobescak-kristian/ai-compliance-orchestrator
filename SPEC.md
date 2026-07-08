@@ -60,10 +60,9 @@ proceed into the next phase in the same session unless explicitly told.
 **Amendment (2026-07-07):** Phase 1 split by Kristian's decision into 1a
 (contracts + ledger schema + eval config + FI test skeletons,
 authorship-independent) and 1b (rule sets + seeded pages + answer key,
-per the §10.7 authorship split). **1a DONE (e78f3c0). 1b-i DONE
-(3124c1e): rule sets + 12 pages. 1b-ii PENDING:** blind-label pass
-(external), adjudication (Kristian), frozen answer_key.yaml +
-adjudication log commit.
+per the §10.7 authorship split). 1a DONE (e78f3c0). 1b-i DONE (3124c1e):
+rule sets + 12 pages. **1b-ii DONE — Phase 1 COMPLETE (frozen key,
+adjudication log).**
 
 Phase 2 is deliberate: orchestration is proven deterministically before any
 model is invoked — the multi-agent claim is tested at its own layer,

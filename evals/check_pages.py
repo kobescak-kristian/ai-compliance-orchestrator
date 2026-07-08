@@ -83,7 +83,7 @@ PAGE_SPECS = {
         "present": ["rg_notice", "age", "help", "mlt_licence"],
         "absent": [],
         "strings": [
-            "Play and win big every day!",
+            "Big games, every day.",
         ],
     },
     "p06.html": {

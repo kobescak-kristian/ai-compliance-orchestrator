@@ -90,11 +90,17 @@ No bonus offers on page.
 
 ### P05 — operator generic homepage · Markets: MLT
 Brand homepage, games catalogue teaser, no bonuses. Full MLT furniture.
-Tagline: "Play and win big every day!".
+Tagline: "Big games, every day."
 - VIOLATIONS: none. Fully compliant page (tests false-positive discipline).
-- Distractor: "Play and win big every day!" — aspirational, NOT a guarantee;
-  expected COMPLIANT under MLT-PC-01. Flag: deliberate adjudication candidate.
+- Distractor: "Big games, every day." — factual/descriptive, NOT a guarantee;
+  expected COMPLIANT under MLT-PC-01.
 - Rule-level N/A: MLT-BT-01/02/03 (no bonuses); GBR/DEU geo.
+- **D3 amendment (adjudication, 2026-07-08):** original tagline "Play and
+  win big every day!" was flagged a deliberate adjudication candidate
+  (ambiguous under MLT-PC-01's guaranteed-winnings prohibition). Adjudicator
+  ruling: reword to an inert string rather than resolve the ambiguity by
+  fiat — the page-level VIOLATIONS list and rule-level N/As are unchanged;
+  see evals/ADJUDICATION_LOG.md D3.
 
 ### P06 — affiliate best-bonuses comparison · Markets: MLT, GBR, DEU
 Comparison table: casino + sports bonuses. Headline offer A: "200% up to €300

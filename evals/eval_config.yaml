@@ -31,9 +31,9 @@ recorded_not_gated:
   - cost_usd_per_run
   - turns_per_run
 
-# --- Dataset (BLUEPRINT.md §7). PENDING-1b: blocked on SPEC.md §10.7
-# answer-key authorship split -- do not populate until that decision lands.
+# --- Dataset (BLUEPRINT.md §7). Frozen 2026-07-08 (Phase 1b-ii,
+# evals/ADJUDICATION_LOG.md) -- 30 VIOLATION cells across 288.
 dataset:
-  rulesets_dir: PENDING-1b
-  pages_dir: PENDING-1b
-  answer_key: PENDING-1b
+  rulesets_dir: rulesets/
+  pages_dir: evals/dataset/pages/
+  answer_key: evals/answer_key.yaml
