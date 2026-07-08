@@ -57,10 +57,13 @@ proceed into the next phase in the same session unless explicitly told.
 | 6 | Official gate run (Sonnet 4.6) + EVAL_RESULTS.md + FI suite full green | GATE GREEN or honest FAIL with miss-pattern analysis committed |
 | 7 | README (house structure, '## System' heading) + architecture diagram + demo recording | Stop conditions met |
 
-**Amendment (2026-07-07):** Phase 1 split by Kristian's decision — **1a**
-= contracts + ledger schema + eval config + FI test skeletons
-(authorship-independent); **1b** = rule sets + seeded pages + answer key
-(BLOCKED on §10.7 authorship-split decision — do not touch until resolved).
+**Amendment (2026-07-07):** Phase 1 split by Kristian's decision into 1a
+(contracts + ledger schema + eval config + FI test skeletons,
+authorship-independent) and 1b (rule sets + seeded pages + answer key,
+per the §10.7 authorship split). **1a DONE (e78f3c0). 1b-i DONE
+(3124c1e): rule sets + 12 pages. 1b-ii PENDING:** blind-label pass
+(external), adjudication (Kristian), frozen answer_key.yaml +
+adjudication log commit.
 
 Phase 2 is deliberate: orchestration is proven deterministically before any
 model is invoked — the multi-agent claim is tested at its own layer,
@@ -79,9 +82,9 @@ cheaply, and the stubs remain as fixtures for the FI suite forever.
    violations + distractors.
 6. **Positioning (deferred):** flagship question reopens after first
    external signal; not decided here.
-7. **OPEN — must be answered before Phase 1 kickoff:** answer-key
-   authorship split (§7 of BLUEPRINT.md — the model that writes the
-   seeded pages must not author the answer key). Not Code's decision.
+7. **RESOLVED 2026-07-07:** Option A — three-actor split (spec author:
+   strongest model; page author: Code; blind labeler: ChatGPT;
+   adjudicator: Kristian). Protocol in evals/INJECTION_SPEC.md.
 
 ## Gate (BLUEPRINT §7, summary)
 
