@@ -178,3 +178,6 @@ P11:2 P12:2 = **28**. Severity mix: 12 CRITICAL, 13 MAJOR, 3 MINOR.
 Divergence cases (same text, different verdicts by jurisdiction): P03, P08,
 P09. Zero-violation page: P05. Deliberate adjudication candidates: P05
 tagline, P11 GBR-BT-02 boundary.
+
+Superseded by adjudication — authoritative totals in evals/answer_key.yaml
++ ADJUDICATION_LOG.md (30 violations).
