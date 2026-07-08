@@ -23,7 +23,15 @@ from typing import Callable
 
 from pydantic import ValidationError
 
-from contracts.schemas import CheckTask, RemediationProposal, TaskState, ViolationFinding
+from contracts.schemas import (
+    AdjudicationRecord,
+    AdjudicationVerdict,
+    CheckTask,
+    ComplianceRule,
+    RemediationProposal,
+    TaskState,
+    ViolationFinding,
+)
 
 TERMINAL_STATES = {
     TaskState.DONE.value,
@@ -36,6 +44,13 @@ TERMINAL_STATES = {
 class BudgetExceededError(Exception):
     """Raised by a checker/planner callable to simulate FI-1: the agent's
     budget or turn cap tripped mid-task."""
+
+
+class VerifierInvocationError(Exception):
+    """Raised by a verifier callable (nodes.verifier.verify_finding or
+    its stub) on a non-zero subprocess exit, schema-invalid output, or a
+    config/pinned-commit mismatch. Maps to task-atomic FAILED in
+    run_verify_stage (policy/ADJUDICATION_POLICY.md §12)."""
 
 
 def _now() -> str:
@@ -184,6 +199,56 @@ def insert_proposal(conn: sqlite3.Connection, proposal: RemediationProposal) -> 
     return cur.rowcount > 0
 
 
+def insert_adjudication(conn: sqlite3.Connection, record: AdjudicationRecord) -> bool:
+    """Insert one adjudication row, deduped on finding_id (UNIQUE
+    constraint at the storage layer, same dual-layer idempotency pattern
+    as insert_finding/insert_proposal): a second adjudication of the
+    same finding is a no-op, never an overwrite (policy §6, §11 "no
+    silent overwrites"). Returns True if newly inserted.
+    """
+    cur = conn.execute(
+        "INSERT OR IGNORE INTO adjudication_log "
+        "(finding_id, verdict, citation, model, run_id, created_at) VALUES (?,?,?,?,?,?)",
+        (record.finding_id, record.verdict.value, record.citation, record.model, record.run_id, _now()),
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def get_adjudications(conn: sqlite3.Connection) -> list[AdjudicationRecord]:
+    rows = conn.execute(
+        "SELECT finding_id, verdict, citation, model, run_id, created_at FROM adjudication_log"
+    ).fetchall()
+    return [
+        AdjudicationRecord(
+            finding_id=r[0], verdict=r[1], citation=r[2], model=r[3], run_id=r[4], timestamp=r[5]
+        )
+        for r in rows
+    ]
+
+
+def get_confirmed_findings(conn: sqlite3.Connection) -> list[ViolationFinding]:
+    """The system's assertions (policy §5): CONFIRMED findings only,
+    joined from findings + adjudication_log. REJECTED and DISPUTED
+    findings are excluded here even though they remain in the ledger
+    forever -- disagreement is retained, never asserted.
+    """
+    rows = conn.execute(
+        "SELECT f.task_id, f.page_path, f.jurisdiction, f.rule_id, f.ruleset_version, "
+        "f.verdict, f.evidence_excerpt, f.rationale "
+        "FROM findings f JOIN adjudication_log a "
+        "ON a.finding_id = f.task_id || '::' || f.rule_id "
+        "WHERE a.verdict = 'CONFIRMED'"
+    ).fetchall()
+    return [
+        ViolationFinding(
+            task_id=r[0], page_path=r[1], jurisdiction=r[2], rule_id=r[3],
+            ruleset_version=r[4], verdict=r[5], evidence_excerpt=r[6], rationale=r[7],
+        )
+        for r in rows
+    ]
+
+
 def get_findings(conn: sqlite3.Connection, page_path: str | None = None) -> list[ViolationFinding]:
     query = "SELECT task_id, page_path, jurisdiction, rule_id, ruleset_version, verdict, evidence_excerpt, rationale FROM findings"
     params: tuple = ()
@@ -272,6 +337,76 @@ def run_check_stage(
             insert_finding(conn, finding)
 
         _insert_ledger_row(conn, item_id, stage, TaskState.DONE.value, attempt, started_at=started, ended_at=_now())
+
+
+def run_verify_stage(
+    findings: list[ViolationFinding],
+    rules_by_id: dict[str, ComplianceRule],
+    verifier_fn: Callable[[ViolationFinding, ComplianceRule, str], dict],
+    conn: sqlite3.Connection,
+    run_id: str,
+    *,
+    stage: str = "verify",
+    force: bool = False,
+) -> None:
+    """Adjudicate every VIOLATION finding through verifier_fn (policy/
+    ADJUDICATION_POLICY.md §10: COMPLIANT/NOT_APPLICABLE findings are
+    never sent to the verifier -- a wrong COMPLIANT is a recall-failure
+    path, not an adjudication-failure path, explicit by design).
+
+    Findings are grouped by their originating CheckTask (task_id). A
+    verifier_fn failure (VerifierInvocationError or a schema-invalid
+    raw payload) on any one finding fails the whole task atomically --
+    mirroring FI-2's DEAD_LETTER atomicity, except here the terminal
+    state is FAILED, not DEAD_LETTER (policy §12: this is an agent-
+    invocation failure, not a content-payload failure) -- and none of
+    that task's adjudication rows are written. Otherwise the task's
+    terminal state is ESCALATED if any adjudication came back DISPUTED,
+    else DONE, whatever the mix of CONFIRMED/REJECTED (policy §11).
+    """
+    violations = [f for f in findings if f.verdict.value == "VIOLATION"]
+    by_task: dict[str, list[ViolationFinding]] = {}
+    for f in violations:
+        by_task.setdefault(f.task_id, []).append(f)
+
+    register_tasks(list(by_task.keys()), conn, stage)
+
+    for item_id, task_findings in by_task.items():
+        if not force and _latest_terminal_row(conn, item_id, stage) is not None:
+            continue  # resume: already terminal, do not reprocess (also FI-6 idempotency)
+
+        attempt = _next_attempt(conn, item_id, stage)
+        started = _now()
+        _insert_ledger_row(conn, item_id, stage, TaskState.RUNNING.value, attempt, started_at=started)
+
+        records: list[AdjudicationRecord] = []
+        failure: str | None = None
+        for finding in task_findings:
+            rule = rules_by_id[finding.rule_id]
+            try:
+                raw = verifier_fn(finding, rule, run_id)
+                records.append(AdjudicationRecord(**raw))
+            except (VerifierInvocationError, ValidationError) as exc:
+                failure = str(exc)
+                break
+
+        if failure is not None:
+            _insert_ledger_row(
+                conn, item_id, stage, TaskState.FAILED.value, attempt,
+                started_at=started, ended_at=_now(), error_class="VERIFIER_FAILED",
+                payload_ref=failure,
+            )
+            continue  # atomic: no adjudication row from this task reaches storage
+
+        for record in records:
+            insert_adjudication(conn, record)
+
+        terminal = (
+            TaskState.ESCALATED.value
+            if any(r.verdict == AdjudicationVerdict.DISPUTED for r in records)
+            else TaskState.DONE.value
+        )
+        _insert_ledger_row(conn, item_id, stage, terminal, attempt, started_at=started, ended_at=_now())
 
 
 def run_plan_stage(

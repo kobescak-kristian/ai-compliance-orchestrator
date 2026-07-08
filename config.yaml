@@ -1,0 +1,15 @@
+# Verifier subprocess node config (BLUEPRINT.md ADR-0002, Phase 4).
+# Repo path + pinned commit per policy/ADJUDICATION_POLICY.md §12: the
+# shipped ai-claim-verification-agent runs byte-literal unchanged. Every
+# invocation checks the repo's actual HEAD against pinned_commit and
+# fails loudly on a mismatch rather than silently drifting.
+verifier_agent:
+  repo_path: "C:/Users/Dell/GitHub/ai-claim-verification-agent"
+  pinned_commit: "d444b13c3ba07b9f4798d3298ec3bfc92da5a960"
+  models:
+    dev: "claude-haiku-4-5-20251001"
+    official_gate: "claude-sonnet-4-6"
+  max_budget_usd:
+    dev: 0.25
+    official_gate: 1.50
+  max_turns: 20

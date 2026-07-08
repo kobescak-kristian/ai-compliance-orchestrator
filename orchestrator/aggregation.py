@@ -5,7 +5,7 @@ never decided by a model. No LLM calls originate here.
 """
 from __future__ import annotations
 
-from contracts.schemas import ComplianceRule, SeverityReport, Verdict, ViolationFinding
+from contracts.schemas import AdjudicationRecord, ComplianceRule, SeverityReport, Verdict, ViolationFinding
 
 SEVERITY_WEIGHTS = {"CRITICAL": 3, "MAJOR": 2, "MINOR": 1}
 
@@ -55,3 +55,18 @@ def build_severity_reports(
     for i, report in enumerate(reports, start=1):
         report.rank = i
     return reports
+
+
+def build_adjudication_report(records: list[AdjudicationRecord]) -> dict[str, list[AdjudicationRecord]]:
+    """Deterministic three-way split of adjudication records (policy/
+    ADJUDICATION_POLICY.md §5): CONFIRMED findings are the system's
+    assertions; DISPUTED findings are surfaced in their own section,
+    never as an assertion; REJECTED findings are excluded from both --
+    present in the ledger (and this report, for transparency) but never
+    scored or asserted.
+    """
+    return {
+        "confirmed": [r for r in records if r.verdict.value == "CONFIRMED"],
+        "disputed": [r for r in records if r.verdict.value == "DISPUTED"],
+        "rejected": [r for r in records if r.verdict.value == "REJECTED"],
+    }
