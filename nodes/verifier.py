@@ -26,13 +26,23 @@ from pathlib import Path
 
 import yaml
 
-from contracts.schemas import AdjudicationRecord, AdjudicationVerdict, ComplianceRule, ViolationFinding
+from contracts.schemas import AdjudicationVerdict, ComplianceRule, ViolationFinding
 from nodes.assembler import assemble_case
 from orchestrator.pipeline import VerifierInvocationError, finding_id_for
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = REPO_ROOT / "config.yaml"
 RUNNER_SCRIPT = REPO_ROOT / "nodes" / "verifier_runner.py"
+
+# Populated by every verify_finding() call: {finding_id, cost_usd,
+# num_turns} -- for dev/eval-leg cost+turns reporting only (BLUEPRINT.md
+# §7), never part of the strict AdjudicationRecord contract. Mirrors
+# agents/checker/harness.py's last_result convention.
+run_stats: list[dict] = []
+
+
+def reset_run_stats() -> None:
+    run_stats.clear()
 
 # Policy §14: the shipped agent's native verdict schema maps onto this
 # policy's three adjudication verdicts. Fixed, not configurable per run.
@@ -86,11 +96,15 @@ def verify_finding(
     *,
     model: str | None = None,
     config: dict | None = None,
-) -> AdjudicationRecord:
+) -> dict:
     """Adjudicate one VIOLATION finding through the shipped agent,
-    unmodified, as a subprocess. Raises VerifierConfigError /
-    VerifierInvocationError on any failure -- there is no partial or
-    silently-degraded result.
+    unmodified, as a subprocess. Returns a raw dict -- signature-
+    compatible with nodes.verifier_stub.stub_verifier -- that
+    orchestrator.pipeline.run_verify_stage validates into an
+    AdjudicationRecord at the boundary (same real-agent-returns-raw-
+    dict / orchestrator-validates convention as agents.checker.harness.
+    real_checker). Raises VerifierConfigError / VerifierInvocationError
+    on any failure -- there is no partial or silently-degraded result.
     """
     config = config or load_verifier_config()
     repo_path = Path(config["repo_path"]).resolve()
@@ -125,6 +139,14 @@ def verify_finding(
                 f"{finding_id_for(finding)}: {exc}"
             ) from exc
 
+        run_stats.append(
+            {
+                "finding_id": finding_id_for(finding),
+                "cost_usd": payload.get("cost_usd"),
+                "num_turns": payload.get("num_turns"),
+            }
+        )
+
         if len(raw_findings) != 1:
             raise VerifierInvocationError(
                 f"verifier subprocess returned {len(raw_findings)} findings for finding "
@@ -148,13 +170,13 @@ def verify_finding(
                 f"{finding_id_for(finding)}"
             )
 
-        return AdjudicationRecord(
-            finding_id=finding_id_for(finding),
-            verdict=_VERDICT_MAP[shipped_verdict],
-            citation=f"{evidence_source}: {evidence_note}",
-            model=model,
-            timestamp=datetime.now(timezone.utc),
-            run_id=run_id,
-        )
+        return {
+            "finding_id": finding_id_for(finding),
+            "verdict": _VERDICT_MAP[shipped_verdict],
+            "citation": f"{evidence_source}: {evidence_note}",
+            "model": model,
+            "timestamp": datetime.now(timezone.utc),
+            "run_id": run_id,
+        }
     finally:
         shutil.rmtree(case_dir, ignore_errors=True)
