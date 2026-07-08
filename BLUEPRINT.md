@@ -67,6 +67,14 @@ Pipeline (per run):
    the claim-accuracy dimension — published claims vs operator source
    pages; CONTRADICTED findings map into the same finding flow as a
    distinct category. Kept as designed reuse of shipped work.
+
+   **Phase 4 amendment (2026-07-08):** superseded by
+   `policy/ADJUDICATION_POLICY.md` and ADR-0002. The verifier is not an
+   independent fourth checker — it adjudicates each jurisdiction
+   checker's own VIOLATION findings (challenge, never detect), issuing
+   CONFIRMED / REJECTED / DISPUTED verdicts. `AccuracyFinding` above is
+   retained as the record of the superseded design; `AdjudicationRecord`
+   (contracts/schemas.py) is the live Phase 4 contract.
 4. **Aggregate (deterministic):** collect findings, rank pages by
    severity score computed from rule metadata (severity classes are in
    the rule sets, not decided by any model). No LLM.
@@ -256,6 +264,10 @@ layer, cheaply, and the stubs remain as fixtures for the FI suite forever.
    near-free for a private repo).
 3. **Verifier integration:** subprocess + JSON contract, as optional
    fourth checker (claim-accuracy dimension), Phase 4.
+   **Phase 4 amendment (2026-07-08):** verifier role superseded by
+   `policy/ADJUDICATION_POLICY.md` and ADR-0002 — subprocess + JSON
+   contract stands, but the role is adjudicator over checker VIOLATION
+   findings, not an independent fourth checker. See §2 step 3 amendment.
 4. **Gate thresholds:** 0.95 / 0.90 pooled and per jurisdiction;
    NOT_APPLICABLE ≥ 0.90.
 5. **Dataset sizing:** 3 jurisdictions × ~8 rules; 12 pages;
