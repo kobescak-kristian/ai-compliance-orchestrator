@@ -10,10 +10,21 @@ import tempfile
 import pytest
 
 from agents.checker import stub as checker_stub
-from contracts.schemas import CheckTask
+from contracts.schemas import CheckTask, ComplianceRule, RuleCategory, Severity, Verdict, ViolationFinding
 from intake.inventory import RuleAccessDenied, build_check_tasks, read_ruleset
+from nodes import verifier_stub
+from orchestrator.aggregation import build_adjudication_report
 from orchestrator.ledger import create_db
-from orchestrator.pipeline import get_findings, register_tasks, run_check_stage, task_id_for
+from orchestrator.pipeline import (
+    finding_id_for,
+    get_adjudications,
+    get_confirmed_findings,
+    get_findings,
+    register_tasks,
+    run_check_stage,
+    run_verify_stage,
+    task_id_for,
+)
 
 
 @pytest.fixture
@@ -196,6 +207,44 @@ def test_fi6_idempotent_rerun(conn):
     assert done_attempts == 2  # ledger honestly logs both attempts happened
 
 
+def test_adjudication_log_append_only_no_overwrite(conn):
+    """policy/ADJUDICATION_POLICY.md §6: "a finding's assertion status
+    changes only through an adjudication row" -- no code path may ever
+    update or delete one. Proven directly at the storage layer
+    (UNIQUE(finding_id) + INSERT OR IGNORE, orchestrator.pipeline.
+    insert_adjudication): a second insert attempt for the same
+    finding_id, even carrying a different verdict, is silently ignored
+    -- the original row's verdict is what's actually stored. This is
+    the same guarantee test_fi5_conflicting_findings exercises through
+    a full run_verify_stage re-run; here it's isolated to the single
+    storage primitive so a future change to that call site can't hide a
+    regression behind the higher-level test's other assertions.
+    """
+    from datetime import datetime, timezone
+
+    from contracts.schemas import AdjudicationRecord
+    from orchestrator.pipeline import get_adjudications, insert_adjudication
+
+    first = AdjudicationRecord(
+        finding_id="p01.html::MLT::MLT-BT-01", verdict="CONFIRMED",
+        citation="stub: bright-line criterion met, evidence verified",
+        model="stub-verifier-v1", timestamp=datetime.now(timezone.utc), run_id="overwrite-test",
+    )
+    conflicting_second = AdjudicationRecord(
+        finding_id="p01.html::MLT::MLT-BT-01", verdict="REJECTED",
+        citation="stub: evidence fails the cited bright-line criterion",
+        model="stub-verifier-v1", timestamp=datetime.now(timezone.utc), run_id="overwrite-test-2",
+    )
+
+    assert insert_adjudication(conn, first) is True
+    assert insert_adjudication(conn, conflicting_second) is False  # ignored, not applied
+
+    rows = get_adjudications(conn)
+    assert len(rows) == 1  # no second row, no overwritten row
+    assert rows[0].verdict.value == "CONFIRMED"  # the original verdict stands
+    assert rows[0].run_id == "overwrite-test"
+
+
 def test_fi7_path_escape_and_rule_isolation(conn):
     """FI-7 | Path escape attempt in any agent tool input; checker
     requests another jurisdiction's rule set | Rejected; audit row
@@ -222,10 +271,97 @@ def test_fi7_path_escape_and_rule_isolation(conn):
     ]
 
 
-def test_fi5_conflicting_findings():
+def test_fi5_conflicting_findings(conn):
     """FI-5 | Conflicting findings on the same excerpt (checker:
     COMPLIANT; verifier: CONTRADICTED -- or two rules colliding) | Task ->
     ESCALATED, surfaced in human queue with both artifacts -- never
     auto-resolved
+
+    SUPERSEDED (policy/ADJUDICATION_POLICY.md §7): BLUEPRINT.md §6's
+    original FI-5 wording predates the adjudication policy and describes
+    a checker-vs-checker/verifier tie the orchestrator itself referees.
+    Under the policy, the "conflict" is the verifier adjudicating a
+    checker VIOLATION finding to REJECTED or DISPUTED. This test scripts
+    one of each, on two different tasks, to prove both halves of the
+    TaskState mapping (policy §11) in one pass: rejected-only -> DONE,
+    any DISPUTED -> ESCALATED -- never auto-resolved to a single verdict,
+    both positions retained in the ledger.
     """
-    pytest.skip("implemented Phase 4 (verifier subprocess node required)")
+    verifier_stub.reset_failures()
+
+    rejected_finding = ViolationFinding(
+        page_path="p01.html", jurisdiction="MLT", rule_id="MLT-BT-01",
+        ruleset_version="v1.0", verdict=Verdict.VIOLATION,
+        evidence_excerpt="wagering text not adjacent to offer",
+        rationale="stub fixture rationale: adjacency check",
+        task_id="p01.html::MLT",
+    )
+    disputed_finding = ViolationFinding(
+        page_path="p06.html", jurisdiction="MLT", rule_id="MLT-PC-01",
+        ruleset_version="v1.0", verdict=Verdict.VIOLATION,
+        evidence_excerpt="guarantee-adjacent wording",
+        rationale="stub fixture rationale: prohibited-claims check",
+        task_id="p06.html::MLT",
+    )
+    rules_by_id = {
+        "MLT-BT-01": ComplianceRule(
+            jurisdiction="MLT", rule_id="MLT-BT-01", category=RuleCategory.BONUS_TERMS,
+            severity=Severity.MAJOR, rule_text="Wagering requirements must be adjacent to the offer.",
+            ruleset_version="v1.0",
+        ),
+        "MLT-PC-01": ComplianceRule(
+            jurisdiction="MLT", rule_id="MLT-PC-01", category=RuleCategory.PROHIBITED_CLAIMS,
+            severity=Severity.CRITICAL, rule_text="No guaranteed-win language.",
+            ruleset_version="v1.0",
+        ),
+    }
+    findings = [rejected_finding, disputed_finding]
+
+    verifier_stub.configure_verdict(finding_id_for(rejected_finding), "REJECTED")
+    verifier_stub.configure_verdict(finding_id_for(disputed_finding), "DISPUTED")
+
+    run_verify_stage(findings, rules_by_id, verifier_stub.stub_verifier, conn, run_id="fi5-test")
+
+    # both positions in ledger, each citing its verdict (no naked rejection)
+    adjs = {a.finding_id: a for a in get_adjudications(conn)}
+    assert adjs[finding_id_for(rejected_finding)].verdict.value == "REJECTED"
+    assert adjs[finding_id_for(disputed_finding)].verdict.value == "DISPUTED"
+    assert adjs[finding_id_for(rejected_finding)].citation
+    assert adjs[finding_id_for(disputed_finding)].citation
+
+    # disputed row in the report's disputed section
+    report = build_adjudication_report(get_adjudications(conn))
+    assert finding_id_for(disputed_finding) in [r.finding_id for r in report["disputed"]]
+    assert finding_id_for(rejected_finding) in [r.finding_id for r in report["rejected"]]
+    assert finding_id_for(rejected_finding) not in [r.finding_id for r in report["disputed"]]
+    assert finding_id_for(disputed_finding) not in [r.finding_id for r in report["rejected"]]
+
+    # rejected row excluded from assertions; disputed is too (policy §5)
+    confirmed_ids = {finding_id_for(f) for f in get_confirmed_findings(conn)}
+    assert finding_id_for(rejected_finding) not in confirmed_ids
+    assert finding_id_for(disputed_finding) not in confirmed_ids
+
+    # task ESCALATED per (iii): rejected-only -> DONE, any DISPUTED -> ESCALATED
+    def _verify_state(task_id):
+        row = conn.execute(
+            "SELECT state FROM task_ledger WHERE task_id = ? AND stage = 'verify' ORDER BY id DESC LIMIT 1",
+            (task_id,),
+        ).fetchone()
+        return row[0]
+
+    assert _verify_state(rejected_finding.task_id) == "DONE"
+    assert _verify_state(disputed_finding.task_id) == "ESCALATED"
+
+    # idempotent re-run (including force=True, FI-6 style): nothing overwritten
+    run_verify_stage(findings, rules_by_id, verifier_stub.stub_verifier, conn, run_id="fi5-test", force=True)
+
+    adjs_after = get_adjudications(conn)
+    assert len(adjs_after) == 2  # no duplicate rows
+    adjs_after_by_id = {a.finding_id: a for a in adjs_after}
+    assert adjs_after_by_id[finding_id_for(rejected_finding)].verdict.value == "REJECTED"
+    assert adjs_after_by_id[finding_id_for(disputed_finding)].verdict.value == "DISPUTED"
+
+    terminal_attempts = conn.execute(
+        "SELECT COUNT(*) FROM task_ledger WHERE stage='verify' AND state IN ('DONE','ESCALATED')"
+    ).fetchone()[0]
+    assert terminal_attempts == 4  # 2 tasks x 2 terminal attempts each -- ledger honestly logs both runs

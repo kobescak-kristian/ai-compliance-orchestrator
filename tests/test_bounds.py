@@ -21,8 +21,13 @@ import tempfile
 import pytest
 
 from agents.checker.tools import build_tools
-from contracts.schemas import CheckTask
+from contracts.schemas import CheckTask, ComplianceRule, RuleCategory, Severity, Verdict, ViolationFinding
+from nodes.assembler import assemble_case
 from orchestrator.ledger import create_db
+
+# Same convention as evals/dev_score.py's LEAK_MARKERS: strings that could
+# only appear in a verifier's input if evals/answer_key.yaml had leaked in.
+_KEY_LEAK_MARKERS = ["answer_key", "FROZEN (adjudicated", "ADJUDICATION_LOG"]
 
 
 @pytest.fixture
@@ -91,8 +96,53 @@ def test_verifier_cage():
     tools | May never: anything outside its dataset dir (existing bounds
     suite). (BLUEPRINT.md §4) Reused, not forked: subprocess node with
     JSON stdin/stdout contract; the shipped repo stays untouched (§3).
+
+    Blindness bounds (policy/ADJUDICATION_POLICY.md §2), asserted on the
+    constructed case input -- not on trust: no answer-key markers, no
+    checker transcript/rationale, no sibling findings. A second
+    (sibling) finding on the same page, carrying a distinguishing
+    marker in its evidence, proves isolation: only the finding actually
+    being adjudicated shows up in its assembled case.
     """
-    pytest.skip("implemented Phase 4 (verifier subprocess node)")
+    finding = ViolationFinding(
+        page_path="p01.html", jurisdiction="MLT", rule_id="MLT-BT-01",
+        ruleset_version="v1.0", verdict=Verdict.VIOLATION,
+        evidence_excerpt="wagering text not adjacent to offer",
+        rationale="checker rationale: adjacency check -- CHECKER_TRANSCRIPT_MARKER_4b2e",
+        task_id="p01.html::MLT",
+    )
+    sibling_marker = "SIBLING_FINDING_EVIDENCE_MARKER_9f3a"
+    sibling = ViolationFinding(
+        page_path="p01.html", jurisdiction="MLT", rule_id="MLT-BT-02",
+        ruleset_version="v1.0", verdict=Verdict.VIOLATION,
+        evidence_excerpt=sibling_marker,
+        rationale="checker rationale: sibling finding, must not leak",
+        task_id="p01.html::MLT",
+    )
+    rule = ComplianceRule(
+        jurisdiction="MLT", rule_id="MLT-BT-01", category=RuleCategory.BONUS_TERMS,
+        severity=Severity.MAJOR, rule_text="Wagering requirements must be adjacent to the offer.",
+        ruleset_version="v1.0",
+    )
+
+    files = assemble_case(finding, rule)
+    combined = "\n".join(files.values())
+
+    for marker in _KEY_LEAK_MARKERS:
+        assert marker not in combined, f"answer-key marker {marker!r} leaked into assembled case"
+
+    # no checker transcript/rationale
+    assert finding.rationale not in combined
+    assert "CHECKER_TRANSCRIPT_MARKER_4b2e" not in combined
+
+    # no sibling findings (isolation)
+    assert sibling_marker not in combined
+    assert sibling.rule_id not in combined
+
+    # the shape the shipped agent's case_paths() expects: one target, N sources
+    assert set(files) == {"target.html", "source_rule.html", "source_page.html"}
+    assert finding.rule_id in files["target.html"]
+    assert rule.rule_text in files["source_rule.html"]
 
 
 def test_planner_cage():
