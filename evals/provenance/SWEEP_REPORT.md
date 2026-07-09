@@ -6,6 +6,12 @@ No sweep script was committed to this repo — the sweep was a manual grep
 run in a prior session, before the blind-label pass began; its record
 is exactly what `evals/ADJUDICATION_LOG.md` logged, no more.*
 
+## Historical run (pre-blind, 2026-07-08)
+
+Exactly as originally recorded — nothing below this heading has been
+edited for the live-sweep addition; see "Live sweep" at the end of this
+file for what changed 2026-07-09.
+
 ## What the sweep was for
 
 Before the 12 finished pages were sent to the blind labeler (ChatGPT),
@@ -77,3 +83,29 @@ would be a bare commit message with no trace of what was checked, what
 was found, or why it mattered to the protocol's isolation guarantee
 (ADR-0004) — that the blind labeler only ever sees pages that reflect
 their briefs, not accidental extras.
+
+## Live sweep (from this commit)
+
+The historical run above was a one-off manual grep with an unrecoverable
+partial keyword list. As of 2026-07-09, the sweep is a permanent,
+committed test:
+
+- **Full pattern committed as code:** `tests/test_sweep.py::
+  SWEEP_PATTERN` — `guarant|risk[- ]?free|lose nothing|free|last
+  chance|ends (soon|in)|hurry|countdown|income|get rich|can'?t
+  lose|no risk`, case-insensitive. This supersedes the historical run's
+  6-term partial list; nothing is unrecoverable going forward.
+- **Provenance is the test file itself.** Every future page edit is
+  re-checked automatically by `python -m pytest tests/test_sweep.py`
+  (or the full suite) — there is no separate script to remember to run
+  and no manual grep to repeat.
+- **Residuals adjudicated into `evals/provenance/SWEEP_ALLOWLIST.md`,
+  count 8.** Running the full pattern against HEAD (2026-07-09) surfaced
+  8 hits outside `evals/check_pages.py`'s spec-string lists — titles,
+  nav text, and elaboration prose on p03/p04/p10, none a new rule
+  surface (hard-checked against the frozen key, none plausibly flip a
+  cell). Per Kristian's ruling, these were adjudicated into a separate
+  allowlist rather than folded into `PAGE_SPECS` — spec strings stay
+  exactly what was specified at page-construction time. The allowlist
+  carries its own staleness guard: an entry whose text stops matching
+  its page fails the test rather than silently going unused.
