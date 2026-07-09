@@ -60,9 +60,15 @@ proceed into the next phase in the same session unless explicitly told.
 **Amendment (2026-07-07):** Phase 1 split by Kristian's decision into 1a
 (contracts + ledger schema + eval config + FI test skeletons,
 authorship-independent) and 1b (rule sets + seeded pages + answer key,
-per the §10.7 authorship split). 1a DONE (e78f3c0). 1b-i DONE (3124c1e):
-rule sets + 12 pages. **1b-ii DONE — Phase 1 COMPLETE (frozen key,
-adjudication log).**
+per the §10.7 authorship split).
+
+**Phase-tracking note (2026-07-09):** per-phase completion status no
+longer lives here. GOVERNANCE.md §3 clause 8 (kristian-os) supersedes
+the 2026-07-07 convention of tracking it in this file — build-repo
+STATE.md (this repo's STATE.md, Phase History section) is now the sole
+owner of phase/build status; SPEC stays the contract. This note is a
+fact-boundary pointer, not a phase update — do not add DONE/status
+markers here again.
 
 Phase 2 is deliberate: orchestration is proven deterministically before any
 model is invoked — the multi-agent claim is tested at its own layer,
