@@ -1,0 +1,118 @@
+# STATE — ai-compliance-orchestrator
+
+Multi-jurisdiction iGaming compliance surveillance: bounded checker
+agents per jurisdiction + a subprocess adjudicator over their findings,
+coordinated by deterministic orchestration with typed handoffs, a full
+audit trail, and a human gate — proves agent-to-agent fan-out and
+contract-enforced boundaries (BLUEPRINT.md §1).
+**Classification:** PROJECT (BLUEPRINT.md L16, stated) · **T0**
+(inferred — not the portfolio flagship; ARTIFACT_STANDARD.md names
+ai-reliability-engine as sole Tier-1 holder. Kristian confirms
+in-session, per GOVERNANCE.md §3 rule 1.)
+**Plan:** Phases 0-4 complete. Phase 5 (planner agent + human-gate CLI)
+next; Phase 6 (official Sonnet 4.6 gate run) and Phase 7
+(README/diagram/demo) remain — BLUEPRINT.md §9.
+**Open decisions / open loops:**
+- Agent recording → flip gates the public positioning card (ADR-0002
+  Option B dependency): both `ai-claim-verification-agent` and this
+  repo are PRIVATE as of commit 43ff49f — the reuse claim in ADR-0002
+  is unverifiable by an external reader until both flip.
+- **Dev-number reconciliation required before any external artifact
+  cites them** — see Eval Numbers below; one cited figure is UNSOURCED.
+- Phase 5 build (planner agent + human-gate CLI, BLUEPRINT.md §9 row 5)
+  — not started.
+
+## Eval Numbers (found on disk only; run ID + source cited per figure)
+
+| Quantity | Value | Run ID | Source |
+|---|---|---|---|
+| Checker-only precision/recall (dev, Haiku 4.5) | 1.000 / 0.941 (TP 16 / FP 0 / FN 1) | `dev-27b9e6bf` | `evals/EVAL_RESULTS.md` (commit 126568c) |
+| Post-adjudication precision/recall (dev, Haiku 4.5 verifier) | 1.000 / 0.882 (TP 15 / FP 0 / FN 2); 15 CONFIRMED / 0 REJECTED / 1 DISPUTED | `adj-dev-8ad74444` | `evals/EVAL_RESULTS.md` (commit e6911bd) |
+| Post-adjudication precision/recall — alternate figure | 0.938 / 0.882 (15/1/2), $0.6522 (as dictated; not independently verified) | `dev-9342adb5` | **UNSOURCED** — not found anywhere in this repo's working tree or full git history, nor in kristian-os (grepped both this session). Not recorded from memory. |
+
+Open loop: the `0.938` figure and run ID `dev-9342adb5` do not exist in
+any committed record found. A prior session in this repo's history
+(2026-07-08) independently investigated the same discrepancy and reached
+the same conclusion — recorded here again, not closed, per this
+dictation's explicit instruction to keep it open until Kristian
+reconciles it. Nothing outside this repo/kristian-os was searched.
+
+## Phase History (0-4, RECONSTRUCTED)
+
+*Per GOVERNANCE.md §3 rule 7 (kristian-os commit 204806a): retrofit
+entries below are reconstructed from `git log --oneline --stat`,
+committed files (SPEC.md phase lines, ADR-0004, `evals/` artifacts, the
+provenance folder), and FAILURE_REGISTER.md F-016 (describe by
+reference, not verbatim quotation — applied throughout). They carry no
+contemporaneous authority (T5-equivalent); contemporaneous record begins
+with this file.*
+
+## Change Log
+*(New entries on top. Phase closes require evidence: exit codes,
+commit hashes, eval numbers.)*
+
+- **2026-07-09** — STATE.md created per rule-v3 retrofit (GOVERNANCE.md
+  §3 clause 7, kristian-os commit 204806a). Contemporaneous.
+- **2026-07-09** — Clause-7 deviation logged: Phase 4 closure (commit
+  43ff49f) and sweep-permanence work (commit 7a07e01) ran before this
+  reconstruction — the working session opened ahead of the retrofit.
+  Deviation acknowledged under GOVERNANCE.md §3 clause 7's escape valve
+  (one bounded session may proceed with reconstruction as its first
+  task); contemporaneous STATE begins at this commit. Contemporaneous.
+- **2026-07-09** — [RECONSTRUCTED] Sweep made permanent: full trigger
+  pattern committed as `tests/test_sweep.py`; 8 residual hits (page
+  titles/nav/elaboration prose, none a real collision, none flipping a
+  frozen-key cell) adjudicated into `evals/provenance/SWEEP_ALLOWLIST.md`
+  — spec strings in `evals/check_pages.py` unchanged. `SWEEP_REPORT.md`
+  now three-tier (historical / live sweep / residuals). pytest: 14
+  passed, 1 skipped. Commit `7a07e01`.
+- **2026-07-09** — [RECONSTRUCTED] Phase 4 completion: `adr/0004-three-
+  actor-answer-key-protocol.md` (Accepted — Executed; spec/key: Claude,
+  pages: Claude Code, blind labels: ChatGPT, adjudication: Kristian, per
+  `evals/ADJUDICATION_LOG.md`; named residual: pages/key/checkers share
+  a model family, blind labeling verifies key correctness only, not
+  checker independence) + `evals/provenance/` (PAGE_BRIEFS,
+  PAGE_AUTHOR_PROMPT, SWEEP_REPORT, README — reconstructed from
+  `evals/INJECTION_SPEC.md` + `evals/ADJUDICATION_LOG.md` + commit
+  `fa5d6a1`, no approximation where source was incomplete). Phase 1
+  provenance gate cleared — this was the standing decision blocking
+  Phase 5. Commit `43ff49f`.
+- **2026-07-08** — [RECONSTRUCTED] Phase 4: verifier is a subprocess
+  adjudication node over checker VIOLATION findings, not an independent
+  4th checker — supersedes BLUEPRINT.md §2 step 3 / §10.3 (amendment
+  lines added, original retained; see ADR-0002, Accepted). `policy/
+  ADJUDICATION_POLICY.md` pre-committed before any Phase 4 code.
+  `AdjudicationRecord` contract + append-only `adjudication_log` ledger
+  table. FI-5 unskipped (supersedes BLUEPRINT §6's original wording,
+  noted in the test itself); `test_verifier_cage` unskipped (blindness
+  bounds on the assembled case). Dev-leg adjudication run `adj-dev-
+  8ad74444` (see Eval Numbers). Shipped `ai-claim-verification-agent`
+  repo run byte-literal unchanged, pinned commit
+  `d444b13c3ba07b9f4798d3298ec3bfc92da5a960`; its git working tree
+  verified clean before and after every invocation. pytest at close: 13
+  passed, 1 skipped. Commits `30c7618`..`89784ba` (policy, contracts,
+  nodes, tests, verifier fix + dev-leg, docs/ADR-0002).
+- **2026-07-08** — [RECONSTRUCTED] Phase 3 close: real caged checker
+  agent (Haiku 4.5 dev routing) replaces its Phase 2 stub. Dev run
+  `dev-27b9e6bf` (see Eval Numbers) — 12/12 CheckTasks terminal DONE,
+  zero lost tasks, bounds check PASS (no answer-key marker in any
+  audit.db tool payload). Commits `75f4bf3`, `126568c`.
+- **2026-07-08** — [RECONSTRUCTED] Phase 2: orchestrator core (ledger,
+  state machine, resume-from-ledger), intake, aggregation, end-to-end on
+  stub agents — FI-1..4/6/7 green, zero LLM calls this phase. Commit
+  `e24d9be`.
+- **2026-07-08** — [RECONSTRUCTED] Phase 1b-ii: frozen answer key (30
+  violations, three-actor protocol per ADR-0004) — 288/288 cells
+  labeled, 97.6% blind-label agreement, 7 disagreements adjudicated
+  (D1-D7, `evals/ADJUDICATION_LOG.md`); D2 record corrected same day.
+  Commits `dd155bf`, `0d84bf9`.
+- **2026-07-08** — [RECONSTRUCTED] Phase 1b-i: 3 jurisdiction rule sets
+  + 12 seeded pages per `evals/INJECTION_SPEC.md`. Pre-blind filler
+  sweep caught one unintended trigger (P12 free-bet/deposit collision);
+  fixed before the blind pass began; SPEC.md §10.7 (answer-key
+  authorship split) resolved same commit. Commits `3124c1e`, `fa5d6a1`.
+- **2026-07-07** — [RECONSTRUCTED] Phase 1a: contracts, ledger schema,
+  eval config, FI test skeletons — authorship-independent; Phase 1b
+  blocked on §10.7 until resolved. Commit `e78f3c0`.
+- **2026-07-07** — [RECONSTRUCTED] Phase 0: repo scaffold, SPEC.md,
+  CLAUDE.md, ADR-0001/ADR-0003, per BLUEPRINT.md v1.1. Commit `a12fddd`.
