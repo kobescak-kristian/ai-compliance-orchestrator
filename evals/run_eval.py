@@ -121,34 +121,64 @@ def run_official_pipeline(conn: sqlite3.Connection, run_id: str) -> dict:
     """Full corpus, all targeted jurisdictions, Sonnet 4.6 for checker
     and verifier; planner runs too (complete artifact) but is not
     scored. Returns per-stage cost/turns/wall-clock stats.
+
+    Cost/turns capture: checker's real_checker only exposes its most
+    recent ResultMessage via agents.checker.harness.last_result (no
+    accumulator), so it's wrapped here to sum across all 23 tasks.
+    Verifier and planner already accumulate into their own module-level
+    run_stats lists (nodes.verifier.run_stats,
+    agents.planner.harness.run_stats) -- reset before this run and read
+    after, so a caller never has to remember to drain them before the
+    process exits (the gap that lost this data on the first official
+    run, gate-9328e564 -- see EVAL_RESULTS.md).
     """
+    import agents.checker.harness as checker_harness
+    import agents.planner.harness as planner_harness
+    import nodes.verifier as verifier_module
+
     stats: dict = {}
 
     all_tasks, missing = build_check_tasks(PAGES_DIR, RULESETS_DIR)
     if missing:
         raise RuntimeError(f"cannot run official gate: rule sets missing for {missing}")
 
-    checker_fn = functools.partial(
-        real_checker, ledger_conn=conn, run_id=run_id, model=OFFICIAL_MODEL, max_budget_usd=OFFICIAL_CHECK_BUDGET_USD
-    )
+    check_cost = 0.0
+    check_turns = 0
+
+    def checker_fn(task):
+        nonlocal check_cost, check_turns
+        result = real_checker(
+            task, ledger_conn=conn, run_id=run_id, model=OFFICIAL_MODEL, max_budget_usd=OFFICIAL_CHECK_BUDGET_USD
+        )
+        if checker_harness.last_result is not None:
+            check_cost += checker_harness.last_result.total_cost_usd or 0.0
+            check_turns += checker_harness.last_result.num_turns or 0
+        return result
+
     t0 = time.monotonic()
     run_check_stage(all_tasks, checker_fn, conn)
     stats["check_wall_s"] = time.monotonic() - t0
     stats["check_task_count"] = len(all_tasks)
+    stats["check_cost_usd"] = check_cost
+    stats["check_turns"] = check_turns
 
     findings = get_findings(conn)
     rulesets = load_rulesets(RULESETS_DIR)
     rules_by_id: dict[str, ComplianceRule] = {r.rule_id: r for rules in rulesets.values() for r in rules if rules}
 
+    verifier_module.reset_run_stats()
     verifier_fn = functools.partial(verify_finding, model=OFFICIAL_MODEL, max_budget_usd=OFFICIAL_VERIFY_BUDGET_USD)
     t0 = time.monotonic()
     run_verify_stage(findings, rules_by_id, verifier_fn, conn, run_id)
     stats["verify_wall_s"] = time.monotonic() - t0
     stats["verify_finding_count"] = sum(1 for f in findings if f.verdict.value == "VIOLATION")
+    stats["verify_cost_usd"] = sum((s["cost_usd"] or 0) for s in verifier_module.run_stats)
+    stats["verify_turns"] = sum((s["num_turns"] or 0) for s in verifier_module.run_stats)
 
     confirmed = {a.finding_id for a in get_adjudications(conn) if a.verdict.value == "CONFIRMED"}
     confirmed_findings = [f for f in findings if f"{f.task_id}::{f.rule_id}" in confirmed]
 
+    planner_harness.reset_run_stats()
     planner_fn = functools.partial(
         real_planner, ledger_conn=conn, run_id=run_id, rules_by_id=rules_by_id,
         model=OFFICIAL_MODEL, max_budget_usd=OFFICIAL_PLAN_BUDGET_USD,
@@ -157,6 +187,11 @@ def run_official_pipeline(conn: sqlite3.Connection, run_id: str) -> dict:
     run_plan_stage(confirmed_findings, planner_fn, conn)
     stats["plan_wall_s"] = time.monotonic() - t0
     stats["plan_finding_count"] = len(confirmed_findings)
+    stats["plan_cost_usd"] = sum((s["cost_usd"] or 0) for s in planner_harness.run_stats)
+    stats["plan_turns"] = sum((s["num_turns"] or 0) for s in planner_harness.run_stats)
+
+    stats["total_cost_usd"] = stats["check_cost_usd"] + stats["verify_cost_usd"] + stats["plan_cost_usd"]
+    stats["total_turns"] = stats["check_turns"] + stats["verify_turns"] + stats["plan_turns"]
 
     return stats
 

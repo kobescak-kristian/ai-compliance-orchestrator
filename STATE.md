@@ -9,8 +9,13 @@ contract-enforced boundaries (BLUEPRINT.md §1).
 (inferred — not the portfolio flagship; ARTIFACT_STANDARD.md names
 ai-reliability-engine as sole Tier-1 holder. Kristian confirms
 in-session, per GOVERNANCE.md §3 rule 1.)
-**Plan:** Phases 0-5 complete. Phase 6 (official Sonnet 4.6 gate run) and
-Phase 7 (README/diagram/demo) remain — BLUEPRINT.md §9.
+**Plan:** Phases 0-6 complete. Phase 6 gate result: **FAIL** (violation-
+detection precision; see below) — not adjusted, not rerun-until-pretty.
+Phase 7 (README/diagram/demo) remains — BLUEPRINT.md §9. Phase 7's
+"honest FAIL with miss-pattern analysis" content already exists
+(`evals/EVAL_RESULTS.md` OFFICIAL section); whether Phase 7 proceeds on a
+FAILing gate, or a remediation/re-gate phase is inserted first, is
+Kristian's call, not decided here.
 **Open decisions / open loops:**
 - Agent recording → flip gates the public positioning card (ADR-0002
   Option B dependency): both `ai-claim-verification-agent` and this
@@ -18,8 +23,19 @@ Phase 7 (README/diagram/demo) remain — BLUEPRINT.md §9.
   is unverifiable by an external reader until both flip.
 - **Dev-number reconciliation required before any external artifact
   cites them** — see Eval Numbers below; one cited figure is UNSOURCED.
-- Phase 6 build (official Sonnet 4.6 gate run + EVAL_RESULTS.md + FI
-  suite full green, BLUEPRINT.md §9 row 6) — not started.
+- **Gate FAIL disposition:** official run `gate-9328e564` failed
+  violation_detection on pooled precision (0.844 vs 0.95 min) — GBR and
+  MLT both fail precision and recall; DEU is clean. Whether to remediate
+  the checker prompt/rules and re-gate, accept the FAIL as the published
+  result with its miss-pattern analysis, or something else, is Kristian's
+  call — not decided in this session (BLUEPRINT §9 Phase 6 acceptance is
+  "GATE GREEN or honest FAIL with miss-pattern analysis committed"; the
+  latter is what happened).
+- Cost/turns telemetry gap on `gate-9328e564` (checker + verify/plan
+  accumulators never read before the driving process exited) — logged as
+  a defect in `evals/EVAL_RESULTS.md`, fixed in `evals/run_eval.py` for
+  future runs, not re-run for telemetry alone (didn't abort, doesn't
+  affect scoring validity).
 
 ## Eval Numbers (found on disk only; run ID + source cited per figure)
 
@@ -50,6 +66,43 @@ with this file.*
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
 
+- **2026-07-09** — Phase 6: official gate run, `evals/run_eval.py`
+  (frozen and committed pre-run, `f3f04fb`) -- full 12-page corpus, 23
+  CheckTasks, 184 judged + 104 geo-derived = 288 cells, Sonnet 4.6 for
+  checker + verifier + planner. Bounds check PASS. Orchestration
+  invariants clean: check 23/23, verify 17/17, plan 32/32 terminal, zero
+  dead-letter, zero failed, zero lost. Adjudication: 32/32 CONFIRMED,
+  zero rejected, zero disputed -- all 8 misses this run are checker
+  misses, not adjudication-layer cost (contrast with the dev leg's one
+  DISPUTED-costs-recall case). Scores: pooled TP27/FP5/FN3, precision
+  0.844 (< 0.95 min), recall 0.900 (= 0.90 min, clears); NOT_APPLICABLE
+  leg 31/34 = 0.912 (PASS); DEU clean (10/0/0), GBR and MLT both fail
+  precision and recall. **GATE RESULT: FAIL** on violation_detection
+  (precision) -- not_applicable_handling and orchestration_invariants
+  both PASS. Not adjusted, not rerun-for-a-better-number. Full
+  miss-pattern analysis (5 named patterns, evidence-cited per pattern)
+  in `evals/EVAL_RESULTS.md` OFFICIAL section: p09.html's 3 FPs trace to
+  the checker judging adjacency against a paragraph other than the one
+  actually carrying the offer's terms; p11.html's 2 FNs trace to the
+  checker anchoring on the dataset's own designed distractor sentence
+  instead of the page's actual violating claim; one FP (p06.html x
+  GBR-BT-02) reproduces a "risk-free" vs "free"-item rule-boundary
+  confusion the dataset's own P11 brief already documents as deliberate;
+  p01.html x GBR-BT-02 (flagged in advance as a standing observation)
+  reproduces as a miss on both the Haiku dev leg and this Sonnet
+  official leg, with a different specific wrong label each time; p04.html
+  x GBR-PC-03 (also flagged in advance) does NOT dispute again -- Sonnet
+  confirms it with a cited rationale, where the Haiku dev-leg verifier
+  had disputed the same cell. MLT's "zero-miss at 7 violations" baseline
+  (on record as accepted, per this session's instruction) does not hold
+  this run -- 1 FN + 2 FP, stated plainly, not smoothed over.
+  Cost/turns telemetry gap on this run (see open loops above) -- fixed
+  in `evals/run_eval.py` same commit, not re-run for telemetry alone.
+  pytest: 15 passed, 0 skipped, unaffected. Shipped
+  `ai-claim-verification-agent` repo git status clean before and after
+  (32 subprocess invocations this run). This entry is contemporaneous
+  with the commit it describes; see `git log -1` at commit time for the
+  hash (same self-citation limitation as the Phase 5 entry below).
 - **2026-07-09** — Phase 5: caged planner agent (`agents/planner/`:
   config, audit, tools [read_finding/read_rule/emit_proposal], prompts,
   harness, select — mirrors the checker's caging pattern; mode-switch
