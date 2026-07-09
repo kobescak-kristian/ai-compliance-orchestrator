@@ -9,9 +9,8 @@ contract-enforced boundaries (BLUEPRINT.md §1).
 (inferred — not the portfolio flagship; ARTIFACT_STANDARD.md names
 ai-reliability-engine as sole Tier-1 holder. Kristian confirms
 in-session, per GOVERNANCE.md §3 rule 1.)
-**Plan:** Phases 0-4 complete. Phase 5 (planner agent + human-gate CLI)
-next; Phase 6 (official Sonnet 4.6 gate run) and Phase 7
-(README/diagram/demo) remain — BLUEPRINT.md §9.
+**Plan:** Phases 0-5 complete. Phase 6 (official Sonnet 4.6 gate run) and
+Phase 7 (README/diagram/demo) remain — BLUEPRINT.md §9.
 **Open decisions / open loops:**
 - Agent recording → flip gates the public positioning card (ADR-0002
   Option B dependency): both `ai-claim-verification-agent` and this
@@ -19,8 +18,8 @@ next; Phase 6 (official Sonnet 4.6 gate run) and Phase 7
   is unverifiable by an external reader until both flip.
 - **Dev-number reconciliation required before any external artifact
   cites them** — see Eval Numbers below; one cited figure is UNSOURCED.
-- Phase 5 build (planner agent + human-gate CLI, BLUEPRINT.md §9 row 5)
-  — not started.
+- Phase 6 build (official Sonnet 4.6 gate run + EVAL_RESULTS.md + FI
+  suite full green, BLUEPRINT.md §9 row 6) — not started.
 
 ## Eval Numbers (found on disk only; run ID + source cited per figure)
 
@@ -51,6 +50,32 @@ with this file.*
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
 
+- **2026-07-09** — Phase 5: caged planner agent (`agents/planner/`:
+  config, audit, tools [read_finding/read_rule/emit_proposal], prompts,
+  harness, select — mirrors the checker's caging pattern; mode-switch
+  defaults to stub, Phase 2 pipeline signature and tests untouched) +
+  human-gate CLI (`gate/cli.py`: list/approve/reject/disputed,
+  idempotent approve/reject via a PENDING-scoped UPDATE). BLUEPRINT.md
+  §2 step 5 amended: the planner drafts proposals for CONFIRMED findings
+  only (policy §5), not every raw VIOLATION -- amendment line added,
+  original retained. `test_planner_cage` unskipped: blindness asserted
+  on constructed tool output (no answer-key markers, no sibling
+  findings, no checker/verifier transcripts) and self-approval is
+  impossible at the API surface -- no approve/reject-shaped tool exists
+  in the planner's whitelist at all. pytest: 15 passed, 0 skipped (was
+  14/1 -- the last skip, planner cage, is now green; no skips remain).
+  Dev leg `plan-dev-05d72b61`: 15/15 CONFIRMED findings from Phase 4's
+  `adj-dev-8ad74444` planned over (the 1 DISPUTED finding excluded by
+  design), all terminal DONE, zero lost, 15 proposals queued, $0.4118 /
+  60 turns. CLI round-trip demonstrated live: approved proposal [1],
+  rejected proposal [2], idempotent no-op confirmed re-approving [1] and
+  also rejecting the now-APPROVED [1]; `disputed` verified against
+  Phase 4's real ESCALATED task (p04.html x GBR), showing both the
+  CONFIRMED and the DISPUTED finding with their adjudication citations.
+  Full detail: `evals/EVAL_RESULTS.md` Phase 5 leg. This entry is
+  contemporaneous with the commit it describes; the commit's own hash
+  cannot be self-cited (unlike every entry below, all written after
+  their commit existed) -- see `git log -1` at commit time instead.
 - **2026-07-09** — STATE.md created per rule-v3 retrofit (GOVERNANCE.md
   §3 clause 7, kristian-os commit 204806a). Contemporaneous.
 - **2026-07-09** — Clause-7 deviation logged: Phase 4 closure (commit

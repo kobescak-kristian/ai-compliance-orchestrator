@@ -21,6 +21,8 @@ import tempfile
 import pytest
 
 from agents.checker.tools import build_tools
+from agents.planner import config as planner_config
+from agents.planner.tools import build_tools as build_planner_tools
 from contracts.schemas import CheckTask, ComplianceRule, RuleCategory, Severity, Verdict, ViolationFinding
 from nodes.assembler import assemble_case
 from orchestrator.ledger import create_db
@@ -149,8 +151,98 @@ def test_planner_cage():
     """Planner | LLM agent | Tools: read_finding, read_rule,
     emit_proposal | May never: fetch pages, write files, approve its own
     proposal. (BLUEPRINT.md §4)
+
+    Blindness (this Phase-5 instruction, mirroring the verifier's policy/
+    ADJUDICATION_POLICY.md §2 bounds), asserted on the constructed tool
+    outputs -- not on trust: no answer-key markers, no checker rationale/
+    transcript, no sibling findings (a second finding on the same page,
+    with a distinguishing rationale and rule, proves isolation -- neither
+    its evidence nor its rule is reachable through the tools bound to the
+    first finding). Self-approval is impossible at the API surface: the
+    tool whitelist has no approve/reject capability at all, not merely a
+    forbidden one.
     """
-    pytest.skip("implemented Phase 5 (real planner agent)")
+    finding = ViolationFinding(
+        page_path="p01.html", jurisdiction="MLT", rule_id="MLT-BT-01",
+        ruleset_version="v1.0", verdict=Verdict.VIOLATION,
+        evidence_excerpt="wagering text not adjacent to offer",
+        rationale="checker rationale: adjacency check -- CHECKER_TRANSCRIPT_MARKER_7c1d",
+        task_id="p01.html::MLT",
+    )
+    rule = ComplianceRule(
+        jurisdiction="MLT", rule_id="MLT-BT-01", category=RuleCategory.BONUS_TERMS,
+        severity=Severity.MAJOR, rule_text="Wagering requirements must be adjacent to the offer.",
+        ruleset_version="v1.0",
+    )
+    sibling_marker = "SIBLING_FINDING_EVIDENCE_MARKER_2e6a"
+    sibling_finding = ViolationFinding(
+        page_path="p01.html", jurisdiction="MLT", rule_id="MLT-BT-02",
+        ruleset_version="v1.0", verdict=Verdict.VIOLATION,
+        evidence_excerpt=sibling_marker,
+        rationale="checker rationale: sibling finding, must not leak",
+        task_id="p01.html::MLT",
+    )
+    sibling_rule = ComplianceRule(
+        jurisdiction="MLT", rule_id="MLT-BT-02", category=RuleCategory.BONUS_TERMS,
+        severity=Severity.MINOR, rule_text="SIBLING_RULE_TEXT_MARKER_must_not_leak",
+        ruleset_version="v1.0",
+    )
+
+    # self-approval impossible at the API surface: no such tool exists
+    assert set(planner_config.TOOL_NAMES) == {"read_finding", "read_rule", "emit_proposal"}
+    assert not any("approv" in name.lower() or "reject" in name.lower() for name in planner_config.TOOL_NAMES)
+
+    read_finding, read_rule, emit_proposal = build_planner_tools(finding, rule, "planner-cage-test")
+    tool_names = {t.name for t in (read_finding, read_rule, emit_proposal)}
+    assert tool_names == {"read_finding", "read_rule", "emit_proposal"}  # exactly these 3, nothing else
+
+    finding_result = asyncio.run(read_finding.handler({}))
+    finding_text = finding_result["content"][0]["text"]
+
+    # no checker transcript: rationale never appears
+    assert finding.rationale not in finding_text
+    assert "CHECKER_TRANSCRIPT_MARKER_7c1d" not in finding_text
+    # no sibling findings
+    assert sibling_marker not in finding_text
+    assert sibling_finding.rule_id not in finding_text
+    # the bare anchor is present
+    assert finding.evidence_excerpt in finding_text
+    assert finding.rule_id in finding_text
+
+    # own rule is allowed
+    own_rule_result = asyncio.run(read_rule.handler({"rule_id": rule.rule_id}))
+    assert own_rule_result.get("is_error") is None
+    own_rule_text = own_rule_result["content"][0]["text"]
+    assert rule.rule_text in own_rule_text
+
+    # sibling's rule is rejected -- rule isolation, mirroring the checker's
+    # cross-jurisdiction bound
+    sibling_rule_result = asyncio.run(read_rule.handler({"rule_id": sibling_rule.rule_id}))
+    assert sibling_rule_result.get("is_error") is True
+    sibling_rule_text = sibling_rule_result["content"][0]["text"]
+    assert "rejected" in sibling_rule_text.lower()
+    assert "SIBLING_RULE_TEXT_MARKER_must_not_leak" not in sibling_rule_text
+
+    # no answer-key markers anywhere in any tool output collected so far
+    combined = finding_text + own_rule_text + sibling_rule_text
+    for marker in _KEY_LEAK_MARKERS:
+        assert marker not in combined, f"answer-key marker {marker!r} leaked into planner tool output"
+
+    # emit_proposal validates at the tool boundary and records exactly
+    # what was bound -- offending_text is the finding's own evidence,
+    # never invented, never a sibling's
+    emit_result = asyncio.run(emit_proposal.handler({"proposed_text": "35x wagering applies (adjacent)"}))
+    assert emit_result.get("is_error") is None
+
+    from agents.planner import tools as planner_tools
+
+    assert planner_tools.proposal is not None
+    assert planner_tools.proposal["page_path"] == finding.page_path
+    assert planner_tools.proposal["rule_id"] == finding.rule_id
+    assert planner_tools.proposal["offending_text"] == finding.evidence_excerpt
+    assert planner_tools.proposal["proposed_text"] == "35x wagering applies (adjacent)"
+    assert planner_tools.proposal["created_by_run_id"] == "planner-cage-test"
+    planner_tools.reset_run_state()  # leave module state clean for other tests
 
 
 def test_rule_isolation_checker_cross_jurisdiction(conn):

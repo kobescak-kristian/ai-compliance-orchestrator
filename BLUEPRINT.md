@@ -82,6 +82,17 @@ Pipeline (per run):
    a RemediationProposal (offending text → proposed compliant text +
    rule ref). It can only emit proposals — never writes, edits,
    publishes.
+
+   **Phase 5 amendment (2026-07-09):** this predates the adjudication
+   policy (Phase 4). The planner drafts proposals only for **CONFIRMED**
+   findings, not every VIOLATION — `policy/ADJUDICATION_POLICY.md` §5:
+   the system's assertions are CONFIRMED findings only; REJECTED and
+   DISPUTED findings never generate a proposal. Wiring:
+   `orchestrator.pipeline.run_plan_stage` is unchanged (still takes a
+   `findings` list and filters to VIOLATION-verdict internally); the
+   caller now passes it `orchestrator.pipeline.get_confirmed_findings`
+   results rather than raw check-stage output, so the VIOLATION filter
+   and the CONFIRMED filter compose rather than conflict.
 6. **Human gate (deterministic):** proposals + ranked findings land in
    a review queue (SQLite + CLI). Approve/reject updates ledger state
    only. Nothing in the system can modify a page. Ever.

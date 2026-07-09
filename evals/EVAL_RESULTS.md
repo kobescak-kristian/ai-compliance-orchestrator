@@ -87,3 +87,37 @@ Acceptance read (BLUEPRINT §9 Phase 4): leg runs clean — all 16 findings
 adjudicated, terminal states correct, fallback trigger evaluated and did not
 fire. Not a gate result (Phase 6 is Sonnet 4.6, full corpus, thresholds
 enforced).
+
+## Phase 5 leg — planner (Haiku 4.5, dev routing)
+
+### 2026-07-09 — run_id plan-dev-05d72b61
+
+Drafts a RemediationProposal for each CONFIRMED finding from the Phase 4
+dev leg (`adj-dev-8ad74444`) — 15 of the 16 adjudicated findings; the 1
+DISPUTED finding (p04.html × GBR-PC-03) is excluded by design (policy §5:
+the planner drafts only for the system's assertions, per BLUEPRINT.md §2
+step 5's Phase 5 amendment). Real caged planner agent
+(`agents/planner/harness.py`), tool whitelist exactly `read_finding`,
+`read_rule`, `emit_proposal`.
+
+- Model: claude-haiku-4-5-20251001 (dev routing; Max plan auth, no per-token API key)
+- Findings planned over: **15/15** — all terminal DONE, zero lost, zero
+  FAILED/DEAD_LETTER
+- Proposals in queue: **15** (one per finding; none declined)
+- Cost: **$0.4118** total ($0.027/finding avg) · Turns: **60** total (4.0/finding avg)
+- Wall clock: 314 s
+
+CLI round-trip (`gate/cli.py`, against this leg's db): approved proposal
+`[1]` (p01.html × GBR-GE-01), rejected proposal `[2]` (p02.html ×
+DEU-GE-01) — both single-write UPDATEs confirmed via `list --status`.
+Idempotency confirmed both ways: re-approving `[1]` after it was already
+APPROVED is a no-op ("already APPROVED"), and rejecting an already-
+APPROVED proposal is also a no-op, not an overwrite. `disputed` command
+verified against Phase 4's real ESCALATED task (p04.html × GBR): shows
+both artifacts per finding — the CONFIRMED GBR-RG-01 finding and the
+DISPUTED GBR-PC-03 finding, each with its adjudication citation,
+never auto-resolved.
+
+Acceptance read (BLUEPRINT §9 Phase 5): proposal queue populated from a
+real run (15/15), all tasks terminal, zero lost; approve/reject
+round-trip shown in the ledger via the CLI. Not a gate result.
