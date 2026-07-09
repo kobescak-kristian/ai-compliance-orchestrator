@@ -1,6 +1,7 @@
 # ai-compliance-orchestrator
 
 - Read BLUEPRINT.md before any work.
+- Phase start: update STATE.md status to in-progress before any phase work.
 - One phase per session, per §9; stop at phase boundary and report.
 - Never write agent code before Phase 1 is committed and Kristian-approved.
 - Done = acceptance criteria + exit code 0 shown, never file existence.

@@ -37,25 +37,71 @@ with no model in the loop. Nothing in the system can modify a page. Ever.
 
 ## System
 
+Nodes, their tool boundaries, and what each may never do — not just
+labels, the actual `allowed_tools` whitelist enforced in code
+(`tests/test_bounds.py`). No internal prompt or reasoning content is
+shown; this is structure only.
+
 ```
-                      ┌──────────────────────────────────────────────┐
-                      │        ORCHESTRATOR (deterministic)           │
-                      │ task ledger · state machine · queues          │
-                      │ schema enforcement · dead-letter · resume     │
-                      │ severity aggregation (from rule metadata)     │
-                      └──┬───────────┬───────────┬───────────┬───────┘
-                         │           │           │           │
-                   ┌─────▼────┐ ┌────▼─────┐ ┌───▼──────┐ ┌──▼───────┐
-  published pages →│ INTAKE   │ │ CHECKERS │ │ VERIFIER │ │ PLANNER  │
-  + rule sets      │ (no LLM) │ │ (1 agent │ │ (shipped │ │ (agent,  │
-                   │ inventory│ │ per juris│ │ agent as │ │ proposals│
-                   └──────────┘ │ -diction)│ │subprocess)│ │ only)    │
-                                └──────────┘ └──────────┘ └────┬─────┘
-                                                      ┌─────────▼───────┐
-                                                      │ HUMAN GATE (CLI)│
-                                                      │ approve/reject  │
-                                                      └─────────────────┘
-  Every box writes to SQLite: task ledger + agent audit trails.
+                         PUBLISHED PAGES  +  RULE SETS
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │  INTAKE — deterministic, no LLM │
+                    │  builds one CheckTask per        │
+                    │  (page × targeted jurisdiction)  │
+                    └────────────────┬──────────────────┘
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              ▼                     ▼                     ▼
+     ┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
+     │ CHECKER (MLT)      │ │ CHECKER (GBR)      │ │ CHECKER (DEU)      │
+     │ agent, caged       │ │ agent, caged       │ │ agent, caged       │
+     │ tools: fetch_page, │ │ tools: fetch_page, │ │ tools: fetch_page, │
+     │ read_ruleset (own  │ │ read_ruleset (own  │ │ read_ruleset (own  │
+     │ jurisdiction only),│ │ jurisdiction only),│ │ jurisdiction only),│
+     │ emit_finding       │ │ emit_finding       │ │ emit_finding       │
+     │ NEVER: see another │ │ NEVER: see another │ │ NEVER: see another │
+     │ jurisdiction, write│ │ jurisdiction, write│ │ jurisdiction, write│
+     │ files, or network  │ │ files, or network  │ │ files, or network  │
+     └──────────┬──────────┘ └──────────┬──────────┘ └──────────┬──────────┘
+                └─────────────────────────┼─────────────────────────┘
+                                          ▼
+                    ┌───────────────────────────────┐
+                    │  VERIFIER — shipped agent,       │
+                    │  subprocess, byte-literal          │
+                    │  unchanged, pinned commit hash    │
+                    │  tools: its own 4, read-only        │
+                    │  NEVER: edit a finding, add one    │
+                    │  the checker missed, see the key   │
+                    └────────────────┬──────────────────┘
+                                    │  CONFIRMED findings only
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │  PLANNER — agent, caged            │
+                    │  tools: read_finding, read_rule,   │
+                    │  emit_proposal                     │
+                    │  NEVER: fetch a page, write a      │
+                    │  file, approve its own proposal    │
+                    │  (no such tool exists)             │
+                    └────────────────┬──────────────────┘
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │  HUMAN GATE — deterministic CLI    │
+                    │  list / approve / reject /         │
+                    │  disputed                          │
+                    │  NEVER: modify a page — nothing    │
+                    │  upstream can either                │
+                    └───────────────────────────────┘
+
+   Every node above also writes to, and is bounded by, the same store:
+   ┌─────────────────────────────────────────────────────────────────┐
+   │  LEDGER (SQLite) — task_ledger (state machine, every stage) ·    │
+   │  findings · proposals · adjudication_log (append-only, never     │
+   │  overwritten) · dead_letter (schema-invalid payloads) ·          │
+   │  audit_log / path_access_log / tool_calls (every tool call,      │
+   │  written before its result is ever used)                        │
+   └─────────────────────────────────────────────────────────────────┘
 ```
 
 **Pipeline, one pass:**
