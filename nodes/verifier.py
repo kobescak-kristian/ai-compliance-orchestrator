@@ -95,6 +95,7 @@ def verify_finding(
     run_id: str,
     *,
     model: str | None = None,
+    max_budget_usd: float | None = None,
     config: dict | None = None,
 ) -> dict:
     """Adjudicate one VIOLATION finding through the shipped agent,
@@ -111,7 +112,7 @@ def verify_finding(
     _check_pinned_commit(repo_path, config["pinned_commit"])
 
     model = model or config["models"]["dev"]
-    max_budget_usd = config["max_budget_usd"]["dev"]
+    max_budget_usd = max_budget_usd if max_budget_usd is not None else config["max_budget_usd"]["dev"]
 
     case_id = f"phase4_adj_{uuid.uuid4().hex[:12]}"
     case_dir = repo_path / "evals" / "dataset" / case_id
