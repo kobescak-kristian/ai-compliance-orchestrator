@@ -10,27 +10,23 @@ contract-enforced boundaries (BLUEPRINT.md §1).
 ai-reliability-engine as sole Tier-1 holder. Kristian confirms
 in-session, per GOVERNANCE.md §3 rule 1.)
 **Plan:** Phases 0-6 complete. Phase 6 gate result: **FAIL** (violation-
-detection precision; see below) — not adjusted, not rerun-until-pretty.
-Phase 7 (README/diagram/demo) remains — BLUEPRINT.md §9. Phase 7's
-"honest FAIL with miss-pattern analysis" content already exists
-(`evals/EVAL_RESULTS.md` OFFICIAL section); whether Phase 7 proceeds on a
-FAILing gate, or a remediation/re-gate phase is inserted first, is
-Kristian's call, not decided here.
+detection precision) — **RESOLVED 2026-07-09 (Kristian): publish as the
+final result, no remediation/re-gate this cycle.** Not adjusted, not
+rerun-until-pretty; BLUEPRINT §9 Phase 6 acceptance ("GATE GREEN or
+honest FAIL with miss-pattern analysis committed") is met by the latter.
+Phase 7 (README/diagram/demo) now in progress — BLUEPRINT.md §9.
 **Open decisions / open loops:**
 - Agent recording → flip gates the public positioning card (ADR-0002
   Option B dependency): both `ai-claim-verification-agent` and this
   repo are PRIVATE as of commit 43ff49f — the reuse claim in ADR-0002
-  is unverifiable by an external reader until both flip.
+  is unverifiable by an external reader until both flip. **Not touched
+  by "publish" above** — that resolved the gate-result disposition only;
+  repo-visibility flip is a separate, still-open, cross-repo decision
+  (tracked outside this session per BLUEPRINT's own sequencing-revision
+  note) and requires the repo-publish-gate skill before it happens, not
+  assumed from this instruction.
 - **Dev-number reconciliation required before any external artifact
   cites them** — see Eval Numbers below; one cited figure is UNSOURCED.
-- **Gate FAIL disposition:** official run `gate-9328e564` failed
-  violation_detection on pooled precision (0.844 vs 0.95 min) — GBR and
-  MLT both fail precision and recall; DEU is clean. Whether to remediate
-  the checker prompt/rules and re-gate, accept the FAIL as the published
-  result with its miss-pattern analysis, or something else, is Kristian's
-  call — not decided in this session (BLUEPRINT §9 Phase 6 acceptance is
-  "GATE GREEN or honest FAIL with miss-pattern analysis committed"; the
-  latter is what happened).
 - Cost/turns telemetry gap on `gate-9328e564` (checker + verify/plan
   accumulators never read before the driving process exited) — logged as
   a defect in `evals/EVAL_RESULTS.md`, fixed in `evals/run_eval.py` for
