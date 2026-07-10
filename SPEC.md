@@ -70,6 +70,11 @@ owner of phase/build status; SPEC stays the contract. This note is a
 fact-boundary pointer, not a phase update — do not add DONE/status
 markers here again.
 
+**Amendment (2026-07-10):** Phase 7 recording does NOT gate the
+flip — README + diagram + published FAIL table suffice; recording
+follows. Decision Kristian 2026-07-10, anti-keystone precedent
+(agent recording queued 3 artifacts for days).
+
 Phase 2 is deliberate: orchestration is proven deterministically before any
 model is invoked — the multi-agent claim is tested at its own layer,
 cheaply, and the stubs remain as fixtures for the FI suite forever.
