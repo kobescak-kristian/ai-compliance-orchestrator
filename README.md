@@ -74,7 +74,7 @@ shown; this is structure only.
                     │  VERIFIER — shipped agent,       │
                     │  subprocess, byte-literal          │
                     │  unchanged, pinned commit hash    │
-                    │  tools: its own 4, read-only        │
+                    │  tools: its own 4, caged            │
                     │  NEVER: edit a finding, add one    │
                     │  the checker missed, see the key   │
                     └────────────────┬──────────────────┘
