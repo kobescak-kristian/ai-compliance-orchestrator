@@ -1,17 +1,21 @@
 # BLUEPRINT — ai-compliance-orchestrator
 *v1.1 — 2026-07-07. Branch B LOCKED (multi-jurisdiction compliance surveillance). Authoritative build document; SPEC.md is condensed from this at Phase 0. Written for Claude Code (executor). House patterns apply throughout: eval gate committed before code, truth on disk, done means checked (exit-code-0 + ledger status), bounded-AI rule v2, secrets never in transcripts.*
 
-**BRANCH DECISION (resolved 2026-07-07):** Rule was "Paradise Media
+**BRANCH DECISION (resolved 2026-07-07):** Rule was "an external hiring process
 second-stage confirmation before Phase 0 → A (offer-sync); otherwise →
-B." Paradise timeline reported as 3–4 weeks, Phase 0 starting now → rule
+B." The external-process timeline reported as 3–4 weeks, Phase 0 starting now → rule
 fires → **Branch B.** Branch A (offer-sync) archived as §13 note; may be
 revived as a v2 skin — the control plane is shared.
 
 **SEQUENCING REVISION (recorded 2026-07-07):** The original gate "Phase 0
 blocked behind claim-verification-agent flip" is REVISED — removed by
-explicit decision (reason: Paradise timeline uncertainty; recording
+explicit decision (reason: the external-process timeline uncertainty; recording
 deprioritized). The recording/flip remains an open item on its own track
 in kristian-os STATE. This is a formal lock revision, not drift.
+
+*Redaction note (2026-07-14): a third-party company name was
+removed from this section before publication; the decision logic
+is unchanged. Reason recorded in the private governance record.*
 
 Classification: PROJECT. Named reader: recruiters/hiring managers at
 iGaming operators and affiliates (majority of active applications).
