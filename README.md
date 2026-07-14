@@ -6,6 +6,8 @@ agents fanning out across a deterministic control plane, with
 contract-enforced handoffs, a full audit trail, and a human gate that
 nothing in the system can bypass.
 
+**The orchestration layer passed every invariant. The detection layer failed its own pre-committed gate — published as-is.**
+
 ## Problem
 
 iGaming content — operator sites and affiliate sites alike — is published
@@ -26,8 +28,9 @@ the orchestration architecture; it does not claim legal accuracy.
 
 One bounded checker agent per jurisdiction evaluates a page against its
 own committed rule set only — it never sees another jurisdiction's
-rules. A second agent, the shipped `ai-claim-verification-agent`
-(reused unmodified, not forked), adjudicates each checker's VIOLATION
+rules. A second agent, the shipped [`ai-claim-verification-agent`](https://github.com/kobescak-kristian/ai-claim-verification-agent)
+(reused unmodified, not forked, pinned to commit
+[`d444b13c`](https://github.com/kobescak-kristian/ai-claim-verification-agent/commit/d444b13c3ba07b9f4798d3298ec3bfc92da5a960)), adjudicates each checker's VIOLATION
 findings as CONFIRMED / REJECTED / DISPUTED before anything counts as an
 assertion. A third agent drafts remediation proposals for confirmed
 violations only. A human approves or rejects every proposal through a
@@ -114,7 +117,7 @@ shown; this is structure only.
    evidence excerpt and a rationale, per rule.
 3. **Verify** (the shipped agent, as an adjudicator) — the shipped
    `ai-claim-verification-agent` runs byte-literal unchanged, pinned to
-   a specific commit, as a subprocess. It re-derives each VIOLATION
+   commit `d444b13c` (linked at first mention above), as a subprocess. It re-derives each VIOLATION
    finding from the rule text and the page alone — blind to the
    checker's reasoning, to sibling findings, and to the answer key —
    and returns CONFIRMED / REJECTED / DISPUTED. It can challenge a
@@ -146,6 +149,9 @@ run `gate-9328e564`, full 12-page corpus, 288 scored cells):
 |---|---|---|---|
 | Precision (pooled) | 0.844 | ≥ 0.95 | **FAIL** |
 | Recall (pooled) | 0.900 | ≥ 0.90 | PASS (exactly at the line) |
+| Precision / Recall (DEU) | 1.000 / 1.000 | ≥ 0.95 / ≥ 0.90 | PASS |
+| Precision / Recall (GBR) | 0.786 / 0.846 | ≥ 0.95 / ≥ 0.90 | **FAIL** |
+| Precision / Recall (MLT) | 0.750 / 0.857 | ≥ 0.95 / ≥ 0.90 | **FAIL** |
 | NOT_APPLICABLE handling | 0.912 | ≥ 0.90 | PASS |
 | Orchestration invariants | 100% terminal, zero lost, zero dead-letter | 100% | PASS |
 
@@ -175,6 +181,28 @@ ingestion, legal-accuracy claims of any kind, live-web fetching at
 scale, CMS/publishing integration, scheduled daemon runs, dashboards,
 operator API integrations, multi-tenant anything.
 
+## Limitations
+
+1. Rules are synthetic, modeled on public regulatory themes — this
+   system demonstrates the governance pattern, not legal coverage
+   (`adr/0003-synthetic-simplified-rulesets.md`).
+2. Answer-key authorship split — committed three-actor roles
+   (spec/key: Claude · pages: Claude Code · blind labels: ChatGPT ·
+   adjudication: Kristian, per `evals/ADJUDICATION_LOG.md`, frozen at
+   `dd155bf`) removes key-authorship leakage; the page author still
+   knows what it planted (`adr/0004`). Pages, key, and checkers share
+   a model family; the blind cross-model label pass verifies the
+   key's correctness, not the dataset's style-independence.
+3. Checker and verifier share a model; adjudication guards against
+   per-finding error, not model-family blind spots.
+4. Per-jurisdiction gate math at this dataset size: frozen counts are
+   MLT 7 / GBR 13 / DEU 10 violations (30 total,
+   `evals/answer_key.yaml`). At recall ≥ 0.90 per jurisdiction, MLT
+   tolerates zero misses before failing gate; GBR and DEU each
+   tolerate exactly one miss — accepted 2026-07-08. MLT's zero-miss
+   tolerance did not hold in the official run (1 FN + 2 FP) —
+   consistent with the quantization risk at this dataset size.
+
 ## Version Log
 
 | Version | Date | Change |
@@ -187,3 +215,4 @@ operator API integrations, multi-tenant anything.
 | v0.6 | 2026-07-09 | Phase 5 — caged planner agent + human-gate CLI; dev leg: 15/15 proposals, CLI approve/reject round-trip. |
 | v0.7 | 2026-07-09 | Phase 6 — official gate run, Sonnet 4.6, full corpus: **GATE FAIL** on precision, published with full miss-pattern analysis. |
 | v0.8 | 2026-07-09 | Phase 7 — README, architecture diagram, Tier 0 documentation. |
+| v0.9 | 2026-07-14 | Pre-flip README final: FAIL statement first screen, Limitations (all four), reuse pin cited, per-jurisdiction gate rows. |
