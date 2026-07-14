@@ -70,3 +70,12 @@ page-author's inputs: `evals/provenance/` (this Phase 4 completion).
   blocked until `evals/provenance/` — the reconstructed page briefs,
   the page-author's binding construction rules, and the pre-blind
   filler-sweep report — is committed. See `evals/provenance/README.md`.
+
+## Addendum (2026-07-14)
+
+Evidence pointer added at gate-0 verification for the publication
+window (Q-24): the executed protocol and frozen answer key this ADR
+records are committed at `dd155bf` and `0d84bf9`; the adjudication
+record cited generically above is `evals/ADJUDICATION_LOG.md` as of
+those commits. Added as a dated addendum, not an edit to the
+original text — the original ADR body is unchanged.
