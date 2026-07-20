@@ -35,16 +35,42 @@ BLUEPRINT.md §9.
   repo-publish-gate's own table). The ADR-0002 Option B reuse claim is
   now externally verifiable. Flip itself is a GitHub Settings action, not
   a commit — no hash pins the exact moment; bracketed between `2cff5ef`
-  (2026-07-14, last pre-flip commit) and today. **Gap, stated plainly:**
-  repo-publish-gate's post-flip step 2 also calls for running the
-  README's stated demo path from a fresh unauthenticated clone (exit 0
-  required) — no evidence of that run exists in either repo's history;
-  not performed this session either, so not closed by this entry.
-  Originally recorded here: both repos PRIVATE as of commit 43ff49f, the
-  reuse claim unverifiable until both flipped, repo-visibility flip
-  tracked as a separate cross-domain decision requiring the
-  repo-publish-gate skill first — that skill ran (see Change Log,
-  2026-07-14 entries) before the flip.
+  (2026-07-14, last pre-flip commit) and today. Originally recorded here:
+  both repos PRIVATE as of commit 43ff49f, the reuse claim unverifiable
+  until both flipped, repo-visibility flip tracked as a separate
+  cross-domain decision requiring the repo-publish-gate skill first —
+  that skill ran (see Change Log, 2026-07-14 entries) before the flip.
+- **CLOSED 2026-07-20 (this session, stranger clone, evidence below):**
+  post-flip step 2 (README demo path from a fresh unauthenticated clone).
+  Result: **N/A, not PASS/FAIL as specified** — there is no documented
+  quickstart/demo command sequence anywhere in this repo to run. README.md
+  has exactly two fenced blocks (lines 48, 108), both ASCII architecture
+  diagrams, zero shell commands; grepped every `.md` file for `quickstart|
+  Quickstart|QUICKSTART|## Demo|## Usage|## Run|## Getting Started` —
+  zero hits; no `requirements.txt`/`pyproject.toml`/`setup.py`/`Makefile`
+  at repo root — a stranger has no documented way to even install
+  dependencies, let alone run one. Nothing executed, so nothing exited
+  non-zero; closing this as a documentation-completeness gap, not a code
+  defect, per instruction not to round it into a false PASS. New open
+  item below (quickstart-or-explicit-N/A) replaces it.
+- **NEW 2026-07-20 (found while checking for a demo path, not the task
+  asked):** `config.yaml` at current public HEAD (`verifier_agent.repo_path`)
+  hardcodes an absolute local path, `C:/Users/Dell/GitHub/ai-claim-
+  verification-agent` — this is the exact `C:\Users` pattern
+  repo-publish-gate item 2 (private-leak scan) is supposed to catch, live
+  in the public repo right now. Missed by the 2026-07-14 pre-flip pass
+  (that pass touched BLUEPRINT.md/README.md/adr/0004 only, not
+  config.yaml). Not fixed this session — remediation approach (relative
+  path, env var, or documented local-only field) needs Kristian's call,
+  same as the quickstart gap above.
+- **Quickstart-or-explicit-N/A (new, 2026-07-20):** either add a real,
+  runnable reproduction section to README.md, or state explicitly that
+  none is provided and why (plausible reading: this is a paid-API-key
+  agent-eval system, not a pip-installable demo — `config.yaml`'s
+  `max_budget_usd` fields are consistent with that, but that's inference,
+  not confirmed by Kristian). Kristian rules; not decided here per
+  CLAUDE.md's "STOP and ask" rule for anything the blueprint doesn't
+  cover.
 - **Demo recording (BLUEPRINT §9/§11) — Kristian rules after seeing the
   cited clause, not resolved this session.** ARTIFACT_STANDARD.md v2.3
   (kristian-os, `LAST UPDATED: 2026-07-09`) cuts `DEMO_SCRIPT.md` (and,
@@ -95,6 +121,26 @@ with this file.*
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
 
+- **2026-07-20** — Post-flip demo-path verification (stranger clone,
+  contemporaneous): `git clone --depth 1` of the public repo into a
+  `mktemp -d` temp dir (never the local working copy), read the cloned
+  README.md in full, grepped it and every other `.md` file for a
+  quickstart/demo command section — **none exists**: README's only two
+  fenced blocks are ASCII diagrams, no `requirements.txt`/`pyproject.toml`/
+  `setup.py`/`Makefile` at root either. Closed the open gap from the
+  prior close as N/A-not-PASS/FAIL (nothing documented to execute, so
+  nothing to exit non-zero) rather than rounding it into a false PASS —
+  see "Open decisions" above. While checking, found `config.yaml`
+  hardcodes a local absolute path (`C:/Users/Dell/GitHub/ai-claim-
+  verification-agent`) in the public repo — matches repo-publish-gate's
+  own `C:\Users` private-leak pattern, missed by the 2026-07-14 pre-flip
+  pass. Two new open items logged (quickstart-or-explicit-N/A; config.yaml
+  path leak), neither fixed this session — remediation approach needs
+  Kristian's call. Temp clone removed (`shutil.rmtree` with a read-only-bit
+  clear on git's own read-only object files; plain `rm -rf` and
+  `ignore_errors=True` both silently left it in place) — verified gone.
+  No commit changes source; this entry is the only diff, same close as
+  the entry below it.
 - **2026-07-20** — Social-preview lane added (contemporaneous):
   `docs/social-preview/orchestrator-flip-post-thumb.png` (1200×627, site
   design system) + `generate_thumbnail.py`, for the LinkedIn
