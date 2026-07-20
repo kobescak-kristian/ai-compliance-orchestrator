@@ -27,15 +27,24 @@ still-open decision, see below) — this v1.0 record does not change
 before then. Phase 7 (README/diagram/demo) now in progress —
 BLUEPRINT.md §9.
 **Open decisions / open loops:**
-- Agent recording → flip gates the public positioning card (ADR-0002
-  Option B dependency): both `ai-claim-verification-agent` and this
-  repo are PRIVATE as of commit 43ff49f — the reuse claim in ADR-0002
-  is unverifiable by an external reader until both flip. **Not touched
-  by "publish" above** — that resolved the gate-result disposition only;
-  repo-visibility flip is a separate, still-open, cross-repo decision
-  (tracked outside this session per BLUEPRINT's own sequencing-revision
-  note) and requires the repo-publish-gate skill before it happens, not
-  assumed from this instruction.
+- **RESOLVED 2026-07-20 (verified this session, unauthenticated):** both
+  `ai-claim-verification-agent` and this repo are now PUBLIC — `curl` 200
+  on both repo pages, this repo's raw README, and the pinned
+  `ai-claim-verification-agent` commit `d444b13c` page (not verified via
+  the `gh` connector — that exact shortcut is a named failure mode in
+  repo-publish-gate's own table). The ADR-0002 Option B reuse claim is
+  now externally verifiable. Flip itself is a GitHub Settings action, not
+  a commit — no hash pins the exact moment; bracketed between `2cff5ef`
+  (2026-07-14, last pre-flip commit) and today. **Gap, stated plainly:**
+  repo-publish-gate's post-flip step 2 also calls for running the
+  README's stated demo path from a fresh unauthenticated clone (exit 0
+  required) — no evidence of that run exists in either repo's history;
+  not performed this session either, so not closed by this entry.
+  Originally recorded here: both repos PRIVATE as of commit 43ff49f, the
+  reuse claim unverifiable until both flipped, repo-visibility flip
+  tracked as a separate cross-domain decision requiring the
+  repo-publish-gate skill first — that skill ran (see Change Log,
+  2026-07-14 entries) before the flip.
 - **Demo recording (BLUEPRINT §9/§11) — Kristian rules after seeing the
   cited clause, not resolved this session.** ARTIFACT_STANDARD.md v2.3
   (kristian-os, `LAST UPDATED: 2026-07-09`) cuts `DEMO_SCRIPT.md` (and,
@@ -85,6 +94,57 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-07-20** — Social-preview lane added (contemporaneous):
+  `docs/social-preview/orchestrator-flip-post-thumb.png` (1200×627, site
+  design system) + `generate_thumbnail.py`, for the LinkedIn
+  publication-announcement post. repo-publish-gate items 1 (secrets) and
+  2 (private-leak) run against the new content only, not a full-repo
+  re-gate — clean: zero hits for `sk-ant|sk-proj|...|AKIA...` and for the
+  prior-leak term list `kristian-os|FABLE|Q-[0-9]|C:\Users|Bolt|Paradise`.
+  Image copy cross-checked against this file's own recorded numbers
+  (P≥0.95/R≥0.90, run `gate-9328e564`) — matches, nothing fabricated.
+  Commit `ec8602c`, pushed to `origin/main`, `origin/main..HEAD` empty.
+  This entry and the six below (repo flip + five-commit catch-up) written
+  same close, per Kristian's explicit instruction this session.
+- **[RECONSTRUCTED] 2026-07-20** — Repo-visibility flip confirmed: see
+  "Open decisions" above (RESOLVED 2026-07-20) for full detail — both
+  this repo and `ai-claim-verification-agent` verified PUBLIC
+  unauthenticated; flip itself undated in git history (GitHub Settings,
+  not scripted); post-flip fresh-clone demo verification not evidenced,
+  left open.
+- **[RECONSTRUCTED] 2026-07-14** — commit `2cff5ef`: README diagram
+  wording, verifier tools `'read-only'` → `'caged'` (log_finding writes
+  its own case log), per pinned SPEC `d444b13c` — second-read finding 11.
+- **[RECONSTRUCTED] 2026-07-14** — commit `f4e1fcd`: BLUEPRINT.md
+  redaction — a third-party company name replaced with "an external
+  hiring process" / "the external-process" in the Branch-Decision and
+  Sequencing-Revision notes; decision logic unchanged. Publish-gate
+  finding, ruling 2026-07-14; reason recorded in the private governance
+  record, not this repo.
+- **[RECONSTRUCTED] 2026-07-14** — commit `77a2a0d`: README pre-flip pass
+  (repo-publish-gate runbook step 1) — top-of-file FAIL-stated-plainly
+  sentence added; `ai-claim-verification-agent` reuse citation linked and
+  pinned to commit `d444b13c`; per-jurisdiction gate rows added to the
+  results table (DEU 1.000/1.000 PASS, GBR 0.786/0.846 FAIL, MLT
+  0.750/0.857 FAIL); four-item Limitations section added (synthetic
+  rules, answer-key authorship split, checker/verifier shared-model risk,
+  per-jurisdiction gate-math at this dataset size); version log gets v0.9.
+- **[RECONSTRUCTED] 2026-07-14** — commit `79d2629`: `adr/0004` dated
+  addendum — evidence pointer for the frozen answer key (commits
+  `dd155bf`, `0d84bf9`) added at gate-0 verification (Q-24); original ADR
+  body unchanged, addendum only.
+- **[RECONSTRUCTED] 2026-07-11** — commit `e148846`: CLAUDE.md gets the
+  "Session boot and governance" block (governance-home pointer,
+  environment-fingerprint pen check, eval/adjudication discipline, close
+  ritual, work-source rule) — the block this and every session since has
+  booted from, including this one.
+- *Catch-up note: this file's Change Log had not been updated for the
+  five commits above (2026-07-11 through 2026-07-14) before this
+  session — reconstructed from `git log -p` per the same GOVERNANCE.md
+  §3 clause 7 pattern used for the Phase 0-4 retrofit below; no
+  contemporaneous authority (T5-equivalent) for the six RECONSTRUCTED
+  entries above.*
 
 - **2026-07-09** — Phase 7 completion: architecture diagram rebuilt in
   README.md `## System` (ASCII, embedded per ARTIFACT_STANDARD.md's
