@@ -4,7 +4,9 @@
 # invocation checks the repo's actual HEAD against pinned_commit and
 # fails loudly on a mismatch rather than silently drifting.
 verifier_agent:
-  repo_path: "C:/Users/Dell/GitHub/ai-claim-verification-agent"
+  # sibling checkout of ai-claim-verification-agent (reused components,
+  # see ADR-0002); path is environment-specific
+  repo_path: "../ai-claim-verification-agent"
   pinned_commit: "d444b13c3ba07b9f4798d3298ec3bfc92da5a960"
   models:
     dev: "claude-haiku-4-5-20251001"

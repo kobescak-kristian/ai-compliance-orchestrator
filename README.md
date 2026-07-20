@@ -8,6 +8,13 @@ nothing in the system can bypass.
 
 **The orchestration layer passed every invariant. The detection layer failed its own pre-committed gate — published as-is.**
 
+This repository publishes the evaluation record: the frozen gate
+configuration, the official run tables (including the failed run), and
+the analysis. Per the portfolio's artifact tiers, it does not ship a
+runnable demo — the committed configs and result tables are the
+artifact, and every number in them can be checked against the files in
+this repo.
+
 ## Problem
 
 iGaming content — operator sites and affiliate sites alike — is published

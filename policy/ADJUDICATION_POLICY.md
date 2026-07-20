@@ -156,8 +156,9 @@ output parsing, verdict remapping) lives in this orchestrator's
 `nodes/assembler.py` and `nodes/verifier.py`, never inside the shipped
 repo.
 
-- Repo: `ai-claim-verification-agent` (local path
-  `C:\Users\Dell\GitHub\ai-claim-verification-agent`; remote
+- Repo: `ai-claim-verification-agent` (local path: sibling checkout,
+  `../ai-claim-verification-agent` relative to this repo's root — path
+  is environment-specific, see `config.yaml`; remote
   `https://github.com/kobescak-kristian/ai-claim-verification-agent.git`,
   **PRIVATE** as of 2026-07-08).
 - **Pinned commit:** `d444b13c3ba07b9f4798d3298ec3bfc92da5a960`
