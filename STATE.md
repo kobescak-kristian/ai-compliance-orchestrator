@@ -54,23 +54,42 @@ BLUEPRINT.md §9.
   defect, per instruction not to round it into a false PASS. New open
   item below (quickstart-or-explicit-N/A) replaces it.
 - **NEW 2026-07-20 (found while checking for a demo path, not the task
-  asked):** `config.yaml` at current public HEAD (`verifier_agent.repo_path`)
-  hardcodes an absolute local path, `C:/Users/Dell/GitHub/ai-claim-
-  verification-agent` — this is the exact `C:\Users` pattern
-  repo-publish-gate item 2 (private-leak scan) is supposed to catch, live
-  in the public repo right now. Missed by the 2026-07-14 pre-flip pass
-  (that pass touched BLUEPRINT.md/README.md/adr/0004 only, not
-  config.yaml). Not fixed this session — remediation approach (relative
-  path, env var, or documented local-only field) needs Kristian's call,
-  same as the quickstart gap above.
-- **Quickstart-or-explicit-N/A (new, 2026-07-20):** either add a real,
-  runnable reproduction section to README.md, or state explicitly that
-  none is provided and why (plausible reading: this is a paid-API-key
-  agent-eval system, not a pip-installable demo — `config.yaml`'s
-  `max_budget_usd` fields are consistent with that, but that's inference,
-  not confirmed by Kristian). Kristian rules; not decided here per
-  CLAUDE.md's "STOP and ask" rule for anything the blueprint doesn't
-  cover.
+  asked), CLOSED-REMEDIATED 2026-07-20 (this session):** `config.yaml` at
+  the then-current public HEAD (`verifier_agent.repo_path`) hardcoded an
+  absolute local path, `C:/Users/<user>/GitHub/ai-claim-
+  verification-agent` — the exact `C:\Users` pattern repo-publish-gate
+  item 2 (private-leak scan) is supposed to catch, live in the public
+  repo at the time. Missed by the 2026-07-14 pre-flip pass (that pass
+  touched BLUEPRINT.md/README.md/adr/0004 only, not config.yaml).
+  Ruling (Kristian, this session): the path encoded a real cross-repo
+  reuse relationship (ADR-0002) worth keeping, so `repo_path` became
+  `../ai-claim-verification-agent` (sibling-checkout relative — verified
+  the sibling directory actually exists at this layout locally, and
+  nothing in `nodes/verifier.py` invokes from a non-root cwd) with an
+  adjacent comment marking it environment-specific; the same leaked path
+  in `policy/ADJUDICATION_POLICY.md`'s verifier-identity section (found
+  during the full-tree sweep, not previously logged) got the equivalent
+  fix. Full-tree sweep (`grep -rniE "c:[/\\]users" .`, both slash
+  directions, `.git/` excluded) confirmed zero further hits in tracked,
+  functional content — the only remaining hits were this entry's own
+  quoted evidence text, de-identified below by Kristian's explicit
+  choice (redact the username, not the incident). Verbatim string
+  (with the real username) preserved in git history pre-redaction — this
+  edit does not touch prior commits. **Ruling summary: reuse reference
+  retained, environment-specific path removed.** Commit `b151485`.
+- **Quickstart-or-explicit-N/A (new, 2026-07-20), CLOSED-REMEDIATED
+  2026-07-20 (this session):** either add a real, runnable reproduction
+  section to README.md, or state explicitly that none is provided and
+  why (plausible reading: this is a paid-API-key agent-eval system, not
+  a pip-installable demo — `config.yaml`'s `max_budget_usd` fields are
+  consistent with that, but that was inference, not confirmed by
+  Kristian at the time). Ruling (Kristian, this session): no runnable
+  demo at this tier — pre-existing artifact-tier decision; the defect
+  was the README's silence, not the absence. One short paragraph added
+  directly after the intro/what-this-is section (before `## Problem`),
+  stating the artifact-tier position plainly — nothing else in README.md
+  altered. **Ruling summary: per pre-existing artifact-tier decision,
+  restated.** Commit `b151485`.
 - **Demo recording (BLUEPRINT §9/§11) — Kristian rules after seeing the
   cited clause, not resolved this session.** ARTIFACT_STANDARD.md v2.3
   (kristian-os, `LAST UPDATED: 2026-07-09`) cuts `DEMO_SCRIPT.md` (and,
@@ -131,12 +150,14 @@ commit hashes, eval numbers.)*
   prior close as N/A-not-PASS/FAIL (nothing documented to execute, so
   nothing to exit non-zero) rather than rounding it into a false PASS —
   see "Open decisions" above. While checking, found `config.yaml`
-  hardcodes a local absolute path (`C:/Users/Dell/GitHub/ai-claim-
-  verification-agent`) in the public repo — matches repo-publish-gate's
-  own `C:\Users` private-leak pattern, missed by the 2026-07-14 pre-flip
-  pass. Two new open items logged (quickstart-or-explicit-N/A; config.yaml
-  path leak), neither fixed this session — remediation approach needs
-  Kristian's call. Temp clone removed (`shutil.rmtree` with a read-only-bit
+  hardcoded a local absolute path (`C:/Users/<user>/GitHub/ai-claim-
+  verification-agent`, username de-identified here — verbatim string
+  preserved in git history pre-redaction) in the public repo — matches
+  repo-publish-gate's own `C:\Users` private-leak pattern, missed by the
+  2026-07-14 pre-flip pass. Two new open items logged
+  (quickstart-or-explicit-N/A; config.yaml path leak), neither fixed this
+  session — remediation approach needs Kristian's call. Temp clone
+  removed (`shutil.rmtree` with a read-only-bit
   clear on git's own read-only object files; plain `rm -rf` and
   `ignore_errors=True` both silently left it in place) — verified gone.
   No commit changes source; this entry is the only diff, same close as
