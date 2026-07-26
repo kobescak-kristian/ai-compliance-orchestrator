@@ -47,6 +47,16 @@ class _ParagraphExtractor(HTMLParser):
 def resolve_page_path(rel_path: str) -> Path:
     """Resolve a path relative to evals/dataset/pages/, rejecting any
     escape attempt (FI-7)."""
+    if "\\" in rel_path:
+        # Backslash is a path separator on Windows but a literal
+        # filename character on POSIX -- the same string escapes on
+        # one OS and not the other. The cage treats it as a separator
+        # everywhere, so the bound is OS-independent (design decision
+        # 2026-07-24, ported from ai-claim-verification-agent commit
+        # c3633e6).
+        raise PathOutsideDatasetError(
+            f"Path {rel_path!r} resolves outside evals/dataset/pages/ -- rejected."
+        )
     candidate = (PAGES_ROOT / rel_path).resolve()
     if not candidate.is_relative_to(PAGES_ROOT):
         raise PathOutsideDatasetError(
