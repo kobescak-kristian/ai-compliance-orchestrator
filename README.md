@@ -1,5 +1,7 @@
 # ai-compliance-orchestrator
 
+[![CI](https://github.com/kobescak-kristian/ai-compliance-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/kobescak-kristian/ai-compliance-orchestrator/actions/workflows/ci.yml)
+
 Multi-jurisdiction iGaming compliance surveillance, built to prove one
 thing the rest of the portfolio doesn't: **orchestration** — bounded
 agents fanning out across a deterministic control plane, with
