@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # FI suite + bounds tests (full pytest suite) — keyless, zero LLM
+  # calls: every stage runs against stub agents or direct tool-handler
+  # calls. No demo job: this repo advertises no runnable demo at its
+  # artifact tier (see README).
+  fi-and-bounds-suite:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.12', '3.14']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt
+      - run: pytest -v
