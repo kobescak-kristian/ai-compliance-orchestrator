@@ -140,6 +140,31 @@ with this file.*
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
 
+- **2026-07-27** — CI added (contemporaneous): `.github/workflows/
+  ci.yml` per the CI workflow standard (CONVENTIONS, github-ops,
+  adopted 2026-07-25) — ubuntu/macos/windows × Python 3.12/3.14
+  keyless matrix, `permissions: contents: read`, pinned actions
+  (checkout@v7, setup-python@v7), no pull_request_target, no cron;
+  full pytest suite (FI + bounds + pipeline + sweep, zero LLM calls,
+  stub agents only). `requirements.txt` added for the CI install
+  path. `.publicgate-allow` rolled out (6 entries, each citing the
+  2026-07-26 exposure-KEPT ruling recorded in the private governance
+  home); two internal queue-label mentions redacted to date-cited
+  wording same session (commit `2df953d` — redaction, not content
+  change; history retains originals). First run `30181952956` RED
+  2/6 legs (both windows green; ubuntu+macos red): the cage test's
+  Windows-style backslash probe is a literal filename on POSIX —
+  containment held, rejection wording differed. Fix (owner-ruled,
+  diff approved pre-push): commit `d35cddb` ports the sibling
+  claim-verification repo's resolver guard (its commit `c3633e6`,
+  design decision 2026-07-24) — backslash treated as a path
+  separator on every OS; test file unchanged. Local keyless pytest
+  15 passed, pytest's own exit 0 (PIPESTATUS-verified). Re-run
+  `30222240748` GREEN 6/6 legs. Full repo-publish-gate run per push
+  (2 runs so far, both OVERALL PASS, verdict tables in session
+  transcript). This entry's own push triggers a further run — its ID
+  citable only after this commit exists (same self-citation
+  limitation as prior entries).
 - **2026-07-20** — Post-flip demo-path verification (stranger clone,
   contemporaneous): `git clone --depth 1` of the public repo into a
   `mktemp -d` temp dir (never the local working copy), read the cloned
