@@ -199,7 +199,8 @@ commit hashes, eval numbers.)*
   per-jurisdiction gate-math at this dataset size); version log gets v0.9.
 - **[RECONSTRUCTED] 2026-07-14** — commit `79d2629`: `adr/0004` dated
   addendum — evidence pointer for the frozen answer key (commits
-  `dd155bf`, `0d84bf9`) added at gate-0 verification (Q-24); original ADR
+  `dd155bf`, `0d84bf9`) added at gate-0 verification (2026-07-14,
+  private queue record); original ADR
   body unchanged, addendum only.
 - **[RECONSTRUCTED] 2026-07-11** — commit `e148846`: CLAUDE.md gets the
   "Session boot and governance" block (governance-home pointer,
