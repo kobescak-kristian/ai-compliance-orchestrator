@@ -1,10 +1,21 @@
-# repo-publish-gate item-2 internal-label allowlist.
-# Format: <path> | <matched pattern(s)> | <dated ruling citation>
-# Every line must cite a dated ruling (skill v1.3). Hits inside this
-# file are exempt by the skill's own rule.
-CLAUDE.md | kristian-os, FABLE_QUEUE, GOVERNANCE, FAILURE_REGISTER | 2026-07-26 exposure-KEPT ruling (kristian-os github-ops STATE changelog, names-only scope, this-repo extension of the 2026-07-12/14 naming-transparency rulings)
-STATE.md | kristian-os, GOVERNANCE, FAILURE_REGISTER, F-016 (file-anchored register citation) | 2026-07-26 exposure-KEPT ruling (kristian-os github-ops STATE changelog, names-only scope)
-SPEC.md | kristian-os, GOVERNANCE | 2026-07-26 exposure-KEPT ruling (kristian-os github-ops STATE changelog, names-only scope)
-BLUEPRINT.md | kristian-os | 2026-07-26 exposure-KEPT ruling (kristian-os github-ops STATE changelog, names-only scope)
-adr/0002-verifier-as-adjudication-node.md | kristian-os | 2026-07-26 exposure-KEPT ruling (kristian-os github-ops STATE changelog, names-only scope)
-policy/ADJUDICATION_POLICY.md | kristian-os | 2026-07-26 exposure-KEPT ruling (kristian-os github-ops STATE changelog, names-only scope)
+BLUEPRINT.md | in kristian-os STATE. This is a formal lock revision, not drift. | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+CLAUDE.md | - Governance home: kristian-os (PRINCIPLES -> GOVERNANCE -> | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+CLAUDE.md |   FAILURE_REGISTER). Read before any irreversible action. | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+CLAUDE.md | - Work comes from the governance repo's queue (kristian-os, | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+CLAUDE.md |   FABLE_QUEUE); do not invent tasks. | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+SPEC.md | longer lives here. GOVERNANCE.md §3 clause 8 (kristian-os) supersedes | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md | in-session, per GOVERNANCE.md §3 rule 1.) | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md |   (kristian-os, `LAST UPDATED: 2026-07-09`) cuts `DEMO_SCRIPT.md` (and, | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md | | Post-adjudication precision/recall — alternate figure | 0.938 / 0.882 (15/1/2), $0.6522 (as dictated; not independently verified) | `dev-9342adb5` | **UNSOURCED** — not found anywhere in this repo's working tree or full git history, nor in kristian-os (grepped both this session). Not recorded from memory. | | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md | reconciles it. Nothing outside this repo/kristian-os was searched. | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md | *Per GOVERNANCE.md §3 rule 7 (kristian-os commit 204806a): retrofit | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md | provenance folder), and FAILURE_REGISTER.md F-016 (describe by | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md |   prior-leak term list `kristian-os|FABLE|Q-[0-9]|C:\Users|Bolt|Paradise`. | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md |   session — reconstructed from `git log -p` per the same GOVERNANCE.md | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md | - **2026-07-09** — STATE.md created per rule-v3 retrofit (GOVERNANCE.md | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md |   §3 clause 7, kristian-os commit 204806a). Contemporaneous. | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+STATE.md |   Deviation acknowledged under GOVERNANCE.md §3 clause 7's escape valve | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+adr/0002-verifier-as-adjudication-node.md |   named, tracked gate on publication (kristian-os), not a blocker on | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+policy/ADJUDICATION_POLICY.md |   public card, not yet met, tracked outside this session (kristian-os). | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+# adjudicated-secrets
+STATE.md |   re-gate — clean: zero hits for `sk-ant|sk-proj|...|AKIA...` and for the | STATE.md:195 |   re-gate — clean: zero hits for `sk-ant|sk-proj|...|AKIA...` and for the | owner ruling 2026-08-04
