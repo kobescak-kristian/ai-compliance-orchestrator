@@ -110,6 +110,12 @@ BLUEPRINT.md §9.
   a defect in `evals/EVAL_RESULTS.md`, fixed in `evals/run_eval.py` for
   future runs, not re-run for telemetry alone (didn't abort, doesn't
   affect scoring validity).
+- **NEW (Q-72(f), 2026-09-19):** the 2026-07-09 CLAUDE.md rule ("Phase
+  start: update STATE.md status to in-progress before any phase work")
+  is absent from the current `AGENTS.md`/`CLAUDE.md` pair after the
+  2026-09-15 AGENTS.md retrofit (`58a8cd7`) — see Change Log entry
+  above. Not established on disk whether this was intentional. Not
+  resolved here; flagged for owner review.
 
 ## Eval Numbers (found on disk only; run ID + source cited per figure)
 
@@ -139,6 +145,47 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-09-19** — Q-72(f) reconciliation (this commit): this file's
+  Change Log stopped at 2026-07-27 and was silent on three later,
+  non-docs commits. Recorded now:
+  - **2026-08-03** (`1350a51`) — publish-gate coverage canary added
+    (`.githooks/.coverage-canary`), same EICAR-style decoy pattern as
+    the sibling claim-verification-agent repo.
+  - **2026-08-04** (`70736c8`, `canary-resolve-a`) — `.publicgate-allow`
+    migrated from a 6-entry, path-plus-pattern-list format to an
+    entry-exact format (21 new lines, each citing this dated owner
+    ruling) — a real tightening of the publish-gate allowlist
+    mechanism, not wording.
+  - **2026-08-04** (`ca5d321`, Q-35 hook rollout) — validator's
+    decision-record check widened to accept `decisions/` as an
+    alternate to `adr/`; pre-commit regex widened for `/c/`-style
+    paths; pre-push freshness guard added — same pattern as the
+    sibling claim-verification repos' Q-35 commits.
+  - **2026-09-15** (`58a8cd7`, Q-93) — canonical AGENTS.md router
+    adopted (112-line new `AGENTS.md`). **Flagged, not silently
+    fixed:** this commit shrank `CLAUDE.md` from its prior
+    phase-discipline block to a thin `@AGENTS.md` pointer, and in
+    doing so **dropped the explicit rule this file itself records
+    being added on 2026-07-09** ("CLAUDE.md gets a new session rule:
+    'Phase start: update STATE.md status to in-progress before any
+    phase work' — applied to this session as its own first edit"; see
+    the 2026-07-09 Phase 7 entry below). Whether this loss was
+    intentional is not established by anything on disk — it reads as
+    an unreviewed side effect of the AGENTS.md retrofit's CLAUDE.md
+    trim, not a recorded decision to drop it. Not restored here: that
+    is a CLAUDE.md/AGENTS.md-retrofit-quality question, outside
+    Q-72(f)'s STATE/validator-convergence scope. Recorded as an open
+    finding below.
+  Validator (same commit): STATE.md-existence check added (this file
+  existed but was never validator-checked); the AGENTS.md v2.7
+  heading-check block added (this repo's validator predates that
+  requirement — confirmed as the pre-v2.7 pilot copy); the obsolete
+  five-record decision cap removed; six-name BANNED_WITHOUT_TRIGGER
+  list propagated — safe here, unlike the sibling claim-verification
+  repos, because this repo's own `adr/0004-three-actor-answer-key-
+  protocol.md` already cites `SPEC.md` (§10.7) as an existing decision
+  record, satisfying the citation requirement without fabricating one.
 
 - **2026-07-27** — CI added (contemporaneous): `.github/workflows/
   ci.yml` per the CI workflow standard (CONVENTIONS, github-ops,

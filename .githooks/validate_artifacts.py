@@ -8,8 +8,19 @@ ROOT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
 REQUIRED_README_SECTIONS = ["## Problem", "## Solution", "## System", "## Outcome", "## Version Log"]
 BANNED_WITHOUT_TRIGGER = ["SYSTEM_WALKTHROUGH.md", "CHANGELOG.md", "RUNBOOK.md",
                           "PRODUCTION_READINESS.md", "THREAT_MODEL.md", "MONITORING.md",
-                          "INCIDENT_RESPONSE.md", "TEST_MATRIX.md"]
+                          "INCIDENT_RESPONSE.md", "TEST_MATRIX.md",
+                          # Propagated 2026-09-19 (Q-72(f) validator convergence):
+                          # was canonical + sentinel only as of 2026-08-04. Safe
+                          # here: adr/0004-three-actor-answer-key-protocol.md
+                          # already cites SPEC.md (SS10.7) as an existing decision
+                          # record, satisfying the citation requirement.
+                          "SLO.md", "MODEL_CARD.md", "DATA_CONTRACT.md",
+                          "DATA_RETENTION_POLICY.md", "SYSTEM_CARD.md", "SPEC.md"]
 errors = []
+
+# Build-repo STATE rule: STATE.md is part of the scaffold.
+if not (ROOT / "STATE.md").exists():
+    errors.append("STATE.md missing (Build-repo STATE rule)")
 
 readme = ROOT / "README.md"
 if not readme.exists():
@@ -20,8 +31,28 @@ else:
         if section not in text:
             errors.append(f"README missing section: {section}")
 
+# AGENTS.md (ARTIFACT_STANDARD v2.7, Tier 0): root file + required H2 headings.
+# Added 2026-09-19 (Q-72(f)): this repo's validator predated the v2.7
+# requirement and never gained this check even after AGENTS.md was added
+# during the 2026-09-15 Q-93 retrofit -- confirmed as the pre-v2.7 pilot copy.
+# Match is case-insensitive; "&" is accepted for "and". Optional
+# "## Repository landmarks" is not checked.
+AGENTS_REQUIRED_HEADINGS = ["Repository purpose", "Authority and conflict handling",
+                            "Task routing", "Always-on constraints", "Verification"]
+agents = ROOT / "AGENTS.md"
+if not agents.exists():
+    errors.append("AGENTS.md missing (ARTIFACT_STANDARD v2.7 Tier 0)")
+else:
+    agents_text = agents.read_text(encoding="utf-8")
+    for heading in AGENTS_REQUIRED_HEADINGS:
+        words = [r"(?:and|&)" if w == "and" else re.escape(w) for w in heading.split()]
+        pattern = r"^##\s+" + r"\s+".join(words) + r"\s*$"
+        if not re.search(pattern, agents_text, re.I | re.M):
+            errors.append(f"AGENTS.md missing section: ## {heading}")
+
 # Decision-record requirement: adr/ and decisions/ both satisfy it —
-# a repo may use either name for its decision-record folder.
+# a repo may use either name for its decision-record folder. No hard
+# maximum (ARTIFACT_STANDARD v2.6, 2026-08-20 ADR-cap-removal ruling).
 adr = ROOT / "adr"
 decisions = ROOT / "decisions"
 decision_dirs = [d for d in (adr, decisions) if d.is_dir()]
@@ -32,9 +63,7 @@ else:
                        if "template" not in f.name.lower()]
     count = len(decision_files)
     if count == 0:
-        errors.append("adr/ (or decisions/) has no decisions (need 1-5)")
-    elif count > 5:
-        errors.append(f"adr/ (or decisions/) has {count} decisions (cap is 5 - decisions were not decisions)")
+        errors.append("adr/ (or decisions/) has no decisions (need at least 1)")
 
 for banned in BANNED_WITHOUT_TRIGGER:
     if (ROOT / banned).exists():
