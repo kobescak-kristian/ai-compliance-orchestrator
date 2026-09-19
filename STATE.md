@@ -110,12 +110,22 @@ BLUEPRINT.md §9.
   a defect in `evals/EVAL_RESULTS.md`, fixed in `evals/run_eval.py` for
   future runs, not re-run for telemetry alone (didn't abort, doesn't
   affect scoring validity).
-- **NEW (Q-72(f), 2026-09-19):** the 2026-07-09 CLAUDE.md rule ("Phase
-  start: update STATE.md status to in-progress before any phase work")
-  is absent from the current `AGENTS.md`/`CLAUDE.md` pair after the
-  2026-09-15 AGENTS.md retrofit (`58a8cd7`) — see Change Log entry
-  above. Not established on disk whether this was intentional. Not
-  resolved here; flagged for owner review.
+- **RESOLVED 2026-09-19 (owner ruling), raised as a Q-72(f) finding the
+  same day:** the 2026-07-09 CLAUDE.md rule ("Phase start: update
+  STATE.md status to in-progress before any phase work") is absent from
+  the current `AGENTS.md`/`CLAUDE.md` pair after the 2026-09-15 AGENTS.md
+  retrofit (`58a8cd7`). Ruling: the rule is **intentionally retired, not
+  accidentally missing.** It belonged to this repo's original
+  phased-build workflow; the repo is now a completed, public artifact.
+  The governing rule is KOS GOVERNANCE.md's Build-repo STATE rule —
+  clause 5c requires STATE.md to be read before writing to the tree, and
+  clause 2 requires STATE.md to ride the atomic close whenever status,
+  decision, blocker, milestone or phase reality changes, stating "No new
+  cadence" in terms. A repo-specific phase-start write cadence on top of
+  that duplicates governance rather than adding a necessary control. Not
+  restored to `AGENTS.md` or `CLAUDE.md`; no ADR, no validator, code or
+  test change. The 2026-07-09 and 2026-09-15 records stand unchanged as
+  historical truth.
 
 ## Eval Numbers (found on disk only; run ID + source cited per figure)
 
@@ -146,6 +156,21 @@ with this file.*
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
 
+- **2026-09-19** — Owner ruling (adjudication; documentation only, no
+  code change): the 2026-07-09 phase-start STATE.md rule is
+  **intentionally retired**, closing the open finding raised earlier the
+  same day in the Q-72(f) reconciliation entry below (`63a6272`). It was
+  a phased-build-era control; this repo is now a completed, public
+  artifact, and KOS GOVERNANCE.md's Build-repo STATE rule already
+  governs the behaviour it was protecting — clause 5c (read STATE.md
+  before writing to the tree) and clause 2 (STATE.md rides the atomic
+  close whenever status, decision, blocker, milestone or phase reality
+  changes; "No new cadence"). Restoring a repo-specific phase-start
+  cadence would duplicate that rather than add a control. Deliberately
+  NOT done: no restoration to `AGENTS.md` or `CLAUDE.md`, no ADR, no
+  validator, code or test change; no KOS write (build truth belongs to
+  this file per the same rule's clause 3 fact boundary, and no KOS
+  record referenced the finding). Write set: `STATE.md` only.
 - **2026-09-19** — Q-72(f) reconciliation (this commit): this file's
   Change Log stopped at 2026-07-27 and was silent on three later,
   non-docs commits. Recorded now:
@@ -170,13 +195,12 @@ commit hashes, eval numbers.)*
     being added on 2026-07-09** ("CLAUDE.md gets a new session rule:
     'Phase start: update STATE.md status to in-progress before any
     phase work' — applied to this session as its own first edit"; see
-    the 2026-07-09 Phase 7 entry below). Whether this loss was
-    intentional is not established by anything on disk — it reads as
-    an unreviewed side effect of the AGENTS.md retrofit's CLAUDE.md
-    trim, not a recorded decision to drop it. Not restored here: that
-    is a CLAUDE.md/AGENTS.md-retrofit-quality question, outside
-    Q-72(f)'s STATE/validator-convergence scope. Recorded as an open
-    finding below.
+    the 2026-07-09 Phase 7 entry below). Not restored at the time:
+    that was a CLAUDE.md/AGENTS.md-retrofit-quality question, outside
+    Q-72(f)'s STATE/validator-convergence scope, so it was recorded as
+    an open finding. **Adjudicated the same day** — the rule is
+    intentionally retired; see the 2026-09-19 owner-ruling entry above
+    and the resolved item under Open decisions.
   Validator (same commit): STATE.md-existence check added (this file
   existed but was never validator-checked); the AGENTS.md v2.7
   heading-check block added (this repo's validator predates that
