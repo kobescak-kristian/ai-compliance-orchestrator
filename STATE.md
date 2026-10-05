@@ -1,4 +1,5 @@
 # STATE — ai-compliance-orchestrator
+- STATUS: ACTIVE
 
 Multi-jurisdiction iGaming compliance surveillance: bounded checker
 agents per jurisdiction + a subprocess adjudicator over their findings,
@@ -457,3 +458,15 @@ commit hashes, eval numbers.)*
   blocked on §10.7 until resolved. Commit `e78f3c0`.
 - **2026-07-07** — [RECONSTRUCTED] Phase 0: repo scaffold, SPEC.md,
   CLAUDE.md, ADR-0001/ADR-0003, per BLUEPRINT.md v1.1. Commit `a12fddd`.
+
+## Backlog (KOS unit records; Target KOS 06 §D, GOVERNANCE §9)
+
+Rows are read by the KOS computed view (`python core/kos_core.py index
+--view` in kristian-os). An AUTH row authorizes B1 work on this unit and
+is owner-written (program stage U-02 lands the first one); DRAFT rows are
+proposals; DONE rows keep history. The `- STATUS:` line at the top of
+this file is the unit status the view renders (ACTIVE | BLOCKED |
+DORMANT).
+
+| ID | Auth | Title | Date |
+|---|---|---|---|
