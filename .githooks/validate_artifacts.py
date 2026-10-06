@@ -9,13 +9,17 @@ REQUIRED_README_SECTIONS = ["## Problem", "## Solution", "## System", "## Outcom
 BANNED_WITHOUT_TRIGGER = ["SYSTEM_WALKTHROUGH.md", "CHANGELOG.md", "RUNBOOK.md",
                           "PRODUCTION_READINESS.md", "THREAT_MODEL.md", "MONITORING.md",
                           "INCIDENT_RESPONSE.md", "TEST_MATRIX.md",
-                          # Propagated 2026-09-19 (Q-72(f) validator convergence):
-                          # was canonical + sentinel only as of 2026-08-04. Safe
-                          # here: adr/0004-three-actor-answer-key-protocol.md
-                          # already cites SPEC.md (SS10.7) as an existing decision
-                          # record, satisfying the citation requirement.
+                          "DEMO_SCRIPT.md", "ASSURANCE_ONE_PAGER.md",
+                          "TECHNICAL_OWNERSHIP_GUIDE.md",
+                          # Added 2026-08-04: canonical + sentinel copies only, scoped
+                          # by owner ruling.
                           "SLO.md", "MODEL_CARD.md", "DATA_CONTRACT.md",
                           "DATA_RETENTION_POLICY.md", "SYSTEM_CARD.md", "SPEC.md"]
+# Tier 1 artifacts (ARTIFACT_STANDARD.md #Tier 1) are allowed without an ADR
+# trigger only for the current flagship — exactly one at a time.
+TIER1_ARTIFACTS = {"DEMO_SCRIPT.md", "ASSURANCE_ONE_PAGER.md", "TECHNICAL_OWNERSHIP_GUIDE.md"}
+CURRENT_FLAGSHIP = "ai-reliability-engine"
+IS_FLAGSHIP = ROOT.resolve().name == CURRENT_FLAGSHIP
 errors = []
 
 # Build-repo STATE rule: STATE.md is part of the scaffold.
@@ -32,9 +36,6 @@ else:
             errors.append(f"README missing section: {section}")
 
 # AGENTS.md (ARTIFACT_STANDARD v2.7, Tier 0): root file + required H2 headings.
-# Added 2026-09-19 (Q-72(f)): this repo's validator predated the v2.7
-# requirement and never gained this check even after AGENTS.md was added
-# during the 2026-09-15 Q-93 retrofit -- confirmed as the pre-v2.7 pilot copy.
 # Match is case-insensitive; "&" is accepted for "and". Optional
 # "## Repository landmarks" is not checked.
 AGENTS_REQUIRED_HEADINGS = ["Repository purpose", "Authority and conflict handling",
@@ -51,8 +52,7 @@ else:
             errors.append(f"AGENTS.md missing section: ## {heading}")
 
 # Decision-record requirement: adr/ and decisions/ both satisfy it —
-# a repo may use either name for its decision-record folder. No hard
-# maximum (ARTIFACT_STANDARD v2.6, 2026-08-20 ADR-cap-removal ruling).
+# a repo may use either name for its decision-record folder.
 adr = ROOT / "adr"
 decisions = ROOT / "decisions"
 decision_dirs = [d for d in (adr, decisions) if d.is_dir()]
@@ -67,6 +67,8 @@ else:
 
 for banned in BANNED_WITHOUT_TRIGGER:
     if (ROOT / banned).exists():
+        if banned in TIER1_ARTIFACTS and IS_FLAGSHIP:
+            continue
         # allowed only if a decision-record file mentions it (the trigger record)
         justified = any(
             re.search(re.escape(banned), f.read_text(encoding="utf-8"))
