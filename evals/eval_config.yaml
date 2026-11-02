@@ -9,7 +9,7 @@
 
 version: "2.0"
 written: 2026-11-02
-status: "FROZEN on owner sign-off at the P1 stop (open items: ruleset v1.1 text; off-target guardrail rule, RT1-06). Until then no H1 key is frozen and no P2 code is written."
+status: "FROZEN. Owner approved this gate, the scenario spec, the ruleset v1.1 text (14 rules), the RT1-06 rule and the one-time H1 exception on 2026-11-02 (P1 stop). Next: H2 authoring and P2, each only on the owner's separate authorization."
 
 eval_level:
   proposed: "Light (portfolio demo; a human approves every proposal)"
@@ -75,7 +75,7 @@ component_a:
       - "every primary trigger (except absent type) and every key span appears in the reader's output"
       - "for every absent-type key cell, no required_content string and no absent_token appears in the reader's output"
     gated_on: "private holdout keys"
-    reported_only_on: "development keys (evals/v2/july_primaries.yaml with the July v1.0 key; P2 development keys)"
+    reported_only_on: "development keys (evals/v2/july_primaries.yaml with the July v1.0 key; P2 development keys; the private H1 key)"
   holdout_markers: "case ID pattern h<n>-NN, the strings key.yaml, briefs.md and adjudication.md, and the holdout_root path; none may appear in agent input or output"
 
 # ---------------------------------------------------------------------
@@ -102,17 +102,18 @@ component_b:
     expected_compliant_or_na: "decided and not asserted; N/A primaries test 'not flagged' only, exactly like COMPLIANT ones"
   off_target_guardrail:
     unit: "page (same independent unit as the claim)"
-    scored_cells: "every non-primary cell of every holdout page"
+    scored_cells: "every non-primary cell of every holdout page: all rules of the page's target markets, which the workflow is asked to decide; no cell is left out (sibling cells of the primary rule's family included)"
     material_error:
       - "a CONFIRMED assertion on a cell whose key is not VIOLATION (false alarm)"
       - "a key VIOLATION cell that is not asserted (missed violation)"
       - "a cell that is not decided (task FAILED or DEAD_LETTER, or no finding)"
     not_material: "NOT_APPLICABLE vs COMPLIANT mix-ups (diagnostic only)"
-    page_unclean_iff: "at least one material error in any of its 3 runs"
-    open_owner_decision_rt1_06: "keep the approved reading, or adopt the recommended one: (1) a cell counts only if it has a material error in at least 2 of its 3 runs; (2) sibling cells (same rule family as the primary, other market, same page) are not scored, because they repeat the primary decision. See STATE.md P1 entry"
+    repeated_error: "the same cell has a material error in at least 2 of its 3 runs (owner ruling RT1-06, 2026-11-02)"
+    page_unclean_iff: "at least one cell of the page has a repeated error"
+    one_off_errors: "a cell with a material error in exactly 1 of its 3 runs does not make the page unclean; one-off errors are counted and reported per page as a diagnostic"
     max_unclean_pages: 6
     of_pages: 30
-    supports: "with 24 or more clean pages of 30, at least 64% of scenario pages are free of material off-target errors (one-sided 95%; computed 0.643)"
+    supports: "with 24 or more clean pages of 30, at least 64% of scenario pages are free of repeated material off-target errors (one-sided 95%; computed 0.643)"
   b_passes_iff: "failing cases <= 2 AND unclean pages <= 6"
 
 # Evidence grading for text and missing_term primaries. Exact, no fuzzy match.
@@ -164,7 +165,7 @@ sanitized_results_allowlist:
   series: [series_id, date, commit, config_sha256, holdout_id, manifest_sha256, model, verifier_pin, ruleset_version, ruleset_sha256, run_db_names, earlier_series_count, result, exit_code]
   component_a: [check_name, run_index, passed, count]
   per_case: [case_id, jurisdiction, rule_id, run_index, passed, miss_category]
-  per_page_off_target: [case_id, unclean, false_alarm_cells, missed_cells, undecided_cells]
+  per_page_off_target: [case_id, unclean, false_alarm_cells, missed_cells, undecided_cells, one_off_error_cells]
   per_page_off_target_types: "integer counts only, never rule IDs"
   aggregates: [cases_passed, cases_failed, unclean_pages, tp, fp, fn, precision, recall, na_accuracy, confirmed, rejected, disputed, rejected_correct, rejected_wrong, flips, cost_usd, turns, wall_clock_s]
   miss_categories: [NOT_DECIDED, NOT_ASSERTED, ASSERTED_ON_NON_VIOLATION, OFF_PAGE, NO_OVERLAP, TOO_LONG, ABSENT_ON_TEXT, DISPUTED, REJECTED]
@@ -177,7 +178,7 @@ diagnostics:
   - "NOT_APPLICABLE accuracy over rule-level N/A cells"
   - "adjudication table: CONFIRMED / REJECTED / DISPUTED; rejected-correct vs rejected-wrong"
   - "flips: cells whose outcome differs between the 3 runs"
-  - "off-target page count under both guardrail readings (any run; 2 of 3 runs)"
+  - "one-off off-target errors (a cell wrong in exactly 1 of 3 runs), per page and in total; and the page count under the stricter any-run reading, for comparison only"
   - "planner proposal checks"
   - "cost, turns and wall clock per run"
   - "v1 thresholds below, for comparison with July only"
@@ -192,14 +193,15 @@ datasets:
       gated: false
       note: "July results after ruleset v1.1 are regression evidence only (RT1-20)"
     p2_pages: "about 8 public pages added in P2 under evals/v2/SCENARIO_SPEC.md §8; gated: false"
+    h1_private: "the first holdout (H1, 30 pages, authored 2026-11-02 before the v1.1 text was final) is private development material by a one-time owner decision for H1 only (2026-11-02, option c): never official, never published, not gated; it stays in the private folder. This is not a general retirement rule (see result_rules.holdout_retirement)"
   holdout:
     spec: evals/v2/SCENARIO_SPEC.md
     location: "private; local setting holdout_root in the gitignored file config.local.yaml; never a tracked path"
     official_runs: "the cage root is switched to the holdout pages through the local setting (P2); pages are never copied into the repo; run DBs and logs are written under holdout_root; console output is sanitized"
     manifest: "evals/v2/holdouts/H<n>.sha256: page hashes after the self-check, full manifest (pages, briefs, key, adjudication) before the first run"
-    current: H1
+    current: "H2, not yet created: authored by a fresh spec author under the approved v1.1 text and this gate, only on the owner's separate authorization"
   rulesets_dir: rulesets/
-  ruleset_version: "v1.1 once signed by the owner (evals/v2/RULESET_V1_1.md)"
+  ruleset_version: "v1.1, text approved by the owner 2026-11-02 (evals/v2/RULESET_V1_1.md); written into the rule files in P2"
   ruleset_sha256: "recorded here for the three rule files when the signed v1.1 text is written (P2, before any run)"
   provenance: "synthetic pages and rules (ADR-0003); keys by the three-actor protocol (ADR-0004, SCENARIO_SPEC §6); holdout pages are hand-briefed, not generated by a script, so regeneration is not deterministic by design; the manifest fixes their content"
 
@@ -225,7 +227,8 @@ public_claim_wording: >
   failed) got their predeclared decision right in all 3 runs, with
   evidence checked for text violations. This supports a pass rate of at
   least 80% (one-sided 95%) for scenarios drawn under this spec. At most
-  6 of 30 pages showed any other material error, and all deterministic
+  6 of 30 pages showed a repeated material error on another cell (wrong
+  in at least 2 of 3 runs), and all deterministic
   reliability and planner-integrity checks passed. Earlier official
   series: k, all recorded.
 

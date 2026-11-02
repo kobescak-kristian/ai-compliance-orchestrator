@@ -26,7 +26,9 @@ Phase 6 acceptance ("GATE GREEN or honest FAIL with miss-pattern
 analysis committed") is met by the FAIL-with-analysis branch. "Post-flip"
 ties any remediation to after the repo-visibility flip (a separate,
 still-open decision, see below) — this v1.0 record does not change
-before then. [end SUPERSEDED] Phase 7 (README/diagram/demo) now in progress —
+before then. [end SUPERSEDED] (Only the re-gate cap is superseded. The
+Phase 6 acceptance statement and "this v1.0 record does not change"
+inside that range still stand.) Phase 7 (README/diagram/demo) now in progress —
 BLUEPRINT.md §9.
 **Open decisions / open loops:**
 - **RESOLVED 2026-07-20 (verified this session, unauthenticated):** both
@@ -159,11 +161,39 @@ BLUEPRINT.md §9.
     the runner computes A3 the same way and reports it only.
   - Text-based violations keep the full evidence-grounding checks.
   - Regression tests cover both cases.
+- **Owner rulings at the P1 stop (2026-11-02):**
+  - Late v1.1 notes: option (c). The three notes added after H1 was
+    authored (DEU-PC-01, DEU-PC-03, DEU-RG-01) stay proposed. H1 is
+    never used as the official holdout; it is kept privately as
+    development material. The official holdout (H2) is authored by a
+    fresh author only after the owner approves the exact v1.1 text and
+    the gate.
+  - Off-target guardrail (red team 1, RT1-06): a material error counts
+    toward the guardrail only when the same cell is wrong in at least 2
+    of 3 runs. All non-primary cells stay scored (no sibling cells left
+    out); one-off errors are reported as a diagnostic. Frozen in
+    `evals/eval_config.yaml` before any official holdout exists.
+  - The v1.1 interpretations are accepted in principle.
+- **Owner approval at the P1 stop (2026-11-02):** approved gate v2
+  (`evals/eval_config.yaml` 2.0) and its scenario spec
+  (`evals/v2/SCENARIO_SPEC.md`); the ruleset v1.1 interpretations for
+  all 14 rules (`evals/v2/RULESET_V1_1.md`); RT1-06 (the same
+  off-target cell must be materially wrong in at least 2 of 3 runs to
+  count); H1 retirement as a one-time exception only (H1 stays private
+  development material; H2 is the fresh official holdout). The general
+  holdout-retirement rule stays unchanged. The v1.1 text reaches
+  `rulesets/*.json` only in P2.
 - **Open owner decisions (P-001):**
-  - ruleset v1.1 clarifications (D7), with the text signed at the P1 stop;
+  - authorize H2 authoring (fresh author), then H2 blind labeling and
+    adjudication (owner actions, another model family);
+  - authorize P2;
   - paid-run authorization: proposed $30 notional for Haiku
     development runs; $110 notional per official series on
     claude-sonnet-4-6, unless the preflight finds it unavailable.
+- **Do not run `evals/run_eval.py` until P2 rewrites it.** It still
+  reads the v1.0 gate keys, which gate v2 moved under `v1_reference`; a
+  run would fail only at the end, after the model calls (review finding,
+  2026-11-02). P2 rewrites the runner before any development run.
 - **Deferred, not done (cross-repo):** the incident-register entry in
   the governance repository for the misattributed July miss analysis (see the 2026-11-02
   note in `evals/EVAL_RESULTS.md`). Writes to other repositories are
@@ -230,6 +260,47 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-02**, P-001 P1 (local branch `repair/v2`; gate before
+  code; no system code changed, no model run of the system). Owner
+  authorized P1 only. Stops at the P1 checkpoint for owner approval.
+  - Commit `965d52c` (P1a, before any holdout existed): gate v2
+    (`evals/eval_config.yaml` 2.0), `BLUEPRINT.md` §7 amendment (level
+    lines, signed exception), `evals/v2/SCENARIO_SPEC.md`,
+    `evals/v2/RULESET_V1_1.md` (proposed), `evals/v2/RED_TEAM_1.md`,
+    `evals/check_holdout.py` with `tests/test_check_holdout.py`,
+    `evals/v2/july_primaries.yaml`, `.gitignore`, and the five deferred
+    P0 wording fixes in this file.
+  - Red team 1 (fresh session, never opened a holdout, no model run of
+    the system): `evals/v2/RED_TEAM_1.md`. After the owner's RT1-06
+    ruling: "Findings: 21; changed the build: 1; changed the test: 18;
+    no change: 2".
+  - H1 authored privately under the scenario spec committed in
+    `965d52c` (the spec was not yet approved by the owner). Roles, each
+    a fresh Claude context working only in the private folder (outside
+    every Git repo): a spec author; three page authors; a spec-author
+    second pass (all cells checked against the finished pages, filler
+    sweep); and a third pass that relabelled two primaries to
+    NOT_APPLICABLE under the v1.0 key's conventions and redesigned two
+    cases as COMPLIANT near-misses to keep the frozen mix. Pages and key
+    never entered this repo. The second pass found three labelling
+    conventions that exist only in the v1.0 key; three more v1.1 notes
+    were proposed (July key still unchanged, 0 of 288 cells).
+  - H1 self-check `python -I evals/check_holdout.py <H1>`: "Holdout
+    self-check: PASS", exit 0. 30 cases; 15 VIOLATION, 10 COMPLIANT,
+    5 NOT_APPLICABLE; 384 key cells.
+  - Checkpoint review of the staged P1b change: round 1 STOP and round 2
+    STOP, both on the late-notes plan deviation. The owner ruled option
+    (c): H1 retired to private development material. Its page manifest
+    was not committed; it is kept with H1 in the private folder.
+  - After the owner's rulings, the P1b change holds: the RT1-06 rule in
+    the gate, option (c) recorded as a one-time H1 exception (the
+    general retirement rule unchanged), the minor review findings fixed.
+    The owner approved the gate, the spec and the v1.1 text on
+    2026-11-02; P1b was committed after a fresh checkpoint review.
+  - Not done in P1 (later phases, each on its own authorization): H2;
+    P2 code; any paid run; the deferred cross-repo incident-register
+    entry.
 
 - **2026-11-02**, P-001 P0 (local branch `repair/v2`, docs only, no
   code change, no model run). Owner approved the remediation plan and

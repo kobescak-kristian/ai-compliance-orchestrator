@@ -1,12 +1,13 @@
-# Ruleset v1.1: interpretation notes (PROPOSED, for owner signature)
+# Ruleset v1.1: interpretation notes (APPROVED by the owner)
 
-Status: **PROPOSED 2026-11-02.** Not in force. The owner signs or changes
-this text at the P1 stop (repair program P-001, defect D7). Until then
-`rulesets/*.json` stay at v1.0 and nothing here reaches any agent.
+Status: **APPROVED by the owner 2026-11-02** (P1 stop, repair program
+P-001, defect D7), for all 14 rules, as written below. Not yet in force:
+`rulesets/*.json` stay at v1.0 until P2 writes these strings into them,
+and until then nothing here reaches any agent.
 
 ## What changes and what does not
 
-- Only the `rule_text` of 11 of the 24 rules changes. The first sentence of
+- Only the `rule_text` of 14 of the 24 rules changes. The first sentence of
   each stays word for word; one "Interpretation (v1.1):" note is appended.
 - No schema change, no new rule, no severity change, no category change.
 - `ruleset_version` becomes `v1.1` in all three files (DEU, GBR, MLT), so
@@ -30,6 +31,8 @@ Sources are public records in this repo:
 | MLT-BT-02, MLT-BT-03 | presence rules: a term only behind a link counts as not stated; a no-deposit offer is not deposit-linked; an odds boost is not a bonus offer | ADJUDICATION_LOG D4, D5, D1; v1.0 key p03 |
 | DEU-RG-02 | deposit-based play means any real-money product or operator promotion, with or without a bonus | ADJUDICATION_LOG D7 |
 | GBR-RG-02 | an offer is a promotional incentive; operator or game links alone are not an offer | ADJUDICATION_LOG D2 |
+| DEU-PC-01, DEU-PC-03 | product-scoped prohibitions are NOT_APPLICABLE when the product is absent | PAGE_BRIEFS P03 rule-level N/A list ("no casino content", "no live casino"); v1.0 key |
+| DEU-RG-01 | the standard help-resource line satisfies "addiction-help notice" | v1.0 key (COMPLIANT on every DEU page with standard furniture) |
 
 The notes are general. None names a page, a brand or a test case.
 
@@ -64,8 +67,34 @@ The note text follows the original sentence after one space.
 **DEU-RG-02**
 > Pages promoting deposit-based play must reference the cross-operator monthly deposit limit. Interpretation (v1.1): promoting deposit-based play means promoting a named operator, a specific real-money gambling product (for example a casino game, live casino or a sportsbook) or an offer, with or without a bonus. General betting content that names no operator, product or offer is not covered.
 
-The other 13 rules keep their v1.0 text and only change `ruleset_version`
+**DEU-PC-01** (added in P1 after H1 authoring, see below)
+> Bonus offers for casino-style or slot games must not be promoted to the DEU market; sports-betting bonuses are permitted subject to terms rules. Interpretation (v1.1): if the page promotes no bonus offer for casino-style or slot games, this rule is NOT_APPLICABLE.
+
+**DEU-PC-03** (added in P1 after H1 authoring)
+> Live-casino products must not be promoted to the DEU market. Interpretation (v1.1): if the page has no live-casino content, this rule is NOT_APPLICABLE.
+
+**DEU-RG-01** (added in P1 after H1 authoring)
+> The page must display an addiction-help notice and a minimum-age statement (18+). Interpretation (v1.1): a visible line of text that names a gambling-help resource (for example "Help available at ...") counts as the addiction-help notice.
+
+The other 10 rules keep their v1.0 text and only change `ruleset_version`
 to `v1.1`.
+
+Why three notes were added after H1 authoring: the H1 spec author's
+second pass found that these three labelling conventions exist only in
+the v1.0 key (the July brief N/A lists and the standard furniture), not
+in any rule text. A blind labeler and the checker would both have to
+guess them. Adding them to the rule text makes the convention visible
+to both. It changes no July cell (table below) and no H1 page.
+
+**Plan deviation, resolved by the owner (2026-11-02, option c).** The
+approved plan fixes the v1.1 text before a holdout is authored. These
+three notes came after H1 was authored, because H1 authoring exposed
+the gap. Owner ruling: the notes stay proposed; H1 is never used as the
+official holdout and is kept privately as development material; the
+official holdout (H2) is authored by a fresh author only after the owner
+approves the exact v1.1 text and the gate. So all 14 notes come before
+the official holdout, as the plan requires. The owner then approved
+all 14 notes on 2026-11-02, before any H2 work.
 
 ## July key check: no v1.0 key cell changes under v1.1
 
@@ -86,6 +115,9 @@ Every July cell of a changed rule, for the pages that target its market
 | MLT-BT-03 | p06 V, p03 N, no-bonus pages N, others C | yes: p06 min deposit only behind a link; p03 offer needs no deposit |
 | DEU-RG-02 | p02 V, p07 V, p08 N, p03 C, p06 C | yes: p07 promotes live casino with no bonus (real-money product); p08 promotes no operator or product |
 | GBR-RG-02 | p12 V, p04 N, p08 N, others C | yes: p04 links operators but has no incentive |
+| DEU-PC-01 | p02 V, p06 V, p03 N, p07 N, p08 N | yes: p02 and p06 promote casino bonuses; p03 has only a sports bonus, p07 live casino with no bonus, p08 no offer |
+| DEU-PC-03 | p07 V, p02 N, p03 N, p06 N, p08 N | yes: only p07 has live-casino content |
+| DEU-RG-01 | p02 C, p03 C, p06 C, p07 C, p08 C | yes: every DEU page carries "Help available at GambleSupport.example", "18+" and the RG notice (checked by grep) |
 
 Cells red team 1 (RT1-05) named as made debatable by the first draft of
 these notes, and why the revised wording keeps each one:
@@ -99,8 +131,10 @@ these notes, and why the revised wording keeps each one:
 | p12 GBR-BT-01, GBR-BT-02 | C, C | the two "profit boost" picks state wagering, minimum deposit and validity, and nothing is called free, so the verdict is the same whether or not they count as bonus offers |
 
 Result: 0 of 288 v1.0 key cells would change. The v1.0 key stays the
-key for the July development set. The table was checked against
-`evals/answer_key.yaml` by red team 1 (all listed values match).
+key for the July development set. Red team 1 checked the first 11 rows
+against `evals/answer_key.yaml` (all values match); the three rows added
+in P1 (DEU-PC-01, DEU-PC-03, DEU-RG-01) were checked by the builder
+against the same file and by the P1b checkpoint review.
 
 Known limit (RT1-20): some note examples are close to July wording (an
 expiry reminder, urgency on a newsletter line, "lose nothing" backed by a

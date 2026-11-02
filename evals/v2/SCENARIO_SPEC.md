@@ -1,8 +1,8 @@
 # Scenario spec, gate v2 (holdout cases and development suite)
 
 Status: written with gate v2 (`evals/eval_config.yaml` version 2.0,
-repair program P-001, phase P1); frozen on the owner's sign-off at the
-P1 stop. Every private holdout (H1, H2, ...) is drawn under this spec. A
+repair program P-001, phase P1); FROZEN, approved by the owner on
+2026-11-02 at the P1 stop. Every private holdout (H1, H2, ...) is drawn under this spec. A
 change applies only to the next gate version. Red team 1
 (`evals/v2/RED_TEAM_1.md`) findings are resolved in this version.
 
@@ -179,6 +179,12 @@ session was started.
 - A holdout is retired after any completed official series, PASS or
   FAIL, or on any leak. It then becomes local development data and is
   never published.
+- One-time owner decision (2026-11-02), for H1 only: H1 (authored before
+  the v1.1 text was final) is never used as an official holdout and is
+  private development material. This is not a general retirement rule.
+  The first official holdout is H2, authored under §6 by a fresh spec
+  author after the owner approves the exact v1.1 text and the gate. H2
+  authors never see H1.
 
 ## 8. Development suite (public, reported, never gated)
 

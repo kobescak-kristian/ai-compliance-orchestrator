@@ -655,7 +655,7 @@ did. Files: `evals/eval_config.yaml`, `evals/v2/SCENARIO_SPEC.md`,
 | RT1-03 | New evidence type `missing_term`: `ABSENT:` or overlap with the offer span passes | changed the test |
 | RT1-04 | Rule families (computed from the rule files) capped at 2 cases; GEO minimum lowered to 2, other categories stay at 5 | changed the test |
 | RT1-05 | v1.1 notes narrowed (offers only for "free"; odds boost is not a bonus offer for BT rules; DEU-RG-02 needs a named operator, product or offer; GBR-RG-02 definition "for this rule"); the named cells added to the July table | changed the test |
-| RT1-06 | Not changed by the builder: the approved reading stays in the config. Owner decision requested at the P1 stop (count a cell only if wrong in at least 2 of 3 runs; do not score sibling cells). Both readings are reported as diagnostics | open: owner decision |
+| RT1-06 | Not changed by the builder: the approved reading stays in the config. Owner decision requested at the P1 stop (count a cell only if wrong in at least 2 of 3 runs; do not score sibling cells). Both readings are reported as diagnostics | open: owner decision (resolved by owner ruling, see below) |
 | RT1-07 | Fresh ledger and audit DB per run; A2 check that each task has a model call in its own run | changed the test |
 | RT1-08 | INVALID only for runner or grader code errors, provider auth, rate-limit or overload errors, manifest or pin mismatch at start; decided before scoring; whole series reruns; valid case defined; A1 or A3 failure is FAIL for that commit; manifest immutable after first run | changed the test |
 | RT1-09 | Holdout retired after any completed series; off-target fields are integer counts; owner-approved `miss_pattern` field added | changed the test |
@@ -672,5 +672,9 @@ did. Files: `evals/eval_config.yaml`, `evals/v2/SCENARIO_SPEC.md`,
 | RT1-20 | Recorded as a known limit in `RULESET_V1_1.md` and the config | no change (known limit) |
 | RT1-21 | Recorded as a known limit in the spec §6 | no change (known limit) |
 
-Open after resolution: 1 (RT1-06, owner decision).
-Findings: 21; changed the build: 1; changed the test: 17; no change: 2
+Owner ruling on RT1-06 (2026-11-02): an off-target material error counts
+toward the guardrail only when the same cell is wrong in at least 2 of 3
+runs; all non-primary cells stay scored (no sibling cells left out);
+one-off errors are reported as a diagnostic. Written into
+`evals/eval_config.yaml`. RT1-06 is now "changed the test".
+Findings: 21; changed the build: 1; changed the test: 18; no change: 2

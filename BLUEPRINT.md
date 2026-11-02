@@ -262,11 +262,13 @@ checks computed from each official run's ledger including planner
 integrity (A2), and reader visibility of the holdout pages (A3). B is the
 Standard claim: at least 80% of 30 scenario cases pass, at most 2
 failing, 3 runs per case, a case passes only if all 3 runs pass; plus an
-off-target guardrail of at most 6 of 30 pages with any other material
-error. Exact definitions, grading, result rules and the sanitized-results
+off-target guardrail of at most 6 of 30 pages with a repeated material
+error on another cell (the same cell wrong in at least 2 of 3 runs;
+one-off errors are reported, not gated). Exact definitions, grading, result rules and the sanitized-results
 allowlist: `evals/eval_config.yaml` (version 2.0). Case rules:
-`evals/v2/SCENARIO_SPEC.md`. Proposed rule clarifications (D7):
-`evals/v2/RULESET_V1_1.md`, not in force until the owner signs them.
+`evals/v2/SCENARIO_SPEC.md`. Rule clarifications (D7):
+`evals/v2/RULESET_V1_1.md`, approved by the owner 2026-11-02; P2 writes
+them into `rulesets/`. Gate v2 and the spec were approved the same day.
 
 ## 8. Repo structure (target)
 
