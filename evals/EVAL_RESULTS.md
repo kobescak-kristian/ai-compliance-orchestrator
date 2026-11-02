@@ -226,6 +226,44 @@ further, since there is nothing to explain.
   a second data point in the opposite direction: on this cell, a stronger
   model resolved the same judgment call the dev-leg model could not.
 
+#### 2026-11-02 — Attribution note on gate-9328e564 (appended; the entry above is unchanged)
+
+No rerun. Scores, thresholds and the **FAIL** result above stand as recorded.
+This note corrects only the cause given for Patterns 1, 2 and 4 in the
+miss-pattern analysis.
+
+The checker's page reader (`agents/checker/pages.py`, `_ParagraphExtractor`)
+returns only `<title>` and `<p>` text. All `<h1>`, `<h2>` and `<li>` content is
+dropped, both for the checker (`fetch_page`) and for the verifier's assembled
+case (`nodes/assembler.py`, which calls the same `read_page`). Checked on
+2026-11-02 by calling `read_page` on the frozen pages (no model run):
+
+| Page | Text in a dropped element | Visible to checker and verifier |
+|---|---|---|
+| p09.html | `<h2>`: "50% up to €100, 20x wagering, min deposit €10, valid 7 days" | no |
+| p11.html | `<h1>`: "Risk-Free Week: play casino all week, lose nothing ..." | no |
+| p01.html | `<h2>`: "100% up to €200 + 50 Free Spins" | no |
+
+So:
+
+- **Pattern 1** (p09, 3 FP): the checker could not see the heading that
+  carries the full terms. The cause is the reader, not wrong-paragraph
+  anchoring.
+- **Pattern 2** (p11, 2 FN): the violating claim was not in the text the
+  checker received. Only the distractor was left. The cause is the reader,
+  not distractor anchoring.
+- **Pattern 4** (p01 x GBR-BT-02, FN): "Free Spins" was not in the text the
+  checker received. The cause is the reader, not a failure to connect
+  sentences.
+
+6 of the 8 official misses trace to the reader. Patterns 3 and 5 (p06, p10)
+are unaffected by it and stay as written. The adjudication table also needs
+this context: the verifier judged the same truncated page text, so its 32/32
+CONFIRMED does not show what it would do with the full page.
+
+The repair is planned in the 2026-11-02 repair program (STATE.md, P-001),
+under a new gate. It does not change this v1.0 record.
+
 ## Dev runs (Phase 3 leg — Haiku 4.5, no thresholds enforced)
 
 ### 2026-07-08 — run_id dev-27b9e6bf

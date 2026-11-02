@@ -17,7 +17,8 @@ ARTIFACT_STANDARD.md v2.3 clause; not resolved this session by design
 (this instruction's own item 1).
 **Plan:** Phases 0-6 complete. Phase 6 gate result: **FAIL** (violation-
 detection precision) — **RESOLVED 2026-07-09 (Kristian, reworded same
-day): FAIL published as an immutable v1.0 record.** An optional
+day): FAIL published as an immutable v1.0 record.** [SUPERSEDED
+2026-11-02, see open loops] An optional
 post-flip remediation loop is pre-declared — capped at max one re-gate,
 never open-ended iteration. Not adjusted now, and the pre-declared cap
 means it cannot become rerun-until-pretty later either; BLUEPRINT §9
@@ -99,7 +100,78 @@ BLUEPRINT.md §9.
   repo. Verbatim clause pasted in this session's report. Until ruled on,
   no demo recording is built and BLUEPRINT §11's fourth stop condition
   stays open on that basis, not by oversight.
-- **Post-flip re-gate, pre-declared and capped:** if remediation happens
+- **SUPERSEDED 2026-11-02 (owner ruling):** the one-re-gate cap in the
+  "Post-flip re-gate" bullet below is withdrawn. No attempt limit (eval-gate hard rule 6).
+  Every completed result is recorded. The July v1.0 FAIL
+  (`gate-9328e564`) is unchanged.
+- **Repair program P-001 (owner ruling 2026-11-02):** repairs defects
+  D1-D10 and re-evaluates under a new Standard gate (v2).
+  - Branch: local branch `repair/v2`, cut from main `62f5935`. It is not
+    pushed until all approved gates pass.
+  - Session close for this program: commit on that branch, clean status,
+    no push. This replaces the CLAUDE.md close ritual for this program
+    only. The pen check applies to that branch.
+  - Phases: P0 records, P1 gate v2 before code, P2 repairs, P3 build
+    checks, P4 official series, P5 close. Each phase starts only on the
+    owner's explicit authorization.
+  - Not without separate owner authorization: model runs, push, merge,
+    changes to other repositories.
+  - Defects found 2026-11-02:
+    - D1: page reader drops headings and list items.
+    - D2: scorer leaves failed or missing cells unscored instead of
+      counting them as misses.
+    - D3: verifier checkout is off its pin.
+    - D4: no rule-coverage check.
+    - D5: evidence excerpts are never checked.
+    - D6: no timeouts.
+    - D7: rule interpretation gap.
+    - D8: prompt-injection boundary.
+    - D9: eval runner below the current eval-gate rules.
+    - D10: 6 of 24 rules have no violation test case.
+    The full detail lives in the approved plan; P1 and P2 record it in
+    the repo.
+- **Eval level (P-001):** Proposed Light (portfolio demo; a human
+  approves every proposal). Decided **Standard**, owner, 2026-11-02, for
+  the public rate claim.
+- **Eval-gate exception (owner, 2026-11-02; ai-compliance-orchestrator
+  only):** "Official tests are private holdouts of independently
+  authored scenario cases. Their pages and keys never enter Git, before
+  or after a run, including after a FAIL. In their place Git holds the
+  scenario spec frozen before code, each holdout's SHA-256 manifest
+  committed before its first run, the grader, and sanitized results. A
+  holdout exposed by a FAIL becomes local development data, and the next
+  version is gated on a fresh holdout drawn under the same frozen spec.
+  The July v1.0 test is development data: rerun and reported, not gated.
+  This replaces hard rule 1's committed case list, the committed
+  generation script, §6/§8's rerun of the same test, and public
+  re-derivation under hard rule 5 and second-reader-verify step 4 (the
+  second reader gets the private holdout locally, hash-checked). Nothing
+  else changes."
+- **Implementation constraint for P2 (owner, 2026-11-02):** an evidence
+  excerpt starting with `ABSENT:` (a violation about missing required
+  content) is a claim, never proof of an omission.
+  - It skips only the verbatim-quote checks.
+  - The omission still has to be confirmed by the verifier and graded
+    against the key.
+  - A text-based key violation answered with `ABSENT:` fails the
+    evidence overlap and counts as a miss.
+  - For absence-type cells in every answer key the runner grades,
+    including each private holdout key, the reader check (A3) must
+    show that the required content is really absent from the visible
+    page text.
+  - Text-based violations keep the full evidence-grounding checks.
+  - Regression tests cover both cases.
+- **Open owner decisions (P-001):**
+  - ruleset v1.1 clarifications (D7), with the text signed at the P1 stop;
+  - paid-run authorization: proposed about $30 notional for Haiku
+    development runs; about $110 notional per official series on
+    claude-sonnet-4-6, unless the preflight finds it unavailable.
+- **Deferred, not done (cross-repo):** the incident-register entry in
+  the governance repository for the misattributed July miss analysis (see the 2026-11-02
+  note in `evals/EVAL_RESULTS.md`). Writes to other repositories are
+  excluded by owner instruction 2026-11-02. This needs a separate
+  authorization.
+- [SUPERSEDED 2026-11-02, see open loops] **Post-flip re-gate, pre-declared and capped:** if remediation happens
   after the repo-visibility flip, it is capped at max one re-gate — a
   second FAIL after that re-gate is also published, not iterated past.
   This cap is the pre-declaration itself; it does not need a future
@@ -156,6 +228,28 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-02**, P-001 P0 (local branch `repair/v2`, docs only, no
+  code change, no model run). Owner approved the remediation plan and
+  the private-holdout eval-gate exception, and authorized P0 only.
+  - Recorded in this file: the one-re-gate cap is superseded (old text
+    kept, marked); the repair-program ruling; the eval level (Proposed
+    Light, Decided Standard); the exception text; the `ABSENT:`
+    constraint; the open owner decisions; the deferred cross-repo
+    incident-register entry; the AUTH row P-001 in the Backlog.
+  - `evals/EVAL_RESULTS.md`: a dated attribution note appended to the
+    July official entry. 6 of the 8 misses trace to the page reader
+    dropping `<h1>`/`<h2>`/`<li>` text (`read_page` evidence). The FAIL
+    and the entry text are unchanged.
+  - Read-only finding: the sibling `ai-claim-verification-agent`
+    checkout is at `a17f5f8`, not the pin `d444b13` (D3). Nothing was
+    changed there.
+  - Evidence:
+    - `python .githooks/validate_artifacts.py .` printed "Tier 0: PASS",
+      exit 0.
+    - Keyless `python -m pytest -q`: 15 passed, exit 0 (unchanged, no
+      code touched).
+  - Write set: `STATE.md`, `evals/EVAL_RESULTS.md`.
 
 - **2026-09-19** — Owner ruling (adjudication; documentation only, no
   code change): the 2026-07-09 phase-start STATE.md rule is
@@ -470,3 +564,4 @@ DORMANT).
 
 | ID | Auth | Title | Date |
 |---|---|---|---|
+| P-001 | AUTH | Repair program: defects D1-D10 and Standard gate v2 re-evaluation, local branch repair/v2, phase by phase on owner authorization | 2026-11-02 |
