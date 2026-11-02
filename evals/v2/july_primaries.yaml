@@ -1,0 +1,92 @@
+# Primary decisions for the July development set (12 pages), chosen in
+# P1 (2026-11-02) under evals/v2/SCENARIO_SPEC.md §8. Development data:
+# reported, never gated. Each verdict equals the frozen v1.0 key cell in
+# evals/answer_key.yaml (that file is not changed). Spans and triggers are
+# the verbatim brief strings from evals/provenance/PAGE_BRIEFS.md, as
+# they appear on the pages. Five of the twelve (p01, p06, p09, p10, p11)
+# are cells the July official run missed. Same fields as a holdout key
+# primary (SCENARIO_SPEC §4); checked by tests/test_check_holdout.py.
+
+key_version: v1.0
+primaries:
+  p01:
+    rule_id: GBR-BT-02
+    expected: VIOLATION
+    evidence_type: text
+    spans: ["100% up to €200 + 50 Free Spins", "Spins credited after first deposit"]
+    trigger: "100% up to €200 + 50 Free Spins"
+    layout: heading
+  p02:
+    rule_id: MLT-BT-02
+    expected: VIOLATION
+    evidence_type: missing_term
+    spans: ["100% up to €150, 30x wagering, min €10."]
+    trigger: "100% up to €150, 30x wagering, min €10."
+    layout: p
+  p03:
+    rule_id: DEU-BT-02
+    expected: VIOLATION
+    evidence_type: missing_term
+    spans: ["Boosted odds 3.50 on tonight's match!"]
+    trigger: "Boosted odds 3.50 on tonight's match!"
+    layout: p
+  p04:
+    rule_id: GBR-PC-03
+    expected: VIOLATION
+    evidence_type: text
+    spans: ["Zappy the Wizard — a favourite with students and streamers alike!"]
+    trigger: "Zappy the Wizard — a favourite with students and streamers alike!"
+    layout: p
+  p05:
+    rule_id: MLT-PC-01
+    expected: COMPLIANT
+    evidence_type: none
+    trigger: "Big games, every day."
+    layout: heading
+  p06:
+    rule_id: GBR-BT-02
+    expected: COMPLIANT
+    evidence_type: none
+    trigger: "Risk-free first bet — refund if you lose"
+    layout: p
+  p07:
+    rule_id: DEU-PC-03
+    expected: VIOLATION
+    evidence_type: text
+    spans: ["Join our Live Roulette and Blackjack tables with real dealers, streamed 24/7."]
+    trigger: "Join our Live Roulette and Blackjack tables with real dealers, streamed 24/7."
+    layout: p
+  p08:
+    rule_id: MLT-PC-02
+    expected: VIOLATION
+    evidence_type: text
+    spans: ["Turn betting into your side income."]
+    trigger: "Turn betting into your side income."
+    layout: p
+  p09:
+    rule_id: MLT-BT-01
+    expected: COMPLIANT
+    evidence_type: none
+    trigger: "50% up to €100, 20x wagering, min deposit €10, valid 7 days"
+    layout: heading
+  p10:
+    rule_id: GBR-PC-02
+    expected: COMPLIANT
+    evidence_type: none
+    trigger: "it expires automatically if unused within the stated period, so it's worth placing it early rather than letting it sit in your account."
+    layout: p
+  p11:
+    rule_id: GBR-PC-01
+    expected: VIOLATION
+    evidence_type: text
+    spans: ["Risk-Free Week: play casino all week, lose nothing — we refund net losses up to €50."]
+    trigger: "Risk-Free Week: play casino all week, lose nothing — we refund net losses up to €50."
+    layout: heading
+  p12:
+    rule_id: GBR-RG-01
+    expected: VIOLATION
+    evidence_type: absent
+    required_content: ["Please gamble responsibly.", "18+", "Help available at GambleSupport.example"]
+    absent_tokens: ["gamble responsibly", "GambleSupport", "addiction"]
+    trigger: "responsible-gambling notice, 18+ statement and help resource all missing"
+    layout: none

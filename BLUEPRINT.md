@@ -233,6 +233,41 @@ Each row is a test in `tests/test_failures.py`, not a README promise.
   FAIL, gates never adjusted post-run (Context-engine precedent: report
   FAIL honestly rather than gate-shop).
 
+### §7 amendment (2026-11-02, repair program P-001): gate v2
+
+The text above is the v1.0 gate. It stays as written, and its July
+result (`gate-9328e564`, FAIL) stands. The next version of this system is
+gated by v2.
+
+Eval level: Proposed Light (portfolio demo; a human approves every proposal)
+Eval level: Decided Standard, owner, 2026-11-02 (public rate claim)
+
+Eval-gate exception, owner, 2026-11-02, ai-compliance-orchestrator only:
+official tests are private holdouts of independently authored scenario
+cases. Their pages and keys never enter Git, before or after a run,
+including after a FAIL. In their place Git holds the scenario spec
+frozen before code, each holdout's SHA-256 manifest committed before
+its first run, the grader, and sanitized results. A holdout exposed by
+a FAIL becomes local development data, and the next version is gated
+on a fresh holdout drawn under the same frozen spec. The July v1.0 test
+is development data: rerun and reported, not gated. This replaces hard
+rule 1's committed case list, the committed generation script, §6/§8's
+rerun of the same test, and public re-derivation under hard rule 5 and
+second-reader-verify step 4 (the second reader gets the private holdout
+locally, hash-checked). Nothing else changes.
+
+Gate v2 in one paragraph: overall PASS iff component A and component B
+both pass. A is deterministic and must pass 100%: the keyless suite (A1),
+checks computed from each official run's ledger including planner
+integrity (A2), and reader visibility of the holdout pages (A3). B is the
+Standard claim: at least 80% of 30 scenario cases pass, at most 2
+failing, 3 runs per case, a case passes only if all 3 runs pass; plus an
+off-target guardrail of at most 6 of 30 pages with any other material
+error. Exact definitions, grading, result rules and the sanitized-results
+allowlist: `evals/eval_config.yaml` (version 2.0). Case rules:
+`evals/v2/SCENARIO_SPEC.md`. Proposed rule clarifications (D7):
+`evals/v2/RULESET_V1_1.md`, not in force until the owner signs them.
+
 ## 8. Repo structure (target)
 
 ```

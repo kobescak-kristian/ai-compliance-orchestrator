@@ -18,7 +18,7 @@ ARTIFACT_STANDARD.md v2.3 clause; not resolved this session by design
 **Plan:** Phases 0-6 complete. Phase 6 gate result: **FAIL** (violation-
 detection precision) — **RESOLVED 2026-07-09 (Kristian, reworded same
 day): FAIL published as an immutable v1.0 record.** [SUPERSEDED
-2026-11-02, see open loops] An optional
+2026-11-02 from here to the end-marker, see open loops] An optional
 post-flip remediation loop is pre-declared — capped at max one re-gate,
 never open-ended iteration. Not adjusted now, and the pre-declared cap
 means it cannot become rerun-until-pretty later either; BLUEPRINT §9
@@ -26,7 +26,7 @@ Phase 6 acceptance ("GATE GREEN or honest FAIL with miss-pattern
 analysis committed") is met by the FAIL-with-analysis branch. "Post-flip"
 ties any remediation to after the repo-visibility flip (a separate,
 still-open decision, see below) — this v1.0 record does not change
-before then. Phase 7 (README/diagram/demo) now in progress —
+before then. [end SUPERSEDED] Phase 7 (README/diagram/demo) now in progress —
 BLUEPRINT.md §9.
 **Open decisions / open loops:**
 - **RESOLVED 2026-07-20 (verified this session, unauthenticated):** both
@@ -100,10 +100,6 @@ BLUEPRINT.md §9.
   repo. Verbatim clause pasted in this session's report. Until ruled on,
   no demo recording is built and BLUEPRINT §11's fourth stop condition
   stays open on that basis, not by oversight.
-- **SUPERSEDED 2026-11-02 (owner ruling):** the one-re-gate cap in the
-  "Post-flip re-gate" bullet below is withdrawn. No attempt limit (eval-gate hard rule 6).
-  Every completed result is recorded. The July v1.0 FAIL
-  (`gate-9328e564`) is unchanged.
 - **Repair program P-001 (owner ruling 2026-11-02):** repairs defects
   D1-D10 and re-evaluates under a new Standard gate (v2).
   - Branch: local branch `repair/v2`, cut from main `62f5935`. It is not
@@ -128,8 +124,10 @@ BLUEPRINT.md §9.
     - D8: prompt-injection boundary.
     - D9: eval runner below the current eval-gate rules.
     - D10: 6 of 24 rules have no violation test case.
-    The full detail lives in the approved plan; P1 and P2 record it in
-    the repo.
+    The approved plan is a private working file outside this repo and
+    is not a repo record. The in-repo record of the defects and the
+    gate is `evals/v2/SCENARIO_SPEC.md` and `evals/eval_config.yaml`
+    (gate v2, P1); P2 records each fix with its regression test.
 - **Eval level (P-001):** Proposed Light (portfolio demo; a human
   approves every proposal). Decided **Standard**, owner, 2026-11-02, for
   the public rate claim.
@@ -155,23 +153,27 @@ BLUEPRINT.md §9.
     against the key.
   - A text-based key violation answered with `ABSENT:` fails the
     evidence overlap and counts as a miss.
-  - For absence-type cells in every answer key the runner grades,
-    including each private holdout key, the reader check (A3) must
-    show that the required content is really absent from the visible
-    page text.
+  - For absence-type cells in each private holdout key, the reader
+    check (A3) must show that the required content is really absent
+    from the visible page text; there A3 is gated. On development keys
+    the runner computes A3 the same way and reports it only.
   - Text-based violations keep the full evidence-grounding checks.
   - Regression tests cover both cases.
 - **Open owner decisions (P-001):**
   - ruleset v1.1 clarifications (D7), with the text signed at the P1 stop;
-  - paid-run authorization: proposed about $30 notional for Haiku
-    development runs; about $110 notional per official series on
+  - paid-run authorization: proposed $30 notional for Haiku
+    development runs; $110 notional per official series on
     claude-sonnet-4-6, unless the preflight finds it unavailable.
 - **Deferred, not done (cross-repo):** the incident-register entry in
   the governance repository for the misattributed July miss analysis (see the 2026-11-02
   note in `evals/EVAL_RESULTS.md`). Writes to other repositories are
   excluded by owner instruction 2026-11-02. This needs a separate
   authorization.
-- [SUPERSEDED 2026-11-02, see open loops] **Post-flip re-gate, pre-declared and capped:** if remediation happens
+- **SUPERSEDED 2026-11-02 (owner ruling):** the one-re-gate cap in the
+  "Post-flip re-gate" bullet directly below is withdrawn. No attempt
+  limit (eval-gate hard rule 6). Every completed result is recorded. The
+  July v1.0 FAIL (`gate-9328e564`) is unchanged.
+- [SUPERSEDED 2026-11-02, see the bullet above] **Post-flip re-gate, pre-declared and capped:** if remediation happens
   after the repo-visibility flip, it is capped at max one re-gate — a
   second FAIL after that re-gate is also published, not iterated past.
   This cap is the pre-declaration itself; it does not need a future
