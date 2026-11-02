@@ -184,11 +184,16 @@ BLUEPRINT.md §9.
   holdout-retirement rule stays unchanged. The v1.1 text reaches
   `rulesets/*.json` only in P2.
 - **Open owner decisions (P-001):**
-  - H2 authoring: authorized and done 2026-11-02 (pages-only manifest
-    committed, see Change Log). Open: H2 blind labeling (another model
-    family) and adjudication, both owner actions; then the full manifest
-    before the first run;
+  - H2: frozen 2026-11-02 (blind labeling, adjudication and the full
+    33-file manifest done, see Change Log). Open: one offline backup of
+    the H2 folder and its records folder (owner action);
   - authorize P2;
+  - P2 requirement (owner, 2026-11-02): `holdout_root` is the parent
+    private folder; official run DBs and logs go under
+    `holdout_root/runs/H2/`; no run output is written inside the H2
+    folder or the repository. Today `evals/run_eval.py` and the agents'
+    `audit.db` still write to the repo root. Verified before any model
+    evaluation run;
   - paid-run authorization: proposed $30 notional for Haiku
     development runs; $110 notional per official series on
     claude-sonnet-4-6, unless the preflight finds it unavailable.
@@ -262,6 +267,48 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-02**, P-001 H2 freeze (local branch `repair/v2`; no code
+  change, no model run of the system, no push). Owner authorized
+  blind-labeling preparation, adjudication and the final freeze.
+  - Status: H2 is **frozen as the official holdout**. The full manifest
+    is committed before the first run (`SCENARIO_SPEC.md` §6 step 7);
+    from this commit its 33 files are immutable. No official run yet.
+  - Blind labeling (§6 step 5), run by the owner: GPT-6 (OpenAI,
+    ChatGPT, reasoning effort High), a different model family from the
+    Claude authors; three new chats, no follow-up messages. The labeler
+    got only the 30 pages, the 24 effective v1.1 rules and the
+    applicability semantics, with two owner-approved wording edits for a
+    labeler without briefs, and an owner-approved reason format (a quote
+    for text-based violations; the offer or context and the missing item
+    for absence-based ones). No key, briefs or eval records.
+  - Labels: 296 of 296 cells, 0 missing, 0 extra. 291 agreed with the
+    draft key; 5 disagreed, none on a primary cell (all 30 agreed).
+  - Adjudication (§6 step 6): the owner ruled for the labeler on all
+    five, after a check of the pages confirmed the premise of the ruling.
+    Only those five cells changed; the draft key and the labels are kept
+    privately. Final key vs labels: 296 of 296 agree. Rulings and
+    reasons are in the private adjudication file.
+  - Storage (owner decision, H2 only): the holdout folder holds exactly
+    the 33 manifest files (30 pages, `briefs.md`, `key.yaml`,
+    `adjudication.md`). All other H2 records (blind packet, returned
+    labels, work files, breach evidence, draft key, label diff; 36 files,
+    hashes checked after the move) moved unchanged to a private sibling
+    records folder, outside Git. This differs from the `blind_packet/`
+    line of the §7 layout for H2 only. The gate, spec, checker, rules
+    and scoring are unchanged. The 33 files are set read-only (a guard,
+    not a security boundary).
+  - Checks: self-check "Holdout self-check: PASS", exit 0 (30 cases;
+    14 VIOLATION, 11 COMPLIANT, 5 NOT_APPLICABLE; 296 cells). Full
+    manifest `evals/v2/holdouts/H2.sha256`: 33 files, `--verify-manifest`
+    match, exit 0; `sha256sum -c` in the holdout folder: 33 OK. Its 30
+    page lines are identical to the pages-only manifest at `b9ae013`.
+    SHA-256 of the committed content (LF):
+    `c72c3b565b5ccc9f76ef121446ae0f0088593beb609615b447d02f92251ccd13`.
+    Final key SHA-256:
+    `4ce7df83fd72f299ad3eee69ed2929b151c662add922764acf5b55075f1e4cfd`.
+  - Open: one offline backup (owner); P2 authorization, including the
+    run-output requirement under "Open owner decisions (P-001)" above.
 
 - **2026-11-02**, P-001 H2 preparation (local branch `repair/v2`; no
   code change, no model run of the system, no push). Owner authorized
