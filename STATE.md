@@ -184,8 +184,10 @@ BLUEPRINT.md §9.
   holdout-retirement rule stays unchanged. The v1.1 text reaches
   `rulesets/*.json` only in P2.
 - **Open owner decisions (P-001):**
-  - authorize H2 authoring (fresh author), then H2 blind labeling and
-    adjudication (owner actions, another model family);
+  - H2 authoring: authorized and done 2026-11-02 (pages-only manifest
+    committed, see Change Log). Open: H2 blind labeling (another model
+    family) and adjudication, both owner actions; then the full manifest
+    before the first run;
   - authorize P2;
   - paid-run authorization: proposed $30 notional for Haiku
     development runs; $110 notional per official series on
@@ -260,6 +262,47 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-02**, P-001 H2 preparation (local branch `repair/v2`; no
+  code change, no model run of the system, no push). Owner authorized
+  H2 authoring only.
+  - Status: H2 is **awaiting independent blind labeling and owner
+    adjudication**. It is not yet an official holdout: the full
+    manifest (pages, briefs, key, adjudication file) is committed only
+    after adjudication and before the first run (`SCENARIO_SPEC.md` §6
+    step 7).
+  - Authoring under `SCENARIO_SPEC.md` §6 steps 1-4, private folder
+    outside every Git repo. Fresh Claude contexts, none with access to
+    H1: one spec author (briefs and draft key, then a second pass over
+    the finished pages with a filler sweep: 0 page fixes, 0 key cell
+    changes) and three page authors (10 pages each, each given only its
+    own briefs). Each session's inputs and its own files-opened
+    statement are in the private adjudication file.
+  - Isolation slip and recovery: the first batch-1 page author's check
+    script read the other 20 pages (numbers only, no page text; no H1,
+    key or briefs). Owner ruling: redo batch 1. A fresh page author
+    rebuilt `h2-01` to `h2-10` with no directory access; the original
+    batch is kept privately as evidence, outside the active pages.
+    Batches 2 and 3 unchanged. One-time recovery; the general isolation
+    and stop rules are unchanged.
+  - Self-check `python -I evals/check_holdout.py <H2>`: "Holdout
+    self-check: PASS", exit 0. 30 cases; 14 VIOLATION, 11 COMPLIANT,
+    5 NOT_APPLICABLE; per market DEU 10, GBR 10, MLT 10; 296 key cells.
+  - Pages-only manifest `evals/v2/holdouts/H2.sha256`: 30 files,
+    `--verify-manifest` match, exit 0. SHA-256 of the committed content
+    (LF line endings, as Git stores it):
+    `abeec2061415c86da5630cc632141fc36dc37d151bd2b8d3a7468a309fdb8286`.
+  - Deferred P1b review notes, resolved here:
+    - approved gate fingerprint: `evals/eval_config.yaml` at `07d6b95`,
+      blob `763d87f4e5835539125f309ae9fbba5af61c245c`, SHA-256
+      `1f3bb41e36708a7bfa0d65389f9fadff1b8e170df9f6208b449374de91dabb28`;
+    - P1b checkpoint reviews in order: STOP, STOP, OK WITH NOTES, STOP
+      (before the commit), then OK WITH NOTES on the committed content
+      `07d6b95`;
+    - RT1-06 table row in `evals/v2/RED_TEAM_1.md` now reads resolved.
+  - Open (owner actions): blind labeling of H2 with another model
+    family (packet instructions kept privately with H2); adjudication;
+    one offline backup of the H2 folder.
 
 - **2026-11-02**, P-001 P1 (local branch `repair/v2`; gate before
   code; no system code changed, no model run of the system). Owner
