@@ -194,7 +194,19 @@ BLUEPRINT.md §9.
     folder or the repository. Before P2, `evals/run_eval.py` and the
     agents' `audit.db` wrote to the repo root; P2 moved run output under
     `holdout_root/runs/` (the verifier's temporary case files are still a
-    P3 item). Must be verified before any model evaluation run;
+    P3 item). Must be verified before any model evaluation run.
+    **RESOLVED in code 2026-11-03 (P3):** the verifier's temporary case
+    files and its audit DB now go under the run directory, outside every
+    Git repository; keyless checks done. Still OPEN: the run-time
+    metadata check before the first real run (see the P3 Change Log
+    entry and `evals/PREFLIGHT.md` section 3);
+  - P3 owner rulings still open: RT2-05 (provider overload signals),
+    RT2-06 (does one failed agent task fail component A), RT2-07 (does
+    the CLI tell the model its working directory; checked in the real
+    dry run), RT2-08 (hidden void element in the shared text rule); see
+    `evals/v2/RED_TEAM_2.md`;
+  - D10 development pages (plus the three page-level sweep cases from
+    red team 2): need a separate authorization, before any Haiku run;
   - paid-run authorization: proposed $30 notional for Haiku
     development runs; $110 notional per official series on
     claude-sonnet-4-6, unless the preflight finds it unavailable.
@@ -270,6 +282,57 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-03**, P-001 P3 preparation (local branch `repair/v2`;
+  keyless only: no model run, no real verifier run, no push). Owner
+  authorized P3 preparation, red team 2 and the deterministic preflight
+  under the approved plan.
+  - Owner decisions (storage isolation only, no evaluation criterion
+    changed): 1A, the dedicated pinned verifier clone lives in the
+    private folder (path only in `config.local.yaml`); 2A, real-mode
+    agent sessions (checker, planner, verifier) run with the private run
+    directory as working directory, so their CLI transcripts are kept
+    apart from coding sessions; 3A, the checker and planner load no
+    user, project or local settings, CLAUDE.md or other MCP server
+    (`setting_sources=[]`, `strict_mcp_config=True`). The verifier runs
+    as shipped (known limit in `evals/PREFLIGHT.md`).
+  - Clone: made from the local sibling checkout (no network), detached
+    at the pin `d444b13c…`, remote removed. `check_verifier_checkout()`
+    passes; `git status --porcelain --ignored` empty. The sibling
+    checkout (still at `a17f5f8`) was only read.
+  - Storage: the verifier's case files go to `run<k>/verifier_cases/`
+    (`VERIFIER_DATASET_ROOT`; `nodes/verifier_runner.py` sets
+    `DATASET_ROOT` on the shipped `agent.config`, `agent.pages` and
+    `agent.harness`, same pattern as the P2 audit-DB redirect; shipped
+    code unchanged). The storage guard also refuses any Git work tree. A
+    relative verifier `repo_path` resolves against the repo. Storage map
+    in `evals/PREFLIGHT.md`, including the CLI transcripts and the
+    machine-policy hook action records (`~/.claude/kos-core`, outside Git; they keep short
+    tool-input and result fragments; machine policy, not changed).
+  - Keyless checks: storage-redirect probe on the pinned code (paths
+    under a temporary private root, escape rejected, nothing written in
+    the clone); H2 `--verify-manifest` "manifest: match" and "Holdout
+    self-check: PASS", exit 0; H1 self-check PASS, exit 0; stub July
+    series exit 0, output only under `runs/`; stub fixture-holdout series
+    (`tests/test_run_eval.py::test_stub_holdout_series_writes_only_under_runs`)
+    1 passed, exit 0, output only under `runs/H9/`.
+  - Red team 2 (fresh-context agent; never built, never opened a
+    holdout): `evals/v2/RED_TEAM_2.md`, 11 findings plus the interaction
+    sweep. "Findings: 11; changed the build: 7; changed the test: 0; no
+    change: 0; pending owner ruling: 4" (RT2-05 to RT2-08). Build changes:
+    gated series needs exactly 3 runs, a clean tree, a not-yet-retired
+    holdout and a full manifest (RT2-01 to RT2-03); crash and provider
+    classification (RT2-04); the verifier's page copy carries the page
+    title (RT2-09); `fetch_page` serves only the task's own page
+    (RT2-10); cost and turns telemetry (RT2-11). Three page-level sweep
+    cases go to the D10 batch.
+  - Evidence: `python -m pytest -q -p no:cacheprovider` 158 passed, exit
+    0 (was 133). `python .githooks/validate_artifacts.py .` "Tier 0:
+    PASS", exit 0.
+  - Open before the first real run: D10 pages (separate authorization);
+    the paid-run authorization; the real 1-page dry run and the run-time
+    metadata checks in `evals/PREFLIGHT.md` section 3; the four RT2
+    rulings.
 
 - **2026-11-03**, P-001 P2 repairs (local branch `repair/v2`; keyless
   only: no model run, no verifier run, no push). Owner authorized P2

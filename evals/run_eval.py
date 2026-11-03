@@ -29,6 +29,7 @@ only, never page text or private paths.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import functools
 import hashlib
 import json
@@ -174,11 +175,14 @@ def load_holdout(holdout_root: Path, holdout_id: str) -> Dataset:
 
 def guard_output_path(path: Path, holdout_root: Path, holdout_dirs: list[Path]) -> Path:
     """Refuse any run output outside holdout_root/runs, inside the
-    repository or inside a holdout folder (P2 storage requirement)."""
+    repository or inside a holdout folder (P2 storage requirement), or
+    inside any other Git work tree (P3)."""
     resolved = Path(path).resolve()
     runs_root = (Path(holdout_root) / "runs").resolve()
     if resolved.is_relative_to(REPO_ROOT.resolve()):
         raise StorageError("refusing run output inside the repository")
+    if any((p / ".git").exists() for p in (resolved, *resolved.parents)):
+        raise StorageError("refusing run output inside a Git work tree")
     for d in holdout_dirs:
         if resolved.is_relative_to(Path(d).resolve()):
             raise StorageError("refusing run output inside a holdout folder")
@@ -390,7 +394,13 @@ def a2_checks(ctx: "RunContext") -> list[dict]:
                      "no_key_or_holdout_marker", "verifier_pinned_and_clean_after_run"):
             rows.append(_row(name, k, None))  # audit-based: not run in stub mode
 
-    rows.append(_row("resume_zero_calls_zero_rows", k, resume_check(ctx.db_path, ctx.run_dir, ctx.tasks, ctx.rules_by_id, ctx.run_id)))
+    try:
+        resume_failures = resume_check(ctx.db_path, ctx.run_dir, ctx.tasks, ctx.rules_by_id, ctx.run_id)
+    except Exception as exc:  # noqa: BLE001 -- RT2-04: a crash of system code here is a failed resume, scored as is
+        if _raised_in_runner(exc):
+            raise
+        resume_failures = 1
+    rows.append(_row("resume_zero_calls_zero_rows", k, resume_failures))
     for name, failures in planner_integrity(conn, ctx.run_id, ctx.page_text):
         rows.append(_row(name, k, failures))
     return rows
@@ -614,6 +624,7 @@ def _agent_fns(ctx: RunContext, model: str | None):
     import agents.planner.config as planner_config
     import agents.planner.harness as planner_harness
     from nodes.verifier import load_verifier_config, verify_finding
+    from nodes.verifier import run_stats as verifier_run_stats
 
     official = ctx.official
     check_budget = checker_config.EVAL_MAX_BUDGET_USD if official else checker_config.MAX_BUDGET_USD
@@ -630,8 +641,15 @@ def _agent_fns(ctx: RunContext, model: str | None):
                 stats["turns"] += r.num_turns or 0
 
     def verifier_fn(finding, rule, run_id):
-        return verify_finding(finding, rule, run_id, model=model, max_budget_usd=verify_budget,
-                              audit_db_path=ctx.run_dir / "verifier_audit.db")
+        seen = len(verifier_run_stats)
+        try:
+            return verify_finding(finding, rule, run_id, model=model, max_budget_usd=verify_budget,
+                                  audit_db_path=ctx.run_dir / "verifier_audit.db",
+                                  case_root=ctx.run_dir / "verifier_cases")
+        finally:
+            for s in verifier_run_stats[seen:]:  # RT2-11: the verifier's cost and turns count too
+                stats["cost_usd"] += s.get("cost_usd") or 0.0
+                stats["turns"] += s.get("num_turns") or 0
 
     def planner_fn(finding):
         try:
@@ -645,17 +663,24 @@ def _agent_fns(ctx: RunContext, model: str | None):
     return checker_fn, verifier_fn, planner_fn, stats
 
 
-def run_once(ctx: RunContext, model: str | None) -> dict:
-    checker_fn, verifier_fn, planner_fn, stats = _agent_fns(ctx, model)
-    t0 = time.monotonic()
-    run_check_stage(ctx.tasks, checker_fn, ctx.conn)
-    findings = get_findings(ctx.conn)
-    run_verify_stage(findings, ctx.rules_by_id, verifier_fn, ctx.conn, ctx.run_id)
-    run_plan_stage(_confirmed(ctx.conn, findings), planner_fn, ctx.conn)
-    wall = time.monotonic() - t0
+def _raise_for_provider_rows(ctx: RunContext) -> None:
     provider = ctx.conn.execute("SELECT COUNT(*) FROM task_ledger WHERE error_class = 'PROVIDER_ERROR'").fetchone()[0]
     if provider:
         raise InvalidRun(f"run {ctx.run_index}: {provider} provider error rows (auth, rate limit or overload)")
+
+
+def run_once(ctx: RunContext, model: str | None) -> dict:
+    checker_fn, verifier_fn, planner_fn, stats = _agent_fns(ctx, model)
+    t0 = time.monotonic()
+    # P3 (owner decision 2A): real agent sessions run in the private run
+    # directory, so their CLI transcripts are kept apart from coding sessions.
+    with contextlib.chdir(ctx.run_dir) if ctx.real else contextlib.nullcontext():
+        run_check_stage(ctx.tasks, checker_fn, ctx.conn)
+        findings = get_findings(ctx.conn)
+        run_verify_stage(findings, ctx.rules_by_id, verifier_fn, ctx.conn, ctx.run_id)
+        run_plan_stage(_confirmed(ctx.conn, findings), planner_fn, ctx.conn)
+    wall = time.monotonic() - t0
+    _raise_for_provider_rows(ctx)
     return {"cells": cell_outcomes(ctx.conn, ctx.tasks), "cost_usd": stats["cost_usd"], "turns": stats["turns"],
             "wall_clock_s": wall}
 
@@ -706,9 +731,23 @@ def sanitize(results: dict, config: dict) -> dict:
     return results
 
 
+FULL_MANIFEST_FILES = {"key.yaml", "briefs.md", "adjudication.md"}  # RT2-03; SCENARIO_SPEC §6 step 7
+
+
+def _manifest_names(manifest: Path) -> set[str]:
+    return {ln.split("  ", 1)[1].strip() for ln in manifest.read_text(encoding="utf-8").splitlines() if "  " in ln}
+
+
 def _git_head() -> str:
     r = subprocess.run(["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, check=False)
     return r.stdout.strip() or "unknown"
+
+
+def _git_dirty() -> bool:
+    """True when the repository has any uncommitted or untracked file
+    (gitignored files excluded), or its status cannot be read."""
+    r = subprocess.run(["git", "-C", str(REPO_ROOT), "status", "--porcelain"], capture_output=True, text=True, check=False)
+    return r.returncode != 0 or bool(r.stdout.strip())
 
 
 def run_series(
@@ -730,7 +769,20 @@ def run_series(
     config = load_eval_config()
     holdout_root = Path(holdout_root).resolve()
     series_id = f"{dataset_name}-{date.today().isoformat()}-{uuid.uuid4().hex[:6]}"
-    runs = runs or config["component_b"]["claim"]["runs_per_case"]
+    runs_per_case = config["component_b"]["claim"]["runs_per_case"]
+    runs = runs_per_case if runs is None else runs
+    if runs < 1:
+        raise ValueError("--runs must be at least 1")
+    if gated:
+        # RT2-01, RT2-02, RT2-03: an official series is exactly the gate's
+        # run count, on a clean tree (so the recorded commit is what ran),
+        # on a holdout with no completed official series (retirement rule).
+        if runs != runs_per_case:
+            raise ValueError(f"a gated series has exactly {runs_per_case} runs")
+        if _git_dirty():
+            raise ValueError("a gated series needs a clean working tree (commit first)")
+        if results_dir.is_dir() and any(results_dir.glob(f"{dataset_name}-*.json")):
+            raise ValueError(f"{dataset_name} already has a completed official series and is retired")
     rulesets = load_rulesets(RULESETS_DIR)
     rules_by_id = {r.rule_id: r for rules in rulesets.values() if rules for r in rules}
     model = config["model_routing"]["official" if gated else "development"] if real else "stub"
@@ -766,6 +818,8 @@ def run_series(
             if not manifest.is_file() or not holdout_dir.is_dir():
                 raise InvalidRun("holdout or its committed manifest not found")
             series["manifest_sha256"] = lf_sha256(manifest)
+            if gated and not FULL_MANIFEST_FILES <= _manifest_names(manifest):
+                raise InvalidRun("a gated series needs the full manifest (key, briefs and adjudication pinned)")
             if check_holdout.verify_manifest(holdout_dir, manifest):
                 raise InvalidRun("holdout files do not match the committed manifest")
             errors, _summary = check_holdout.check_holdout(holdout_dir, RULESETS_DIR)
@@ -816,6 +870,7 @@ def run_series(
                 except Exception as exc:  # noqa: BLE001 -- classified below
                     if _raised_in_runner(exc):
                         raise InvalidRun(f"run {k}: exception in runner code: {type(exc).__name__}") from exc
+                    _raise_for_provider_rows(ctx)  # RT2-04: a provider error stays INVALID RUN after a crash too
                     run_results.append({"cells": cell_outcomes(conn, tasks), "cost_usd": 0.0, "turns": 0, "wall_clock_s": 0.0})
                 results["component_a"].extend(a2_checks(ctx))
             finally:

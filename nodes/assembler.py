@@ -48,8 +48,11 @@ def assemble_case(finding: ViolationFinding, rule: ComplianceRule) -> dict[str, 
         f"Rule {rule.rule_id} ({rule.jurisdiction})", [rule.rule_text]
     )
 
-    _page_title, page_blocks = read_page(finding.page_path)
-    page_source_html = _html_page(finding.page_path, page_blocks)
+    page_title, page_blocks = read_page(finding.page_path)
+    # RT2-09: the shipped verifier reads <p> text only and the <title> slot
+    # carries the page name, so the page's own title goes in as the first
+    # paragraph -- the verifier then sees the same text as the checker.
+    page_source_html = _html_page(finding.page_path, [page_title, *page_blocks] if page_title else page_blocks)
 
     return {
         "target.html": target_html,

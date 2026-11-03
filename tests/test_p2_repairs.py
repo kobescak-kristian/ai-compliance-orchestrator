@@ -342,9 +342,23 @@ def test_d6_planner_harness_timeout(conn, tmp_path, monkeypatch):
 
 FAKE_AGENT = {
     "agent/__init__.py": "",
-    "agent/config.py": "from pathlib import Path\nAUDIT_DB_PATH = Path(__file__).resolve().parent.parent / 'audit.db'\n",
-    # Same import shape as the pinned shipped agent: the name is copied
-    # into agent.audit, so only patching agent.audit reaches it.
+    "agent/config.py": textwrap.dedent("""\
+        from pathlib import Path
+        REPO_ROOT = Path(__file__).resolve().parent.parent
+        DATASET_ROOT = (REPO_ROOT / "evals" / "dataset").resolve()
+        AUDIT_DB_PATH = REPO_ROOT / "audit.db"
+        """),
+    # Same import shapes as the pinned shipped agent: each name is copied
+    # into the importing module, so only patching that module reaches it.
+    "agent/pages.py": textwrap.dedent("""\
+        from .config import DATASET_ROOT
+
+        def read_page(rel_path):
+            candidate = (DATASET_ROOT / rel_path).resolve()
+            if not candidate.is_relative_to(DATASET_ROOT):
+                raise ValueError("outside the dataset")
+            return candidate.read_text(encoding="utf-8")
+        """),
     "agent/audit.py": textwrap.dedent("""\
         import sqlite3
         from .config import AUDIT_DB_PATH
@@ -359,7 +373,9 @@ FAKE_AGENT = {
         import os
         import time
         from types import SimpleNamespace
+        from . import pages
         from .audit import init_audit_db
+        from .config import DATASET_ROOT
 
         async def run_case_result(case_id, run_id, model, max_budget_usd):
             mode = os.environ.get("FAKE_VERIFIER_MODE", "")
@@ -369,7 +385,11 @@ FAKE_AGENT = {
             if mode == "rate_limit":
                 return SimpleNamespace(is_error=True, subtype="error_during_execution",
                                        api_error_status=429, total_cost_usd=0, num_turns=0), []
-            finding = {"verdict": "SUPPORTED", "evidence_source": "source_page.html", "evidence_note": "seen"}
+            if not (DATASET_ROOT / case_id).is_dir():
+                raise FileNotFoundError("no such case under the dataset root")
+            pages.read_page(f"{case_id}/source_page.html")
+            finding = {"verdict": "SUPPORTED", "evidence_source": "source_page.html",
+                       "evidence_note": f"seen under {DATASET_ROOT.as_posix()}"}
             return SimpleNamespace(is_error=False, total_cost_usd=0.0, num_turns=1), [finding]
         """),
     ".gitignore": "__pycache__/\n",

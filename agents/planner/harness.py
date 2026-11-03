@@ -58,6 +58,10 @@ def build_options(
         tools=[],  # disable all built-in tools (no Write, Bash, Edit, Read, ...)
         mcp_servers={MCP_SERVER_NAME: server},
         allowed_tools=list(QUALIFIED_TOOL_NAMES),  # exactly the 3 custom tools
+        # P3: no user/project/local settings, CLAUDE.md or other MCP server
+        # (same as the checker). Managed policy still applies.
+        setting_sources=[],
+        strict_mcp_config=True,
         max_turns=MAX_TURNS,
         max_budget_usd=max_budget_usd,  # SDK-level per-run cost ceiling
         hooks={
@@ -75,6 +79,7 @@ async def _run_planner_async(
     max_budget_usd: float,
 ) -> dict | None:
     global last_result
+    last_result = None  # RT2-11: a timed-out run must not report the previous run's cost
     init_audit_db()
     finding_id = f"{finding.task_id}::{finding.rule_id}"
     set_run_context(run_id, finding_id)

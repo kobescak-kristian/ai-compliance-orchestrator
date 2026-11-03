@@ -4,8 +4,9 @@ ADJUDICATION_POLICY.md, superseding the earlier "4th checker" framing in
 BLUEPRINT.md §2 step 3 -- see BLUEPRINT.md's Phase 4 amendment note).
 
 Assembles one case per finding (nodes/assembler.py), writes it into the
-shipped repo's evals/dataset/ (the only path its own harness can read
-from -- REPO_ROOT-relative inside that repo, not configurable from here),
+shipped repo's evals/dataset/ by default, or into a private case_root
+outside every Git repository, which nodes/verifier_runner.py points the
+shipped agent's DATASET_ROOT at (P3; the shipped code is not changed),
 invokes the shipped agent unmodified via nodes/verifier_runner.py as a
 subprocess, parses/validates its JSON output at the boundary into an
 AdjudicationRecord, and always removes the case directory afterward --
@@ -43,6 +44,9 @@ REPO_PATH_ENV = "VERIFIER_REPO_PATH"
 # D3: when set, the subprocess writes the shipped agent's audit DB here
 # instead of inside the verifier checkout (nodes/verifier_runner.py).
 AUDIT_DB_ENV = "VERIFIER_AUDIT_DB"
+# P3: when set, the subprocess reads its case files from this private
+# folder instead of <checkout>/evals/dataset (nodes/verifier_runner.py).
+DATASET_ROOT_ENV = "VERIFIER_DATASET_ROOT"
 TIMEOUT_S = 600  # D6: wall-clock cap per verifier subprocess
 PROVIDER_STATUS_CODES = {401, 403, 429, 529}
 _API_STATUS_RE = re.compile(r"api_error_status=(\d+)")
@@ -83,7 +87,10 @@ def load_verifier_config() -> dict:
 
 def resolve_repo_path(config: dict) -> Path:
     override = os.environ.get(REPO_PATH_ENV) or load_local_config().get("verifier_repo_path")
-    return Path(override or config["repo_path"]).resolve()
+    path = Path(override or config["repo_path"])
+    # A relative path is relative to this repo, never to the working
+    # directory (real runs execute in the private run directory, P3).
+    return (path if path.is_absolute() else REPO_ROOT / path).resolve()
 
 
 def _check_pinned_commit(repo_path: Path, pinned_commit: str) -> None:
@@ -140,6 +147,7 @@ def verify_finding(
     max_budget_usd: float | None = None,
     config: dict | None = None,
     audit_db_path: str | Path | None = None,
+    case_root: str | Path | None = None,
 ) -> dict:
     """Adjudicate one VIOLATION finding through the shipped agent,
     unmodified, as a subprocess. Returns a raw dict -- signature-
@@ -150,7 +158,8 @@ def verify_finding(
     real_checker). Raises VerifierConfigError / VerifierInvocationError
     on any failure -- there is no partial or silently-degraded result.
     audit_db_path, when given, redirects the shipped agent's audit DB
-    out of its checkout (D3).
+    out of its checkout (D3); case_root, when given, does the same for
+    the case files, which hold the page text (P3).
     """
     config = config or load_verifier_config()
     repo_path = check_verifier_checkout(config)
@@ -159,12 +168,15 @@ def verify_finding(
     max_budget_usd = max_budget_usd if max_budget_usd is not None else config["max_budget_usd"]["dev"]
 
     case_id = f"phase4_adj_{uuid.uuid4().hex[:12]}"
-    case_dir = repo_path / "evals" / "dataset" / case_id
+    dataset_root = Path(case_root).resolve() if case_root is not None else repo_path / "evals" / "dataset"
+    case_dir = dataset_root / case_id
 
     try:
         env = dict(os.environ)
         if audit_db_path is not None:
             env[AUDIT_DB_ENV] = str(audit_db_path)
+        if case_root is not None:
+            env[DATASET_ROOT_ENV] = str(dataset_root)
         files = assemble_case(finding, rule)
         _write_case_files(case_dir, files)
 

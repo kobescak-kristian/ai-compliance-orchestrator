@@ -114,6 +114,11 @@ def build_tools(task: CheckTask, ledger_conn: sqlite3.Connection):
         except FileNotFoundError as e:
             _log_path_access(ledger_conn, requested_path, allowed=False, reason=str(e))
             return _error(str(e))
+        if requested_path != task.page_path:
+            # RT2-10: bound to this task's page only, not every page in the cage.
+            reason = f"Page {requested_path!r} is not the page assigned to this task -- rejected."
+            _log_path_access(ledger_conn, requested_path, allowed=False, reason=reason)
+            return _error(reason)
         _log_path_access(ledger_conn, requested_path, allowed=True, reason=None)
         body = "\n".join(f"- {b}" for b in blocks)
         # D8: page text is data, delimited so it cannot pose as instructions.

@@ -6,7 +6,8 @@ away) as JSON on stdout. This script itself lives in this repo, not the
 shipped one; nothing is ever written into the shipped repo except the
 case's own data files (written by nodes/verifier.py, removed after the
 run -- see the git-status-clean check in tests/test_bounds.py and the
-Phase 4 dev-leg report).
+Phase 4 dev-leg report). With VERIFIER_DATASET_ROOT and
+VERIFIER_AUDIT_DB set (every runner series), not even those (P3).
 
 Usage:
     python nodes/verifier_runner.py <repo_path> <case_id> <run_id> <model> <max_budget_usd>
@@ -48,6 +49,21 @@ def main() -> None:
             import agent.audit  # noqa: E402 -- shipped repo, unmodified
 
             agent.audit.AUDIT_DB_PATH = audit_db
+
+        # P3: the case files (page text) live in a private folder, not in
+        # the checkout. DATASET_ROOT is copied into agent.pages and
+        # agent.harness by `from .config import DATASET_ROOT`, so all three
+        # names are patched; the shipped path cage then holds at this root.
+        dataset_root = os.environ.get("VERIFIER_DATASET_ROOT")
+        if dataset_root:
+            from pathlib import Path
+
+            import agent.config  # noqa: E402 -- shipped repo, unmodified
+            import agent.harness  # noqa: E402 -- shipped repo, unmodified
+            import agent.pages  # noqa: E402 -- shipped repo, unmodified
+
+            root = Path(dataset_root).resolve()
+            agent.config.DATASET_ROOT = agent.pages.DATASET_ROOT = agent.harness.DATASET_ROOT = root
 
         result, findings = asyncio.run(
             run_case_result(case_id, run_id=run_id, model=model, max_budget_usd=float(max_budget_usd))
