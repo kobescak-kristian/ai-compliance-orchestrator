@@ -31,9 +31,14 @@ Agent context (owner decision 3A): the checker and planner run with
 `setting_sources=[]` and `strict_mcp_config=True`, so no user, project or
 local settings, no CLAUDE.md and no other MCP server load, whatever the
 working directory. The managed machine-policy hooks still run (machine policy, not
-changed by this repo). Known limit: the verifier runs as shipped (pinned,
-ADR-0002) and still loads user-level settings and the user CLAUDE.md; with
-the run dir as cwd it no longer loads this repo's.
+changed by this repo). The verifier session gets the same isolation (Kristian's
+ruling R1, 2026-11-03): `nodes/verifier_runner.py` wraps the pinned agent's
+`build_options` at runtime and sets only these two options; the pinned
+clone is not edited, and its tools, whitelist, budget, turns and hooks stay
+as shipped (ADR-0002). Verified in the second real July dry run
+(2026-11-03, series `july-2026-11-03-80e513`): both verifier sessions ran
+in permission mode `default`, with no plan-mode or connector attachment,
+first-request context about 2,080 tokens, and only the verifier's own tools.
 
 ## 2. Checklist (build check c, items 1-6)
 

@@ -212,7 +212,13 @@ BLUEPRINT.md §9.
     once (owner-authorized, plain terminal) and the verifier failed on
     its budget. R1 approved and implemented (see the R1 Change Log
     entry). Open: R2, R3, RT2-07 ruling; a new dry run needs a new
-    authorization;
+    authorization; **update 2026-11-03:** dry run 2 ran once
+    (authorized by Kristian) and validated R1; R2 implemented; R3 is in the
+    private dry-run procedure only, with no repo change. Open: R3 in
+    the repo (not authorized), RT2-07 (residual uncertainty,
+    not resolved) and the p01 NO_OVERLAP observation (assess in P3
+    development testing, before P4); any further run needs a new
+    authorization (see the dry-run 2 Change Log entry);
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -297,6 +303,65 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-03**, P-001 July dry run 2 (R1 regression check), Kristian's
+  ruling R2 and its implementation (local branch `repair/v2`; no push).
+  - Dry run 2: `run_eval.py --dataset july --page p01 --runs 1 --real`
+    at `8e38ff7`, Haiku 4.5, subscription login (claude.ai / firstParty /
+    max), series `july-2026-11-03-80e513`, exit 0. Authorized by Kristian
+    and run once by Kristian from a plain PowerShell terminal, no retry.
+    Infrastructure check, not a result. Kristian accepted the evidence.
+    - **R1 validated.** Both verifier sessions: permission mode `default`,
+      no plan-mode or connector attachment, first-request context about
+      2,080 tokens (dry run 1: 39,361), only the verifier's own tools.
+    - Verifier: 1 verify task DONE; 2 adjudications CONFIRMED; no budget
+      stop.
+    - Planner: 2 proposals, both plan tasks DONE.
+    - Component A: 19 of 19 passed.
+    - Cell scoring: tp 2, fp 0, fn 0; page clean.
+    - Case p01 (GBR-BT-02) failed `NO_OVERLAP`, as in dry run 1: the
+      first excerpt part is 13 characters and lies inside the 31-character
+      core span; the frozen grader needs 15 overlapping characters.
+      **Kristian's ruling:** no grader change, no checker tuning from this one
+      page; assess in P3 development testing, before P4.
+    - The checker made 2 excerpts not on the page; the D5 guard rejected
+      both and the checker retried.
+    - Storage checks (PREFLIGHT §3): transcripts in the run dir's folder
+      only, hook records only `no-repo.jsonl`, repo and clone unchanged
+      (ignored `__pycache__` excepted), `verifier_cases` empty: PASS.
+    - RT2-07: as in dry run 1, the private path appears only in per-record
+      `cwd` metadata (180 hits), 0 in message content. **Remains an
+      unresolved residual uncertainty** (Kristian).
+    - Cost: `cost_usd` 0.1794 notional, 48 turns (both verifier sessions
+      measured). Hand tally for the $30 cap: about $0.50 notional.
+      Billing: session usage +1%; extra usage off, balance 0, auto-reload
+      off.
+    - **Procedure deviation:** the report has no STEP 1B lines (repo,
+      clone, version and R1-test checks), so STEP 1B was not run. Other
+      evidence covers part of it: `results.json` commit `8e38ff7` and verifier
+      pin; repo and clone clean at the STEP 3 baseline; CLI 2.1.191 in the
+      transcripts. The procedure's STEP 2 does not require STEP 1B.
+  - R3: the private dry-run procedure that Kristian approved for dry
+    run 2 (outside this repo) checks the clone with `git status
+    --porcelain` (as the D3 guard) and allows ignored `__pycache__` in
+    the repo. No tracked file changed for R3; `evals/PREFLIGHT.md` §3
+    still records the 2026-11-03 clone check with `--ignored`. A
+    matching repo change is open and not authorized.
+  - **Kristian's ruling R2 (2026-11-03, option B), implemented:**
+    - A verifier budget stop records the budget cap as an estimated
+      notional cost (`cost_usd_estimated` in `nodes/verifier.py`
+      `run_stats`), not a measured value or a guaranteed upper bound; no
+      turn count is recorded.
+    - `evals/run_eval.py` keeps the estimate apart from the measured
+      cost. The console prints `failed tasks (diagnostic): check N,
+      verify N, plan N` and a cost line with measured and estimated
+      values. `results.json` is unchanged: the frozen allowlist has no
+      field for an estimate, so `cost_usd` stays measured only.
+    - No gate, scoring, allowlist, ruleset, H2 or verifier-pin change.
+  - `evals/PREFLIGHT.md`: verifier settings isolation (R1) described.
+  - Tests: 5 new keyless tests (`tests/test_p2_repairs.py` `test_r2_*`,
+    `tests/test_p3_storage.py` `test_r2_*`); `python -m pytest -q -p
+    no:cacheprovider` 190 passed, exit 0.
 
 - **2026-11-03**, P-001 one-page July dry run result and owner ruling R1
   (local branch `repair/v2`; no push).

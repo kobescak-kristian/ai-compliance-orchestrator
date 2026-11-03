@@ -59,11 +59,18 @@ NON_SUBSCRIPTION_AUTH_ENV = (
 )
 PROVIDER_STATUS_CODES = {401, 403, 429, 529}
 _API_STATUS_RE = re.compile(r"api_error_status=(\d+)")
+# R2: a budget stop, as verifier_runner reports it (the SDK's error text
+# on the exception path, the result subtype on the is_error path).
+BUDGET_STOP_RE = re.compile(r"Reached maximum budget|error_max_budget_usd")
 
 # Populated by every verify_finding() call: {finding_id, cost_usd,
 # num_turns} -- for dev/eval-leg cost+turns reporting only (BLUEPRINT.md
 # §7), never part of the strict AdjudicationRecord contract. Mirrors
-# agents/checker/harness.py's last_result convention.
+# agents/checker/harness.py's last_result convention. R2 (Kristian's ruling
+# 2026-11-03, option B): a budget stop has no result, so its row is
+# {finding_id, cost_usd: None, cost_usd_estimated: <the budget cap>,
+# num_turns: None}; the cap is an estimated notional cost, not a measured
+# value or a guaranteed upper bound, and no turn count is invented.
 run_stats: list[dict] = []
 
 
@@ -207,6 +214,15 @@ def verify_finding(
                 )
             if SUBSCRIPTION_LIMIT_RE.search(result.stderr):
                 raise ProviderError(f"verifier provider subscription usage limit for finding {finding_id_for(finding)}")
+            if BUDGET_STOP_RE.search(result.stderr):
+                run_stats.append(
+                    {
+                        "finding_id": finding_id_for(finding),
+                        "cost_usd": None,
+                        "cost_usd_estimated": max_budget_usd,
+                        "num_turns": None,
+                    }
+                )
             raise VerifierInvocationError(
                 f"verifier subprocess exited {result.returncode} for finding "
                 f"{finding_id_for(finding)}: {result.stderr.strip()}"

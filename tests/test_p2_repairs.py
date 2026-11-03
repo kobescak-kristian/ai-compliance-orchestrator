@@ -418,6 +418,11 @@ FAKE_AGENT = {
             if mode == "server_error":
                 return SimpleNamespace(is_error=True, subtype="success", api_error_status=500,
                                        result="API Error: 500", total_cost_usd=0, num_turns=0), []
+            if mode == "budget_exception":  # SDK 0.2.110: the error result arrives as an exception
+                raise RuntimeError("Claude Code returned an error result: Reached maximum budget ($0.01)")
+            if mode == "budget_result":
+                return SimpleNamespace(is_error=True, subtype="error_max_budget_usd", api_error_status=None,
+                                       result="", total_cost_usd=0.02, num_turns=7), []
             for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_USE_BEDROCK"):
                 if os.environ.get(name):
                     raise RuntimeError("non-subscription auth variable reached the verifier: " + name)
@@ -503,6 +508,34 @@ def test_rt2_05_verifier_subscription_limit_is_provider_error(fake_verifier, tmp
     with pytest.raises(VerifierInvocationError, match="api_error_status=500") as exc:
         verifier.verify_finding(_finding(), _rule(), "run1", config=config, audit_db_path=audit_db)
     assert not isinstance(exc.value, ProviderError)
+
+
+@pytest.mark.parametrize("mode", ["budget_exception", "budget_result"])
+def test_r2_verifier_budget_stop_records_the_cap_as_an_estimate(fake_verifier, tmp_path, monkeypatch, mode):
+    _repo, config = fake_verifier
+    monkeypatch.setenv("FAKE_VERIFIER_MODE", mode)
+    verifier.reset_run_stats()
+    try:
+        with pytest.raises(VerifierInvocationError) as exc:
+            verifier.verify_finding(_finding(), _rule(), "run1", config=config, audit_db_path=tmp_path / "v.db")
+        assert not isinstance(exc.value, ProviderError)
+        # The cap (config dev budget 0.01), never a measured cost; no turn count.
+        assert verifier.run_stats == [{"finding_id": verifier.finding_id_for(_finding()), "cost_usd": None,
+                                       "cost_usd_estimated": 0.01, "num_turns": None}]
+    finally:
+        verifier.reset_run_stats()
+
+
+def test_r2_other_verifier_failures_record_no_cost(fake_verifier, tmp_path, monkeypatch):
+    _repo, config = fake_verifier
+    monkeypatch.setenv("FAKE_VERIFIER_MODE", "server_error")
+    verifier.reset_run_stats()
+    try:
+        with pytest.raises(VerifierInvocationError):
+            verifier.verify_finding(_finding(), _rule(), "run1", config=config, audit_db_path=tmp_path / "v.db")
+        assert verifier.run_stats == []
+    finally:
+        verifier.reset_run_stats()
 
 
 def test_d1_verifier_subprocess_gets_no_api_key_and_loads_no_dotenv(fake_verifier, monkeypatch):

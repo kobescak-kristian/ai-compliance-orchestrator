@@ -644,8 +644,10 @@ def _confirmed(conn, findings):
 
 def _agent_fns(ctx: RunContext, model: str | None):
     """(checker_fn, verifier_fn, planner_fn, stats). Stub mode never calls
-    a model; real mode wires the caged agents and the pinned verifier."""
-    stats = {"cost_usd": 0.0, "turns": 0}
+    a model; real mode wires the caged agents and the pinned verifier.
+    cost_usd and turns are measured; cost_usd_estimated is the budget cap
+    of each verifier budget stop (R2), kept apart and never in turns."""
+    stats = {"cost_usd": 0.0, "turns": 0, "cost_usd_estimated": 0.0, "estimated_sessions": 0}
     if not ctx.real:
         return checker_stub.stub_checker, verifier_stub.stub_verifier, planner_stub.stub_planner, stats
     import agents.checker.config as checker_config
@@ -679,6 +681,9 @@ def _agent_fns(ctx: RunContext, model: str | None):
             for s in verifier_run_stats[seen:]:  # RT2-11: the verifier's cost and turns count too
                 stats["cost_usd"] += s.get("cost_usd") or 0.0
                 stats["turns"] += s.get("num_turns") or 0
+                if s.get("cost_usd_estimated") is not None:  # R2: a budget stop, estimated only
+                    stats["cost_usd_estimated"] += s["cost_usd_estimated"]
+                    stats["estimated_sessions"] += 1
 
     def planner_fn(finding):
         try:
@@ -711,7 +716,14 @@ def run_once(ctx: RunContext, model: str | None) -> dict:
     wall = time.monotonic() - t0
     _raise_for_provider_rows(ctx)
     return {"cells": cell_outcomes(ctx.conn, ctx.tasks), "cost_usd": stats["cost_usd"], "turns": stats["turns"],
-            "wall_clock_s": wall}
+            "wall_clock_s": wall, "cost_usd_estimated": stats.get("cost_usd_estimated", 0.0),
+            "estimated_sessions": stats.get("estimated_sessions", 0), "verify_failed": verify_tasks_failed(ctx.conn)}
+
+
+def verify_tasks_failed(conn: sqlite3.Connection) -> int:
+    """Verify tasks whose latest state is FAILED or DEAD_LETTER: a console
+    diagnostic only (R2), not a component A row."""
+    return sum(1 for _t, s, state in latest_states(conn) if s == "verify" and state in {"FAILED", "DEAD_LETTER"})
 
 
 def _raised_in_runner(exc: BaseException) -> bool:
@@ -762,6 +774,9 @@ def sanitize(results: dict, config: dict) -> dict:
 
 FULL_MANIFEST_FILES = {"key.yaml", "briefs.md", "adjudication.md"}  # RT2-03; SCENARIO_SPEC §6 step 7
 
+# R2: filled by run_series for main's console lines; not part of results.
+console_diagnostics: dict = {}
+
 
 def _manifest_names(manifest: Path) -> set[str]:
     return {ln.split("  ", 1)[1].strip() for ln in manifest.read_text(encoding="utf-8").splitlines() if "  " in ln}
@@ -794,7 +809,10 @@ def run_series(
 ) -> tuple[str, dict, Path | None]:
     """Run one series; return (result, sanitized results, results path).
     auth (D1: auth method, provider, plan type) goes to auth.json in the
-    private series folder; the frozen results allowlist has no field for it."""
+    private series folder; the frozen results allowlist has no field for it.
+    For the same reason the R2 console diagnostics (failed verify tasks,
+    estimated verifier cost) go to console_diagnostics, never to results."""
+    console_diagnostics.clear()
     if not (dataset_name == "july" or HOLDOUT_ID_RE.match(dataset_name)):
         raise ValueError(f"unknown dataset {dataset_name!r}")
     if gated and not HOLDOUT_ID_RE.match(dataset_name):
@@ -916,11 +934,17 @@ def run_series(
                     if _raised_in_runner(exc):
                         raise InvalidRun(f"run {k}: exception in runner code: {type(exc).__name__}") from exc
                     _raise_for_provider_rows(ctx)  # RT2-04: a provider error stays INVALID RUN after a crash too
-                    run_results.append({"cells": cell_outcomes(conn, tasks), "cost_usd": 0.0, "turns": 0, "wall_clock_s": 0.0})
+                    run_results.append({"cells": cell_outcomes(conn, tasks), "cost_usd": 0.0, "turns": 0, "wall_clock_s": 0.0,
+                                        "verify_failed": verify_tasks_failed(conn)})
                 results["component_a"].extend(a2_checks(ctx))
             finally:
                 conn.close()
 
+        console_diagnostics.update(
+            verify_failed=sum(r.get("verify_failed", 0) for r in run_results),
+            cost_usd_estimated=round(sum(r.get("cost_usd_estimated", 0.0) for r in run_results), 4),
+            estimated_sessions=sum(r.get("estimated_sessions", 0) for r in run_results),
+        )
         scored = score_series(dataset, run_results, config)
         results["per_case"] = scored["per_case"]
         results["per_page_off_target"] = scored["per_page_off_target"]
@@ -1017,11 +1041,16 @@ def main(argv: list[str] | None = None) -> int:
           f"{sum(r['passed'] is False for r in a_rows)} failed, {sum(r['passed'] is None for r in a_rows)} not run")
     if diagnostics:
         print(f"failed tasks (diagnostic): check {sum(r['count'] for r in diagnostics if 'check' in r['check_name'])}, "
+              f"verify {console_diagnostics.get('verify_failed', 0)}, "
               f"plan {sum(r['count'] for r in diagnostics if 'plan' in r['check_name'])}")
     agg = results["aggregates"]
     if agg:
         print(f"component B: {agg['cases_passed']} cases passed, {agg['cases_failed']} failed, "
               f"{agg['unclean_pages']} unclean pages")
+        print(f"cost (notional, diagnostic): measured {agg['cost_usd']} USD, {agg['turns']} turns; "
+              f"estimated {console_diagnostics.get('cost_usd_estimated', 0.0)} USD for "
+              f"{console_diagnostics.get('estimated_sessions', 0)} verifier budget stops "
+              f"(budget cap, not measured; their turns are unknown and not counted)")
     where = "evals/results/" if args.gated and out and out.is_relative_to(RESULTS_DIR) else "the private run directory"
     print(f"results: written to {where}")
     print(f"RESULT: {result}")

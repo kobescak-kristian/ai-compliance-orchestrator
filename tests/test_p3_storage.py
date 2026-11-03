@@ -5,6 +5,7 @@ inside any Git work tree; real runs execute in the private run directory,
 and that working directory changes no configuration, agent option, hook
 or file access. No model call, no real verifier run, no CLI process.
 """
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -403,10 +404,54 @@ def test_rt2_11_verifier_cost_and_turns_are_counted(tmp_path, monkeypatch):
     try:
         _checker_fn, verifier_fn, _planner_fn, stats = re_._agent_fns(ctx, "fake-model")
         verifier_fn(_finding(), _rule(), "run")
-        assert stats == {"cost_usd": 0.25, "turns": 4}
+        assert stats == {"cost_usd": 0.25, "turns": 4, "cost_usd_estimated": 0.0, "estimated_sessions": 0}
     finally:
         ctx.conn.close()
         verifier.reset_run_stats()
+
+
+def test_r2_budget_stop_is_counted_as_an_estimate_apart_from_measured(tmp_path, monkeypatch):
+    from orchestrator.pipeline import VerifierInvocationError
+
+    def fake_verify(finding, rule, run_id, **_kw):
+        verifier.run_stats.append({"finding_id": "x", "cost_usd": None, "cost_usd_estimated": 0.25, "num_turns": None})
+        raise VerifierInvocationError("budget stop")
+
+    monkeypatch.setattr(verifier, "verify_finding", fake_verify)
+    verifier.reset_run_stats()
+    ctx = _fresh_ctx(tmp_path, True)
+    try:
+        _checker_fn, verifier_fn, _planner_fn, stats = re_._agent_fns(ctx, "fake-model")
+        with pytest.raises(VerifierInvocationError):
+            verifier_fn(_finding(), _rule(), "run")
+        assert stats == {"cost_usd": 0.0, "turns": 0, "cost_usd_estimated": 0.25, "estimated_sessions": 1}
+    finally:
+        ctx.conn.close()
+        verifier.reset_run_stats()
+
+
+def test_r2_console_shows_verify_failures_and_the_estimate_apart(tmp_path, monkeypatch, capsys):
+    from orchestrator.pipeline import VerifierInvocationError
+
+    def agent_fns(ctx, model):
+        stats = {"cost_usd": 0.0, "turns": 0, "cost_usd_estimated": 0.0, "estimated_sessions": 0}
+
+        def verify(finding, rule, run_id):
+            stats["cost_usd_estimated"] += 0.25
+            stats["estimated_sessions"] += 1
+            raise VerifierInvocationError("budget stop")
+
+        return _checker, verify, _planner, stats
+
+    monkeypatch.setattr(re_, "_agent_fns", agent_fns)
+    assert re_.main(["--dataset", "july", "--page", "p01", "--runs", "1", "--holdout-root", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    # _checker raises one VIOLATION in each of the 2 p01 tasks: 2 verify tasks, both stopped.
+    assert "failed tasks (diagnostic): check 0, verify 2, plan 0" in out
+    assert "measured 0.0 USD, 0 turns; estimated 0.5 USD for 2 verifier budget stops" in out
+    results = json.loads(next(tmp_path.glob("runs/july/*/results.json")).read_text(encoding="utf-8"))
+    assert results["aggregates"]["cost_usd"] == 0.0  # results keep the measured value only; the allowlist is frozen
+    assert set(results["aggregates"]) == set(CONFIG["sanitized_results_allowlist"]["aggregates"])
 
 
 # --------------------------------------------------------------------------
