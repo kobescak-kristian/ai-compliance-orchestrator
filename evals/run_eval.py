@@ -20,7 +20,7 @@ the pinned verifier; it needs the owner's paid-run authorization and is
 not used in P2.
 
 Usage (from the repo root):
-  python evals/run_eval.py --dataset july [--runs N] [--holdout-root PATH]
+  python evals/run_eval.py --dataset july [--runs N] [--holdout-root PATH] [--page ID] [--real]
   python evals/run_eval.py --dataset H2 [--runs N] [--holdout-root PATH] [--real [--gated]]
 Exit codes: 0 completed series (PASS or FAIL); 2 INVALID RUN;
 3 NOT ENOUGH CASES; 64 usage error. Console output is IDs and counts
@@ -42,7 +42,7 @@ import sys
 import time
 import traceback
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 
@@ -790,6 +790,7 @@ def run_series(
     results_dir: Path = RESULTS_DIR,
     run_a1: bool | None = None,
     auth: dict | None = None,
+    page: str | None = None,
 ) -> tuple[str, dict, Path | None]:
     """Run one series; return (result, sanitized results, results path).
     auth (D1: auth method, provider, plan type) goes to auth.json in the
@@ -798,6 +799,13 @@ def run_series(
         raise ValueError(f"unknown dataset {dataset_name!r}")
     if gated and not HOLDOUT_ID_RE.match(dataset_name):
         raise ValueError("the July set is development data and is never gated")
+    if page is not None:
+        # Development only (owner, 2026-11-03): one July page, e.g. the real
+        # dry run. Never on a holdout or in a gated series.
+        if gated or dataset_name != "july":
+            raise ValueError("--page selects one July development page; never with --gated or a holdout")
+        if page not in {c.case_id for c in load_july().cases}:
+            raise ValueError(f"unknown July page {page!r}")
     config = load_eval_config()
     holdout_root = Path(holdout_root).resolve()
     series_id = f"{dataset_name}-{date.today().isoformat()}-{uuid.uuid4().hex[:6]}"
@@ -866,6 +874,8 @@ def run_series(
             pages.configure_cage(dataset.pages_dir, dataset.aliases)
         else:
             dataset = load_july()
+            if page is not None:
+                dataset = replace(dataset, cases=[c for c in dataset.cases if c.case_id == page])
             pages.configure_cage(dataset.pages_dir)
         if real:
             from nodes.verifier import VerifierConfigError, check_verifier_checkout
@@ -976,6 +986,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--holdout-root", type=Path, default=None, help="overrides holdout_root in config.local.yaml")
     ap.add_argument("--real", action="store_true", help="real agents and verifier (paid; owner authorization only)")
     ap.add_argument("--gated", action="store_true", help="official series: writes evals/results/<series_id>.json")
+    ap.add_argument("--page", default=None, help="development only: one July page ID such as p01; never with --gated or a holdout")
     try:
         args = ap.parse_args(argv)
     except SystemExit:
@@ -995,7 +1006,7 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_USAGE
     try:
         result, results, out = run_series(args.dataset, Path(holdout_root), runs=args.runs, real=args.real,
-                                          gated=args.gated, auth=auth)
+                                          gated=args.gated, auth=auth, page=args.page)
     except (ValueError, StorageError) as exc:
         print(f"usage: {exc}")
         return EXIT_USAGE

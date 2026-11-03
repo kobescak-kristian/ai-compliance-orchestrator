@@ -381,6 +381,51 @@ def test_d1_real_run_refused_before_any_output(tmp_path, monkeypatch, capsys):
 
 
 # --------------------------------------------------------------------------
+# --page (owner, 2026-11-03): one July development page, never gated or a holdout
+# --------------------------------------------------------------------------
+
+def test_page_selects_exactly_one_july_page(tmp_path):
+    result, results, out = re_.run_series("july", tmp_path, runs=1, page="p01")
+    assert result in (re_.PASS, re_.FAIL)
+    assert {r["case_id"] for r in results["per_case"]} == {"p01"}
+    assert {r["case_id"] for r in results["per_page_off_target"]} == {"p01"}
+    assert out.is_relative_to(tmp_path / "runs" / "july")
+    ledger = sqlite3.connect(next((tmp_path / "runs").rglob("ledger.db")))
+    try:
+        checked = {r[0] for r in ledger.execute("SELECT DISTINCT task_id FROM task_ledger WHERE stage = 'check'")}
+    finally:
+        ledger.close()
+    assert checked == {"p01.html::GBR", "p01.html::MLT"}  # only p01's markets ran
+
+
+@pytest.mark.parametrize("dataset,gated", [("H9", False), ("H2", False), ("H9", True), ("july", True)])
+def test_page_refused_with_gated_or_a_holdout(tmp_path, dataset, gated):
+    with pytest.raises(ValueError, match="--page|never gated"):
+        re_.run_series(dataset, tmp_path, page="p01", gated=gated)
+    assert not (tmp_path / "runs").exists()
+
+
+def test_page_unknown_id_refused(tmp_path):
+    with pytest.raises(ValueError, match="unknown July page"):
+        re_.run_series("july", tmp_path, page="p99")
+    assert re_.main(["--dataset", "july", "--page", "h2-01", "--holdout-root", str(tmp_path)]) == re_.EXIT_USAGE
+    assert re_.main(["--dataset", "H2", "--page", "p01", "--holdout-root", str(tmp_path)]) == re_.EXIT_USAGE
+    assert not (tmp_path / "runs").exists()
+
+
+def test_page_omitted_keeps_all_july_pages(tmp_path, monkeypatch):
+    seen = {}
+
+    def run_once(ctx, model):
+        seen["pages"] = sorted({t.page_path for t in ctx.tasks})
+        raise re_.InvalidRun("stop after task building")  # no need to run the stages
+
+    monkeypatch.setattr(re_, "run_once", run_once)
+    re_.run_series("july", tmp_path, runs=1)
+    assert seen["pages"] == sorted(c.page_name for c in re_.load_july().cases) and len(seen["pages"]) == 12
+
+
+# --------------------------------------------------------------------------
 # B: evidence grading, primary decision, D2 miss rule
 # --------------------------------------------------------------------------
 

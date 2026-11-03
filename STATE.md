@@ -294,6 +294,19 @@ with this file.*
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
 
+- **2026-11-03**, P-001 `--page` for the one-page dry run (local branch
+  `repair/v2`; keyless only: no model run, no push). The authorized
+  real dry run stopped before any model call: `run_eval.py --dataset
+  july` always loaded all 12 July pages. Owner authorized the minimal
+  fix: `--page <id>` keeps one July page (development only); it is
+  refused with `--gated`, with any holdout dataset and for an unknown
+  page ID; without it nothing changes. No gate, scoring, ruleset or H2
+  change. Evidence: `python -m pytest -q -p no:cacheprovider` 183
+  passed, exit 0 (was 176); `python .githooks/validate_artifacts.py .`
+  "Tier 0: PASS"; stub `--dataset july --page p01 --runs 1` exit 0
+  (one page, stub numbers not meaningful); `--page p99` exit 64. Open:
+  the real one-page dry run, which needs a new start from the owner.
+
 - **2026-11-03**, P-001 post-P3 rulings (local branch `repair/v2`;
   keyless only: no model run, no real verifier run, no API spending,
   no push). Owner rulings on the decision brief D1-D6; the frozen gate,
