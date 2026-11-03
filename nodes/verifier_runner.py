@@ -20,9 +20,28 @@ task-atomic FAILED, per policy/ADJUDICATION_POLICY.md §12.
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
 import os
 import sys
+
+
+def isolate_settings(build_options):
+    """R1 (owner decision 2026-11-03): the checker's and planner's settings
+    isolation (3A) for the shipped agent's session. No user, project or
+    local settings load (no permission mode, no user CLAUDE.md) and no MCP
+    server beyond the shipped agent's own (no claude.ai connectors). Only
+    these two options change; tools, whitelist, budget, turns and hooks
+    stay as the shipped build_options sets them."""
+
+    @functools.wraps(build_options)
+    def wrapper(*args, **kwargs):
+        options = build_options(*args, **kwargs)
+        options.setting_sources = []
+        options.strict_mcp_config = True
+        return options
+
+    return wrapper
 
 
 def main() -> None:
@@ -38,6 +57,13 @@ def main() -> None:
         # searched upward from this folder and could pick up an API key
         # outside the repository; the session uses the subscription login.
         from agent.harness import run_case_result  # noqa: E402 -- shipped repo, unmodified
+
+        # R1: run_case_result looks up build_options in agent.harness at
+        # call time, so the name is wrapped there. The shipped code on disk
+        # is not changed.
+        import agent.harness  # noqa: E402 -- shipped repo, unmodified
+
+        agent.harness.build_options = isolate_settings(agent.harness.build_options)
 
         # D3: keep the shipped agent's audit DB out of its checkout. Its
         # agent/audit.py does `from .config import AUDIT_DB_PATH`, so the

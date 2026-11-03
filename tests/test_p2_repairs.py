@@ -397,7 +397,14 @@ FAKE_AGENT = {
         from .audit import init_audit_db
         from .config import DATASET_ROOT
 
+        def build_options(model, max_budget_usd):
+            # The shipped build_options sets neither isolation option.
+            return SimpleNamespace(model=model, max_budget_usd=max_budget_usd, tools=[],
+                                   allowed_tools=["mcp__claimverify__fetch_page"],
+                                   setting_sources=None, strict_mcp_config=False)
+
         async def run_case_result(case_id, run_id, model, max_budget_usd):
+            o = build_options(model=model, max_budget_usd=max_budget_usd)
             mode = os.environ.get("FAKE_VERIFIER_MODE", "")
             if mode == "sleep":
                 time.sleep(30)
@@ -418,7 +425,9 @@ FAKE_AGENT = {
                 raise FileNotFoundError("no such case under the dataset root")
             pages.read_page(f"{case_id}/source_page.html")
             finding = {"verdict": "SUPPORTED", "evidence_source": "source_page.html",
-                       "evidence_note": f"seen under {DATASET_ROOT.as_posix()}"}
+                       "evidence_note": f"seen under {DATASET_ROOT.as_posix()} | options "
+                                        f"{o.setting_sources} {o.strict_mcp_config} {o.model} {o.max_budget_usd} "
+                                        f"{o.tools} {o.allowed_tools}"}
             return SimpleNamespace(is_error=False, total_cost_usd=0.0, num_turns=1), [finding]
         """),
     ".gitignore": "__pycache__/\n",

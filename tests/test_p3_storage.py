@@ -161,6 +161,58 @@ def test_agent_options_hooks_and_cli_command_do_not_depend_on_cwd(monkeypatch, t
         assert "--setting-sources=" in args and "--strict-mcp-config" in args
 
 
+# --------------------------------------------------------------------------
+# R1 (owner decision 2026-11-03): the verifier session gets the 3A isolation
+# --------------------------------------------------------------------------
+
+
+def _shipped_like_options(model="fake-model", max_budget_usd=0.25):
+    """Same option shape as the pinned agent's build_options."""
+    from claude_agent_sdk import ClaudeAgentOptions, HookMatcher, create_sdk_mcp_server
+
+    return ClaudeAgentOptions(
+        model=model, system_prompt="verify", tools=[],
+        mcp_servers={"claimverify": create_sdk_mcp_server(name="claimverify", version="1.0.0", tools=[])},
+        allowed_tools=["mcp__claimverify__fetch_page", "mcp__claimverify__compare_source"],
+        max_turns=20, max_budget_usd=max_budget_usd,
+        hooks={"PreToolUse": [HookMatcher(hooks=[_audit_hook])], "PostToolUse": [HookMatcher(hooks=[_audit_hook])]},
+    )
+
+
+async def _audit_hook(*_a):
+    return {}
+
+
+def test_r1_verifier_options_get_only_the_settings_isolation():
+    from dataclasses import fields
+
+    from nodes.verifier_runner import isolate_settings
+
+    shipped = _shipped_like_options()
+    isolated = isolate_settings(_shipped_like_options)(model="fake-model", max_budget_usd=0.25)
+    assert shipped.setting_sources is None and not shipped.strict_mcp_config  # what the pinned agent sets
+    assert isolated.setting_sources == [] and isolated.strict_mcp_config is True
+    changed = {f.name for f in fields(shipped) if getattr(shipped, f.name) != getattr(isolated, f.name)}
+    # Each build creates its own in-process server object; same name and type.
+    assert changed == {"setting_sources", "strict_mcp_config", "mcp_servers"}  # whitelist, budget, turns, hooks, model kept
+    assert {k: v["type"] for k, v in isolated.mcp_servers.items()} == {k: v["type"] for k, v in shipped.mcp_servers.items()}
+    plain, args = _cli_args(shipped), _cli_args(isolated)
+    assert "--setting-sources=" in args and "--strict-mcp-config" in args
+    assert "--setting-sources=" not in plain and "--strict-mcp-config" not in plain
+    assert [a for a in args if a not in ("--setting-sources=", "--strict-mcp-config")] == plain
+
+
+def test_r1_verifier_subprocess_runs_with_the_isolation(fake_verifier, tmp_path):
+    _repo, config = fake_verifier
+    run_dir = tmp_path / "runs" / "run1"
+    run_dir.mkdir(parents=True)
+    record = verifier.verify_finding(_finding(), _rule(), "run1", config=config,
+                                     audit_db_path=run_dir / "verifier_audit.db", case_root=run_dir / "verifier_cases")
+    assert record["verdict"].value == "CONFIRMED"
+    # The fake shipped agent reports the options its own build_options returned.
+    assert "| options [] True fake-model 0.01 [] ['mcp__claimverify__fetch_page']" in record["citation"]
+
+
 def _fresh_ctx(tmp_path, real: bool) -> re_.RunContext:
     from dataclasses import replace
 

@@ -208,7 +208,11 @@ BLUEPRINT.md §9.
     Exception approved in principle (owner, 2026-11-03, D6): one
     infrastructure-only dry run on 1 public July page, `--runs 1`, not
     a result, nothing tuned from it, may come before D10; the run itself
-    is not authorized;
+    is not authorized; **update 2026-11-03:** the one-page dry run ran
+    once (owner-authorized, plain terminal) and the verifier failed on
+    its budget. R1 approved and implemented (see the R1 Change Log
+    entry). Open: R2, R3, RT2-07 ruling; a new dry run needs a new
+    authorization;
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -293,6 +297,48 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-03**, P-001 one-page July dry run result and owner ruling R1
+  (local branch `repair/v2`; no push).
+  - Dry run: `run_eval.py --dataset july --page p01 --runs 1 --real` at
+    `716320c`, Haiku 4.5, subscription login (claude.ai / firstParty /
+    max), series `july-2026-11-03-9bdc94`, exit 0. Infrastructure only,
+    not a result.
+    - Checker: 2 tasks DONE; 16 of 16 p01 cells match the July key.
+    - Verifier: 1 task FAILED, `VERIFIER_FAILED`: "Reached maximum
+      budget ($0.25)".
+    - Because nothing was adjudicated: tp/fp/fn 0/0/2, no proposals.
+  - Cause: the pinned verifier session loaded user-level settings. It ran
+    in plan mode with the claude.ai connectors attached, at 39k-77k
+    context tokens per request (checker sessions: 2k-7k).
+    - Only whitelisted tools were called (audit DBs and hook records).
+  - Billing: Settings > Usage, session 49% -> 50%, weekly 42% -> 42%;
+    extra usage off, balance 0.
+  - Cost and turns:
+    - Reported `cost_usd` 0.072 and turns 22 leave out the failed
+      verifier session; its notional cost is up to $0.25.
+    - Hand tally for the $30 cap: about $0.32 notional.
+  - Storage checks (PREFLIGHT §3):
+    - Transcript isolation, hook records and `verifier_cases` cleanup:
+      PASS.
+    - Repo: a gitignored stale `.pyc` was regenerated. Clone: a new
+      ignored `agent/__pycache__/`. No tracked change in either.
+  - RT2-07: the private path appears only in the CLI's per-record `cwd`
+    metadata field. It is not in message content, tool data or
+    attachments; the system prompt is not stored, so it cannot be
+    checked. Owner ruling open.
+  - **Owner ruling R1 (2026-11-03):** the verifier session gets the 3A
+    settings isolation (`setting_sources=[]`, `strict_mcp_config=True`).
+    - It is applied in `nodes/verifier_runner.py` by wrapping the pinned
+      agent's `build_options` at runtime.
+    - The pinned clone is not edited.
+    - Whitelist, auth, budget, gate and scoring are unchanged.
+    - Tests: two keyless tests in `tests/test_p3_storage.py` (options
+      diff, CLI flags, subprocess end to end with the fake verifier).
+    - Full suite 185 passed, exit 0.
+    - Open, not authorized: R2 (count a failed verifier session's cost),
+      R3 (procedure checks for ignored `__pycache__`), RT2-07, a new dry
+      run.
 
 - **2026-11-03**, P-001 `--page` for the one-page dry run (local branch
   `repair/v2`; keyless only: no model run, no push). The authorized
