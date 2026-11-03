@@ -17,6 +17,8 @@ Implemented Phase 4, replacing its stub from Phase 2 (BLUEPRINT.md §9).
 from __future__ import annotations
 
 import json
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -27,12 +29,23 @@ from pathlib import Path
 import yaml
 
 from contracts.schemas import AdjudicationVerdict, ComplianceRule, ViolationFinding
+from intake.local_config import load_local_config
 from nodes.assembler import assemble_case
-from orchestrator.pipeline import VerifierInvocationError, finding_id_for
+from orchestrator.pipeline import ProviderError, VerifierInvocationError, finding_id_for
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = REPO_ROOT / "config.yaml"
 RUNNER_SCRIPT = REPO_ROOT / "nodes" / "verifier_runner.py"
+
+# D3: a machine-specific verifier checkout (the dedicated pinned clone)
+# comes from this env var, else from config.local.yaml, else config.yaml.
+REPO_PATH_ENV = "VERIFIER_REPO_PATH"
+# D3: when set, the subprocess writes the shipped agent's audit DB here
+# instead of inside the verifier checkout (nodes/verifier_runner.py).
+AUDIT_DB_ENV = "VERIFIER_AUDIT_DB"
+TIMEOUT_S = 600  # D6: wall-clock cap per verifier subprocess
+PROVIDER_STATUS_CODES = {401, 403, 429, 529}
+_API_STATUS_RE = re.compile(r"api_error_status=(\d+)")
 
 # Populated by every verify_finding() call: {finding_id, cost_usd,
 # num_turns} -- for dev/eval-leg cost+turns reporting only (BLUEPRINT.md
@@ -68,6 +81,11 @@ def load_verifier_config() -> dict:
     return config["verifier_agent"]
 
 
+def resolve_repo_path(config: dict) -> Path:
+    override = os.environ.get(REPO_PATH_ENV) or load_local_config().get("verifier_repo_path")
+    return Path(override or config["repo_path"]).resolve()
+
+
 def _check_pinned_commit(repo_path: Path, pinned_commit: str) -> None:
     result = subprocess.run(
         ["git", "-C", str(repo_path), "rev-parse", "HEAD"],
@@ -81,6 +99,30 @@ def _check_pinned_commit(repo_path: Path, pinned_commit: str) -> None:
             f"shipped repo HEAD {actual!r} does not match pinned_commit {pinned_commit!r} in config.yaml -- "
             "refusing to run against an unpinned version of the shipped agent"
         )
+
+
+def _check_clean_tree(repo_path: Path) -> None:
+    """D3: the shipped checkout must have no local change at all."""
+    result = subprocess.run(
+        ["git", "-C", str(repo_path), "status", "--porcelain"],
+        capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        raise VerifierConfigError(f"could not read git status of shipped repo: {result.stderr.strip()}")
+    if result.stdout.strip():
+        raise VerifierConfigError(
+            "shipped repo working tree is not clean -- refusing to run against a modified checkout"
+        )
+
+
+def check_verifier_checkout(config: dict | None = None) -> Path:
+    """Pin and clean-tree check (D3); also the runner's real-mode
+    preflight. Returns the resolved checkout path."""
+    config = config or load_verifier_config()
+    repo_path = resolve_repo_path(config)
+    _check_pinned_commit(repo_path, config["pinned_commit"])
+    _check_clean_tree(repo_path)
+    return repo_path
 
 
 def _write_case_files(case_dir: Path, files: dict[str, str]) -> None:
@@ -97,6 +139,7 @@ def verify_finding(
     model: str | None = None,
     max_budget_usd: float | None = None,
     config: dict | None = None,
+    audit_db_path: str | Path | None = None,
 ) -> dict:
     """Adjudicate one VIOLATION finding through the shipped agent,
     unmodified, as a subprocess. Returns a raw dict -- signature-
@@ -106,10 +149,11 @@ def verify_finding(
     dict / orchestrator-validates convention as agents.checker.harness.
     real_checker). Raises VerifierConfigError / VerifierInvocationError
     on any failure -- there is no partial or silently-degraded result.
+    audit_db_path, when given, redirects the shipped agent's audit DB
+    out of its checkout (D3).
     """
     config = config or load_verifier_config()
-    repo_path = Path(config["repo_path"]).resolve()
-    _check_pinned_commit(repo_path, config["pinned_commit"])
+    repo_path = check_verifier_checkout(config)
 
     model = model or config["models"]["dev"]
     max_budget_usd = max_budget_usd if max_budget_usd is not None else config["max_budget_usd"]["dev"]
@@ -118,14 +162,28 @@ def verify_finding(
     case_dir = repo_path / "evals" / "dataset" / case_id
 
     try:
+        env = dict(os.environ)
+        if audit_db_path is not None:
+            env[AUDIT_DB_ENV] = str(audit_db_path)
         files = assemble_case(finding, rule)
         _write_case_files(case_dir, files)
 
-        result = subprocess.run(
-            [sys.executable, str(RUNNER_SCRIPT), str(repo_path), case_id, run_id, model, str(max_budget_usd)],
-            capture_output=True, text=True, check=False,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, str(RUNNER_SCRIPT), str(repo_path), case_id, run_id, model, str(max_budget_usd)],
+                capture_output=True, text=True, check=False, timeout=TIMEOUT_S, env=env,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise TimeoutError(
+                f"verifier subprocess timed out after {TIMEOUT_S}s for finding {finding_id_for(finding)}"
+            ) from exc
         if result.returncode != 0:
+            status = _API_STATUS_RE.search(result.stderr)
+            if status and int(status.group(1)) in PROVIDER_STATUS_CODES:
+                raise ProviderError(
+                    f"verifier provider error api_error_status={status.group(1)} for finding "
+                    f"{finding_id_for(finding)}"
+                )
             raise VerifierInvocationError(
                 f"verifier subprocess exited {result.returncode} for finding "
                 f"{finding_id_for(finding)}: {result.stderr.strip()}"

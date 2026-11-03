@@ -1,9 +1,19 @@
-"""Local-HTML-only page access, scoped to evals/dataset/pages/. Mirrors
-ai-claim-verification-agent's agent/pages.py path-containment pattern
-(BLUEPRINT.md §3 no-network + FI-7 path-escape rejection).
+"""Local-HTML-only page access, scoped to one cage root (default
+evals/dataset/pages/). Mirrors ai-claim-verification-agent's
+agent/pages.py path-containment pattern (BLUEPRINT.md §3 no-network +
+FI-7 path-escape rejection).
+
+The page text follows the shared text rule (intake/textrule.py, RT1-11):
+headings, list items, table cells and every other block are kept (D1).
+
+For a private holdout the runner switches the cage root to the holdout's
+pages and sets an alias map, so agents see neutral page names and never a
+case ID (evals/eval_config.yaml holdout_markers). Pages are never copied.
+Error messages never name the cage root.
 """
-from html.parser import HTMLParser
 from pathlib import Path
+
+from intake.textrule import extract, normalize
 
 from .config import PAGES_ROOT
 
@@ -12,41 +22,32 @@ class PathOutsideDatasetError(ValueError):
     pass
 
 
-class _ParagraphExtractor(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.title = ""
-        self.paragraphs = []
-        self._in_title = False
-        self._in_p = False
-        self._buf = []
+_cage_root: Path = PAGES_ROOT
+# {neutral name shown to agents: real file name under the cage root}.
+# Empty means no aliasing: names resolve directly under the cage root.
+_aliases: dict[str, str] = {}
 
-    def handle_starttag(self, tag, attrs):
-        if tag == "title":
-            self._in_title = True
-        elif tag == "p":
-            self._in_p = True
-            self._buf = []
 
-    def handle_endtag(self, tag):
-        if tag == "title":
-            self._in_title = False
-        elif tag == "p":
-            if self._buf:
-                self.paragraphs.append("".join(self._buf).strip())
-            self._in_p = False
-            self._buf = []
+def configure_cage(root: Path, aliases: dict[str, str] | None = None) -> None:
+    """Switch the cage root (and optionally the alias map) for a run."""
+    global _cage_root, _aliases
+    _cage_root = Path(root).resolve()
+    _aliases = dict(aliases or {})
 
-    def handle_data(self, data):
-        if self._in_title and not self.title:
-            self.title = data.strip()
-        if self._in_p:
-            self._buf.append(data)
+
+def reset_cage() -> None:
+    global _cage_root, _aliases
+    _cage_root = PAGES_ROOT
+    _aliases = {}
+
+
+def _outside(rel_path: str) -> PathOutsideDatasetError:
+    return PathOutsideDatasetError(f"Path {rel_path!r} resolves outside the page cage -- rejected.")
 
 
 def resolve_page_path(rel_path: str) -> Path:
-    """Resolve a path relative to evals/dataset/pages/, rejecting any
-    escape attempt (FI-7)."""
+    """Resolve a page name inside the cage root, rejecting any escape
+    attempt (FI-7). With an alias map set, only alias names resolve."""
     if "\\" in rel_path:
         # Backslash is a path separator on Windows but a literal
         # filename character on POSIX -- the same string escapes on
@@ -54,22 +55,29 @@ def resolve_page_path(rel_path: str) -> Path:
         # everywhere, so the bound is OS-independent (design decision
         # 2026-07-24, ported from ai-claim-verification-agent commit
         # c3633e6).
-        raise PathOutsideDatasetError(
-            f"Path {rel_path!r} resolves outside evals/dataset/pages/ -- rejected."
-        )
-    candidate = (PAGES_ROOT / rel_path).resolve()
-    if not candidate.is_relative_to(PAGES_ROOT):
-        raise PathOutsideDatasetError(
-            f"Path {rel_path!r} resolves outside evals/dataset/pages/ -- rejected."
-        )
-    if not candidate.exists():
-        raise FileNotFoundError(f"No such file under evals/dataset/pages/: {rel_path}")
+        raise _outside(rel_path)
+    if _aliases:
+        if rel_path not in _aliases:
+            raise FileNotFoundError(f"No such page in the page cage: {rel_path}")
+        rel_path_on_disk = _aliases[rel_path]
+    else:
+        rel_path_on_disk = rel_path
+    candidate = (_cage_root / rel_path_on_disk).resolve()
+    if not candidate.is_relative_to(_cage_root):
+        raise _outside(rel_path)
+    if not candidate.is_file():
+        raise FileNotFoundError(f"No such page in the page cage: {rel_path}")
     return candidate
 
 
 def read_page(rel_path: str) -> tuple[str, list[str]]:
-    """Return (title, paragraphs) for an HTML file under evals/dataset/pages/."""
-    path = resolve_page_path(rel_path)
-    parser = _ParagraphExtractor()
-    parser.feed(path.read_text(encoding="utf-8"))
-    return parser.title, parser.paragraphs
+    """Return (title, text blocks) for a page in the cage, one block per
+    block-element boundary (shared text rule)."""
+    parsed = extract(resolve_page_path(rel_path).read_text(encoding="utf-8"))
+    return parsed.title, list(parsed.blocks)
+
+
+def read_visible_text(rel_path: str) -> str:
+    """Normalized visible text of a page in the cage (shared text rule)."""
+    parsed = extract(resolve_page_path(rel_path).read_text(encoding="utf-8"))
+    return normalize("".join(parsed.chunks))

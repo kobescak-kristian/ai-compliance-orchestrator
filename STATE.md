@@ -187,13 +187,14 @@ BLUEPRINT.md §9.
   - H2: frozen 2026-11-02 (blind labeling, adjudication and the full
     33-file manifest done, see Change Log). Open: one offline backup of
     the H2 folder and its records folder (owner action);
-  - authorize P2;
+  - authorize P2: done, 2026-11-03 (see the P2 Change Log entry);
   - P2 requirement (owner, 2026-11-02): `holdout_root` is the parent
     private folder; official run DBs and logs go under
     `holdout_root/runs/H2/`; no run output is written inside the H2
-    folder or the repository. Today `evals/run_eval.py` and the agents'
-    `audit.db` still write to the repo root. Verified before any model
-    evaluation run;
+    folder or the repository. Before P2, `evals/run_eval.py` and the
+    agents' `audit.db` wrote to the repo root; P2 moved run output under
+    `holdout_root/runs/` (the verifier's temporary case files are still a
+    P3 item). Must be verified before any model evaluation run;
   - paid-run authorization: proposed $30 notional for Haiku
     development runs; $110 notional per official series on
     claude-sonnet-4-6, unless the preflight finds it unavailable.
@@ -201,6 +202,8 @@ BLUEPRINT.md §9.
   reads the v1.0 gate keys, which gate v2 moved under `v1_reference`; a
   run would fail only at the end, after the model calls (review finding,
   2026-11-02). P2 rewrites the runner before any development run.
+  **Update 2026-11-03 (P2):** rewritten for gate v2; stub mode only
+  until the owner authorizes paid runs (see the P2 Change Log entry).
 - **Deferred, not done (cross-repo):** the incident-register entry in
   the governance repository for the misattributed July miss analysis (see the 2026-11-02
   note in `evals/EVAL_RESULTS.md`). Writes to other repositories are
@@ -267,6 +270,64 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-03**, P-001 P2 repairs (local branch `repair/v2`; keyless
+  only: no model run, no verifier run, no push). Owner authorized P2
+  under the approved plan.
+  - Shared text rule (RT1-11): `intake/textrule.py` holds the extractor
+    and `normalize`; `evals/check_holdout.py` imports them (self-check
+    behaviour unchanged), and the page reader and the checker tool use
+    the same module.
+  - D1: `read_page` returns the title and every text block (headings,
+    list items, table cells). The cage root and an alias map can be
+    switched per run, so holdout pages are shown under neutral names
+    and never copied; cage errors never name the root.
+  - D3: verifier checkout from env `VERIFIER_REPO_PATH` or
+    `config.local.yaml` (`intake/local_config.py`), else `config.yaml`;
+    clean-tree check next to the pin check; the verifier's audit DB is
+    redirected to the run directory by patching `agent.audit.AUDIT_DB_PATH`
+    in `nodes/verifier_runner.py` (the verifier and its pin unchanged).
+  - D4: the tool rejects a foreign or repeated rule_id; a check task
+    without exactly one finding per assigned rule dead-letters
+    (`COVERAGE`); an unknown rule in the verify stage ends in FAILED
+    (`UNKNOWN_RULE`).
+  - D5: a VIOLATION or COMPLIANT excerpt must be on the page (shared
+    text rule); an `ABSENT:` excerpt skips only this check.
+  - D6: wall-clock caps in both harnesses and on the verifier
+    subprocess; agent failures end in FAILED with `BUDGET_EXCEEDED`,
+    `PROVIDER_ERROR`, `TIMEOUT` or `AGENT_ERROR` (`agents/outcome.py`).
+  - D8: page content delimited in `fetch_page` output, one system-prompt
+    rule plus the ABSENT/verbatim rules, `html.escape` in the assembler.
+  - D2, D9: `evals/run_eval.py` rewritten for gate v2 (preflight, A1,
+    A3, N runs with fresh DBs under `holdout_root/runs/`, storage guard,
+    A2 incl. planner integrity and the resume check, B grading,
+    sanitized results, result classes and exit codes). Default stub.
+    A failed holdout self-check ends as NOT ENOUGH CASES, not INVALID
+    RUN: under the gate's `valid_case` rule a case must pass the
+    self-check, so none is valid (both stop before any score and exit
+    non-zero). The leak check (holdout markers, incl. the holdout_root
+    path in its JSON-escaped form) reads the checker/planner audit DB
+    and the verifier's own audit DB. Proposals do not store
+    `evidence_refs`, so planner integrity resolves a proposal to its
+    finding by page and rule_id.
+  - Ruleset v1.1: the 14 signed texts in `rulesets/*.json`, all 24
+    rules at `v1.1`. Owner decision: `datasets.ruleset_sha256` in
+    `evals/eval_config.yaml` filled with the three file hashes (LF
+    content); no criterion changed. New gate fingerprint: SHA-256 (LF)
+    `d386930e4c5dd9778e950fbb0161a9ffa8df73119e6a8ba8456d3e75ba03ebd8`,
+    blob `c9cf9885ec9aca346382f498921e59c126f26ef6` (was `1f3bb41e…`).
+    Rule files (LF): DEU `604ea05b…`, GBR `0194bb40…`, MLT `09bedd80…`
+    (full values in the gate file).
+  - Evidence: `python -m pytest -q -p no:cacheprovider` 133 passed, exit
+    0 (was 41). `python .githooks/validate_artifacts.py .` "Tier 0:
+    PASS". Stub July series with a temporary `holdout_root`: exit 0,
+    output only under `runs/`, A3 3 of 3 passed, no repository file
+    changed.
+  - Not done (deferred by owner ruling): the about 8 D10 dev pages,
+    before any Haiku run. Open for P3: the dedicated pinned verifier
+    clone and the location of the verifier's temporary case files (still
+    written inside the verifier checkout); no model run until every
+    storage location is verified.
 
 - **2026-11-02**, P-001 H2 freeze (local branch `repair/v2`; no code
   change, no model run of the system, no push). Owner authorized

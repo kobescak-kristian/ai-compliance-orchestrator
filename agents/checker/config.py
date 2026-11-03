@@ -16,6 +16,7 @@ MAX_TURNS = 20
 MAX_BUDGET_USD = 0.25  # per-task ceiling for Haiku dev runs
 EVAL_MAX_BUDGET_USD = 1.50  # per-task ceiling for Sonnet gate runs, Phase 6
 MAX_TOOL_CALLS = 60  # circuit breaker: hard backstop independent of max_turns
+TIMEOUT_S = 600  # wall-clock cap per CheckTask run (D6)
 
 MCP_SERVER_NAME = "compliancecheck"
 TOOL_NAMES = ["fetch_page", "read_ruleset", "emit_finding"]

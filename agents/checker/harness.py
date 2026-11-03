@@ -10,6 +10,7 @@ import sqlite3
 
 import anyio
 from claude_agent_sdk import (
+    AssistantMessage,
     ClaudeAgentOptions,
     HookMatcher,
     ResultMessage,
@@ -18,11 +19,12 @@ from claude_agent_sdk import (
 )
 
 from contracts.schemas import CheckTask
+from agents.outcome import raise_for_outcome
 from orchestrator.pipeline import BudgetExceededError
 
 from . import tools
 from .audit import audit_hook, init_audit_db, set_run_context
-from .config import MAX_BUDGET_USD, MAX_TURNS, MCP_SERVER_NAME, MODEL, QUALIFIED_TOOL_NAMES
+from .config import MAX_BUDGET_USD, MAX_TURNS, MCP_SERVER_NAME, MODEL, QUALIFIED_TOOL_NAMES, TIMEOUT_S
 from .prompts import build_system_prompt, build_user_prompt
 
 # Populated after each real_checker() call: the ResultMessage from the
@@ -68,15 +70,19 @@ async def _run_checker_async(
     prompt = build_user_prompt(task.page_path, task.jurisdiction, task.assigned_rules)
 
     result: ResultMessage | None = None
-    async for msg in query(prompt=prompt, options=options):
-        if isinstance(msg, ResultMessage):
-            result = msg
+    assistant_errors: list[str] = []
+    # D6: wall-clock cap; TimeoutError ends the task in FAILED (TIMEOUT).
+    with anyio.fail_after(TIMEOUT_S):
+        async for msg in query(prompt=prompt, options=options):
+            if isinstance(msg, AssistantMessage) and msg.error:
+                assistant_errors.append(msg.error)
+            if isinstance(msg, ResultMessage):
+                result = msg
     last_result = result
 
     if tools.circuit_breaker_tripped():
         raise BudgetExceededError(f"checker circuit breaker tripped for {task_id}")
-    if result is not None and result.is_error:
-        raise BudgetExceededError(f"checker run ended in error for {task_id}: {result.subtype}")
+    raise_for_outcome(f"checker run for {task_id}", result, assistant_errors)
 
     return list(tools.findings)
 

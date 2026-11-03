@@ -10,6 +10,8 @@ verifier re-deriving the claim from scratch needs and nothing more.
 """
 from __future__ import annotations
 
+import html
+
 from agents.checker.pages import read_page
 from contracts.schemas import ComplianceRule, ViolationFinding
 
@@ -26,8 +28,10 @@ def build_claim_text(finding: ViolationFinding, rule: ComplianceRule) -> str:
 
 
 def _html_page(title: str, paragraphs: list[str]) -> str:
-    body = "\n".join(f"<p>{p}</p>" for p in paragraphs)
-    return f"<html><head><title>{title}</title></head><body>\n{body}\n</body></html>"
+    """Every text value is HTML-escaped (D8): page text and the checker's
+    excerpt are data and must not become markup in the verifier's case."""
+    body = "\n".join(f"<p>{html.escape(p, quote=False)}</p>" for p in paragraphs)
+    return f"<html><head><title>{html.escape(title, quote=False)}</title></head><body>\n{body}\n</body></html>"
 
 
 def assemble_case(finding: ViolationFinding, rule: ComplianceRule) -> dict[str, str]:
@@ -44,8 +48,8 @@ def assemble_case(finding: ViolationFinding, rule: ComplianceRule) -> dict[str, 
         f"Rule {rule.rule_id} ({rule.jurisdiction})", [rule.rule_text]
     )
 
-    _page_title, page_paragraphs = read_page(finding.page_path)
-    page_source_html = _html_page(finding.page_path, page_paragraphs)
+    _page_title, page_blocks = read_page(finding.page_path)
+    page_source_html = _html_page(finding.page_path, page_blocks)
 
     return {
         "target.html": target_html,

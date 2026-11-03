@@ -5,10 +5,11 @@ holdout every time: key structure, page/key agreement, the mix rules
 exits 1 and writes nothing.
 
 Prints IDs and counts only, never page text: the holdout stays private
-(eval-gate exception, owner, 2026-11-02). Visible text comes from this
-file's own full-text extractor, independent of the system's page reader
-(agents/checker/pages.py) on purpose -- check A3 later compares that
-reader against the key.
+(eval-gate exception, owner, 2026-11-02). Visible text comes from the
+shared text rule in intake/textrule.py, which the system's page reader
+(agents/checker/pages.py) also uses (RT1-11, P2); check A3 in
+evals/run_eval.py compares the reader's output against this text and the
+key.
 
 Usage (from the repo root):
   python evals/check_holdout.py HOLDOUT_DIR
@@ -22,9 +23,7 @@ import argparse
 import hashlib
 import re
 import sys
-import unicodedata
 from collections import Counter
-from html.parser import HTMLParser
 from pathlib import Path
 
 import yaml
@@ -34,6 +33,16 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from intake.inventory import KNOWN_JURISDICTIONS, extract_markets, load_rulesets  # noqa: E402
+# Shared text rule (RT1-11): imported, and re-exported for existing callers.
+from intake.textrule import (  # noqa: E402,F401
+    BLOCK_TAGS,
+    ELLIPSIS,
+    LAYOUT_TAGS,
+    SKIP_TAGS,
+    extract,
+    normalize,
+    visible_text,
+)
 
 RULESETS_DIR = REPO_ROOT / "rulesets"
 
@@ -59,20 +68,6 @@ INJECTION_MIN = 2
 WORDS_MIN, WORDS_MAX = 150, 450
 LEAK_WORDS = ("answer key", "answer_key", "holdout", "primary decision", "expected verdict")
 
-BLOCK_TAGS = {
-    "address", "article", "aside", "blockquote", "br", "dd", "div", "dl", "dt",
-    "figcaption", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "header",
-    "hr", "li", "main", "nav", "ol", "p", "section", "table", "tbody", "td", "tfoot",
-    "th", "thead", "title", "tr", "ul",
-}
-LAYOUT_TAGS = {
-    "heading": {"h1", "h2", "h3", "h4", "h5", "h6"},
-    "list": {"li"},
-    "table": {"td", "th"},
-    "p": {"p"},
-}
-SKIP_TAGS = {"script", "style", "template"}
-
 
 class CheckFailed(Exception):
     pass
@@ -96,92 +91,6 @@ def _construct_mapping(loader, node, deep=False):
 _UniqueKeyLoader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping
 )
-
-
-_SINGLE_QUOTES = (0x2018, 0x2019, 0x201A, 0x201B, 0x2039, 0x203A, 0x0060)
-_DOUBLE_QUOTES = (0x201C, 0x201D, 0x201E, 0x201F, 0x00AB, 0x00BB)
-_DASHES = (0x2010, 0x2011, 0x2012, 0x2013, 0x2014, 0x2015, 0x2212, 0xFE58, 0xFE63, 0xFF0D)
-_CHAR_MAP = {c: "'" for c in _SINGLE_QUOTES} | {c: '"' for c in _DOUBLE_QUOTES} | {c: "-" for c in _DASHES}
-ELLIPSIS = chr(0x2026)
-
-
-def normalize(text: str) -> str:
-    """Normalization shared with evidence grading; steps run in the order
-    listed in evals/eval_config.yaml evidence_grading.normalize_steps_in_order."""
-    text = unicodedata.normalize("NFKC", text)
-    text = "".join(c for c in text if unicodedata.category(c) != "Cf")
-    text = text.casefold().translate(_CHAR_MAP).replace("...", ELLIPSIS)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-class _TextExtractor(HTMLParser):
-    """All text outside script/style and comments, plus the text of each
-    heading, list item, table cell and paragraph element on its own."""
-
-    def __init__(self):
-        super().__init__(convert_charrefs=True)
-        self.chunks: list[str] = []
-        self.elements: dict[str, list[str]] = {k: [] for k in LAYOUT_TAGS}
-        self.body_signature: list[str] = []
-        self._skip = 0
-        self._skip_stack: list[str] = []
-        self._in_body = False
-        self._open: list[tuple[str, list[str]]] = []
-
-    def handle_starttag(self, tag, attrs):
-        if self._skip:
-            if tag == self._skip_stack[-1]:
-                self._skip_stack.append(tag)
-                self._skip += 1
-            return
-        if tag in SKIP_TAGS or any(name == "hidden" for name, _ in attrs):
-            self._skip_stack.append(tag)
-            self._skip += 1
-            return
-        if tag == "body":
-            self._in_body = True
-        elif self._in_body:
-            cls = dict(attrs).get("class") or ""
-            self.body_signature.append(f"{tag}.{cls}")
-        if tag in BLOCK_TAGS:
-            self.chunks.append(" ")
-        for layout, tags in LAYOUT_TAGS.items():
-            if tag in tags:
-                self._open.append((layout, []))
-
-    def handle_endtag(self, tag):
-        if self._skip:
-            if tag == self._skip_stack[-1]:
-                self._skip_stack.pop()
-                self._skip -= 1
-            return
-        if tag in BLOCK_TAGS:
-            self.chunks.append(" ")
-        for layout, tags in LAYOUT_TAGS.items():
-            if tag in tags:
-                for i in range(len(self._open) - 1, -1, -1):
-                    if self._open[i][0] == layout:
-                        name, buf = self._open.pop(i)
-                        self.elements[name].append(normalize("".join(buf)))
-                        break
-
-    def handle_data(self, data):
-        if self._skip:
-            return
-        self.chunks.append(data)
-        for _, buf in self._open:
-            buf.append(data)
-
-
-def extract(html_text: str) -> _TextExtractor:
-    parser = _TextExtractor()
-    parser.feed(html_text)
-    parser.close()
-    return parser
-
-
-def visible_text(html_text: str) -> str:
-    return normalize("".join(extract(html_text).chunks))
 
 
 def _load_rules(rulesets_dir: Path) -> tuple[dict[str, list[str]], dict[str, str], dict[str, str]]:

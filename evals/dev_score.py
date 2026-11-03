@@ -16,6 +16,8 @@ Usage:
 """
 from __future__ import annotations
 
+import json
+import re
 import sqlite3
 import sys
 import time
@@ -56,13 +58,23 @@ def load_answer_key() -> dict:
         return yaml.safe_load(f)["answer_key"]
 
 
-def assert_no_key_leak(run_id: str) -> None:
+def assert_no_key_leak(
+    run_id: str,
+    db_path=AUDIT_DB_PATH,
+    extra_markers: tuple[str, ...] | list[str] = (),
+    patterns: tuple[str, ...] | list[str] = (),
+) -> None:
     """Bounds check (BLUEPRINT.md §7): every tool_input/tool_response this
     run logged must be free of answer-key markers. This is the harness-
-    side guarantee the dev leg's numbers mean anything at all."""
-    if not AUDIT_DB_PATH.exists():
-        raise RuntimeError(f"no audit.db at {AUDIT_DB_PATH} -- cannot verify no key leak")
-    conn = sqlite3.connect(AUDIT_DB_PATH)
+    side guarantee the dev leg's numbers mean anything at all.
+
+    db_path selects the run's own audit DB; extra_markers and patterns
+    (regexes) add the holdout markers of evals/eval_config.yaml
+    component_a.holdout_markers for a holdout run."""
+    db_path = Path(db_path)
+    if not db_path.exists():
+        raise RuntimeError(f"no audit DB at {db_path.name} -- cannot verify no key leak")
+    conn = sqlite3.connect(db_path)
     try:
         rows = conn.execute(
             "SELECT id, payload FROM tool_calls WHERE run_id = ?", (run_id,)
@@ -71,13 +83,25 @@ def assert_no_key_leak(run_id: str) -> None:
         conn.close()
     if not rows:
         raise RuntimeError(f"no tool_calls rows for run_id={run_id!r} -- cannot verify no key leak")
+    markers = [m for m in (*LEAK_MARKERS, *extra_markers) if m]
+    # Payloads are stored with json.dumps, which escapes backslashes and
+    # quotes (a Windows path appears with doubled backslashes), so each
+    # marker is also searched in its JSON-escaped form.
+    forms = {m: (m, json.dumps(m)[1:-1]) for m in markers}
+    compiled = [re.compile(p) for p in patterns]
     for row_id, payload in rows:
-        for marker in LEAK_MARKERS:
-            if marker in payload:
+        for marker in markers:
+            if any(form in payload for form in forms[marker]):
                 raise AssertionError(
-                    f"BOUNDS VIOLATION: answer-key marker {marker!r} found in "
-                    f"audit.db tool_calls row {row_id} (run_id={run_id}) -- "
-                    "the answer key leaked into agent input/output."
+                    f"BOUNDS VIOLATION: answer-key or holdout marker found in "
+                    f"audit tool_calls row {row_id} (run_id={run_id}) -- "
+                    "key or holdout material leaked into agent input/output."
+                )
+        for rx in compiled:
+            if rx.search(payload):
+                raise AssertionError(
+                    f"BOUNDS VIOLATION: holdout case-ID pattern found in audit "
+                    f"tool_calls row {row_id} (run_id={run_id})."
                 )
 
 

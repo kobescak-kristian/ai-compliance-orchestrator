@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 
 
@@ -38,6 +39,16 @@ def main() -> None:
 
         from agent.harness import run_case_result  # noqa: E402 -- shipped repo, unmodified
 
+        # D3: keep the shipped agent's audit DB out of its checkout. Its
+        # agent/audit.py does `from .config import AUDIT_DB_PATH`, so the
+        # name is patched on agent.audit itself (agent.config alone would
+        # not reach it). The shipped code on disk is not changed.
+        audit_db = os.environ.get("VERIFIER_AUDIT_DB")
+        if audit_db:
+            import agent.audit  # noqa: E402 -- shipped repo, unmodified
+
+            agent.audit.AUDIT_DB_PATH = audit_db
+
         result, findings = asyncio.run(
             run_case_result(case_id, run_id=run_id, model=model, max_budget_usd=float(max_budget_usd))
         )
@@ -46,7 +57,14 @@ def main() -> None:
         sys.exit(1)
 
     if result.is_error:
-        print(f"shipped agent run ended in error for case {case_id!r}: {result.subtype}", file=sys.stderr)
+        # api_error_status lets nodes/verifier.py tell a provider error
+        # (auth, rate limit, overload) from an agent error (D6).
+        status = getattr(result, "api_error_status", None)
+        print(
+            f"shipped agent run ended in error for case {case_id!r}: {result.subtype} "
+            f"api_error_status={status}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     payload = {
