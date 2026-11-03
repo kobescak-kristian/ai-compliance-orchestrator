@@ -29,6 +29,7 @@ from pathlib import Path
 
 import yaml
 
+from agents.outcome import SUBSCRIPTION_LIMIT_RE
 from contracts.schemas import AdjudicationVerdict, ComplianceRule, ViolationFinding
 from intake.local_config import load_local_config
 from nodes.assembler import assemble_case
@@ -48,6 +49,14 @@ AUDIT_DB_ENV = "VERIFIER_AUDIT_DB"
 # folder instead of <checkout>/evals/dataset (nodes/verifier_runner.py).
 DATASET_ROOT_ENV = "VERIFIER_DATASET_ROOT"
 TIMEOUT_S = 600  # D6: wall-clock cap per verifier subprocess
+# Owner decision D1 (2026-11-03): agent sessions run on the owner's
+# subscription login only. These variables would make the CLI use API
+# billing or a cloud provider instead, so the subprocess never gets them
+# and evals/run_eval.py --real refuses to start while one is set.
+NON_SUBSCRIPTION_AUTH_ENV = (
+    "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN",
+    "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CODE_USE_FOUNDRY",
+)
 PROVIDER_STATUS_CODES = {401, 403, 429, 529}
 _API_STATUS_RE = re.compile(r"api_error_status=(\d+)")
 
@@ -172,7 +181,7 @@ def verify_finding(
     case_dir = dataset_root / case_id
 
     try:
-        env = dict(os.environ)
+        env = {k: v for k, v in os.environ.items() if k not in NON_SUBSCRIPTION_AUTH_ENV}
         if audit_db_path is not None:
             env[AUDIT_DB_ENV] = str(audit_db_path)
         if case_root is not None:
@@ -196,6 +205,8 @@ def verify_finding(
                     f"verifier provider error api_error_status={status.group(1)} for finding "
                     f"{finding_id_for(finding)}"
                 )
+            if SUBSCRIPTION_LIMIT_RE.search(result.stderr):
+                raise ProviderError(f"verifier provider subscription usage limit for finding {finding_id_for(finding)}")
             raise VerifierInvocationError(
                 f"verifier subprocess exited {result.returncode} for finding "
                 f"{finding_id_for(finding)}: {result.stderr.strip()}"

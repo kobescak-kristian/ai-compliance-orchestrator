@@ -30,6 +30,12 @@ LAYOUT_TAGS = {
     "p": {"p"},
 }
 SKIP_TAGS = {"script", "style", "template"}
+# Void elements have no end tag and no text (RT2-08): a hidden one is
+# dropped on its own and never opens a skip region.
+VOID_TAGS = {
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+    "param", "source", "track", "wbr",
+}
 
 _SINGLE_QUOTES = (0x2018, 0x2019, 0x201A, 0x201B, 0x2039, 0x203A, 0x0060)
 _DOUBLE_QUOTES = (0x201C, 0x201D, 0x201E, 0x201F, 0x00AB, 0x00BB)
@@ -91,6 +97,8 @@ class _TextExtractor(HTMLParser):
                 self._skip += 1
             return
         if tag in SKIP_TAGS or any(name == "hidden" for name, _ in attrs):
+            if tag in VOID_TAGS:
+                return
             self._skip_stack.append(tag)
             self._skip += 1
             return

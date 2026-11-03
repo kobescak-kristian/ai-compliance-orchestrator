@@ -33,6 +33,7 @@ import contextlib
 import functools
 import hashlib
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -241,11 +242,25 @@ def _row(name: str, run_index: int, failures: int | None) -> dict:
             "count": failures}
 
 
+def latest_states(conn: sqlite3.Connection) -> list[tuple[str, str, str]]:
+    """(task_id, stage, state) of each task's latest ledger row."""
+    return conn.execute(
+        "SELECT t.task_id, t.stage, t.state FROM task_ledger t JOIN "
+        "(SELECT task_id, stage, MAX(id) AS id FROM task_ledger GROUP BY task_id, stage) m ON t.id = m.id"
+    ).fetchall()
+
+
 def planner_integrity(conn: sqlite3.Connection, run_id: str, page_text_for) -> list[tuple[str, int]]:
     """Gate a2_run_derived.planner_integrity; (check, failures) pairs.
     proposals do not persist evidence_refs; a proposal resolves to its
     finding by page_path + rule_id (the rule_id encodes the market, so
-    this is the same finding as task_id + '::' + rule_id)."""
+    this is the same finding as task_id + '::' + rule_id).
+
+    Owner clarification RT2-06 (2026-11-03, gate v2.0 lines 33-35): a
+    CONFIRMED finding whose plan task ended FAILED needs zero proposals
+    instead of one; every other one needs exactly one, and every stored
+    proposal still passes all checks below."""
+    plan_failed = {t for t, stage, state in latest_states(conn) if stage == "plan" and state == "FAILED"}
     findings = {(f.page_path, f.rule_id): f for f in get_findings(conn)}
     adjudications = {a.finding_id: a for a in get_adjudications(conn)}
     proposals = conn.execute(
@@ -272,7 +287,10 @@ def planner_integrity(conn: sqlite3.Connection, run_id: str, page_text_for) -> l
         if not proposed.strip() or (text_based and proposed.strip() == offending.strip()):
             bad_proposed += 1
     confirmed_cells = {k for k, f in findings.items() if f.verdict.value == "VIOLATION" and confirmed(f)}
-    one_each = sum(1 for k in confirmed_cells if per_cell.get(k, 0) != 1)
+    one_each = sum(
+        1 for k in confirmed_cells
+        if per_cell.get(k, 0) != (0 if f"{findings[k].task_id}::{findings[k].rule_id}" in plan_failed else 1)
+    )
     whitelist = sum(1 for n in PLANNER_TOOL_NAMES if re.search(r"approv|reject|status", n, re.I))
     return [
         ("planner_one_pending_proposal_per_confirmed", one_each + not_pending),
@@ -326,10 +344,7 @@ def a2_checks(ctx: "RunContext") -> list[dict]:
     coverage = sum(1 for cell in expected if assigned.get(cell, 0) != 1) + len(set(assigned) - expected)
     rows.append(_row("coverage_each_rule_in_one_task", k, coverage))
 
-    latest = conn.execute(
-        "SELECT t.task_id, t.stage, t.state FROM task_ledger t JOIN "
-        "(SELECT task_id, stage, MAX(id) AS id FROM task_ledger GROUP BY task_id, stage) m ON t.id = m.id"
-    ).fetchall()
+    latest = latest_states(conn)
     not_terminal = sum(1 for _t, _s, state in latest if state not in TERMINAL_STATES)
     check_ids = {t for t, s, _ in latest if s == "check"}
     lost = sum(1 for t in ctx.tasks if f"{t.page_path}::{t.jurisdiction}" not in check_ids)
@@ -367,19 +382,27 @@ def a2_checks(ctx: "RunContext") -> list[dict]:
             names = {r[0] for r in audit.execute("SELECT DISTINCT tool_name FROM tool_calls WHERE run_id = ?", (ctx.run_id,))}
         finally:
             audit.close()
+        # Owner clarification RT2-06 (2026-11-03, gate v2.0 lines 33-35):
+        # only DONE check tasks need audit rows. A FAILED or DEAD_LETTER
+        # check task stores no finding (atomic stage) and is a miss in B;
+        # its count is a diagnostic row below.
         rows.append(_row("independence_model_call_per_task", k, sum(
-            1 for t in ctx.tasks if f"{t.page_path}::{t.jurisdiction}" not in audited
+            1 for t in ctx.tasks
+            if f"{t.page_path}::{t.jurisdiction}" in done and f"{t.page_path}::{t.jurisdiction}" not in audited
         )))
         rows.append(_row("audit_tools_whitelisted", k, len(names - set(CHECKER_TOOLS) - set(PLANNER_TOOLS))))
         # Checker and planner audit DB, plus the verifier's own audit DB
-        # (same tool_calls schema; it exists only if the verifier ran).
+        # (same tool_calls schema). A marker is always a leak; a missing DB
+        # or no rows fails only when a DONE task should have logged there.
         leak = 0
-        verifier_db = ctx.run_dir / "verifier_audit.db"
-        for db in (ctx.audit_db, *([verifier_db] if verifier_db.is_file() else [])):
+        verify_done = any(s == "verify" and state == "DONE" for _t, s, state in latest)
+        for db, expected in ((ctx.audit_db, bool(done)), (ctx.run_dir / "verifier_audit.db", verify_done)):
             try:
                 assert_no_key_leak(ctx.run_id, db_path=db, extra_markers=ctx.leak_markers, patterns=[CASE_ID_PATTERN])
-            except (AssertionError, RuntimeError):  # a leak, or no rows to verify
+            except AssertionError:  # a leak
                 leak += 1
+            except RuntimeError:  # no DB or no rows to verify
+                leak += expected
         rows.append(_row("no_key_or_holdout_marker", k, leak))
         from nodes.verifier import VerifierConfigError, check_verifier_checkout
 
@@ -403,6 +426,12 @@ def a2_checks(ctx: "RunContext") -> list[dict]:
     rows.append(_row("resume_zero_calls_zero_rows", k, resume_failures))
     for name, failures in planner_integrity(conn, ctx.run_id, ctx.page_text):
         rows.append(_row(name, k, failures))
+    # RT2-06 diagnostics, not checks (passed is None): the tasks the
+    # clarification exempts, published so the exemption stays visible.
+    for name, stage, states in (("diagnostic_check_tasks_failed_or_dead_letter", "check", {"FAILED", "DEAD_LETTER"}),
+                                ("diagnostic_plan_tasks_failed", "plan", {"FAILED"})):
+        count = sum(1 for _t, s, state in latest if s == stage and state in states)
+        rows.append({"check_name": name, "run_index": k, "passed": None, "count": count})
     return rows
 
 
@@ -760,8 +789,11 @@ def run_series(
     manifest_dir: Path = MANIFEST_DIR,
     results_dir: Path = RESULTS_DIR,
     run_a1: bool | None = None,
+    auth: dict | None = None,
 ) -> tuple[str, dict, Path | None]:
-    """Run one series; return (result, sanitized results, results path)."""
+    """Run one series; return (result, sanitized results, results path).
+    auth (D1: auth method, provider, plan type) goes to auth.json in the
+    private series folder; the frozen results allowlist has no field for it."""
     if not (dataset_name == "july" or HOLDOUT_ID_RE.match(dataset_name)):
         raise ValueError(f"unknown dataset {dataset_name!r}")
     if gated and not HOLDOUT_ID_RE.match(dataset_name):
@@ -808,6 +840,9 @@ def run_series(
             out = series_dir / "results.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(results, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+        if auth:
+            series_dir.mkdir(parents=True, exist_ok=True)
+            (series_dir / "auth.json").write_text(json.dumps(auth, indent=2) + "\n", encoding="utf-8")
         return result, results, out
 
     try:
@@ -897,6 +932,43 @@ def run_series(
         planner_audit.set_audit_db_path(planner_audit.AUDIT_DB_PATH)
 
 
+def _sdk_cli_path() -> Path:
+    import claude_agent_sdk
+
+    return Path(claude_agent_sdk.__file__).parent / "_bundled" / ("claude.exe" if sys.platform == "win32" else "claude")
+
+
+def subscription_auth(env: dict[str, str], auth_status=None) -> tuple[str | None, dict]:
+    """Owner decision D1 (2026-11-03): real runs use the subscription login
+    only. Returns (why a real run must not start, or None; the auth method,
+    provider and plan type to record, never the email). auth_status
+    returns the CLI's `auth status` JSON; it is a local check, not a model
+    call. Never reads or prints a credential value."""
+    from nodes.verifier import NON_SUBSCRIPTION_AUTH_ENV
+
+    present = sorted(k for k in NON_SUBSCRIPTION_AUTH_ENV if env.get(k))
+    if present:
+        return f"non-subscription auth variable set: {', '.join(present)}", {}
+    if auth_status is None:
+        def auth_status() -> dict:
+            cli = _sdk_cli_path()
+            if not cli.is_file():
+                raise FileNotFoundError("the Agent SDK's bundled CLI was not found")
+            child = {k: v for k, v in env.items() if k != "CLAUDECODE"}  # as the SDK starts it
+            out = subprocess.run([str(cli), "auth", "status"], capture_output=True, text=True, env=child, timeout=60)
+            return json.loads(out.stdout)
+    try:
+        status = auth_status()
+    except Exception as exc:  # noqa: BLE001 -- any failure to confirm the login refuses the run
+        return f"auth status not confirmed: {type(exc).__name__}", {}
+    facts = {"auth_method": status.get("authMethod"), "api_provider": status.get("apiProvider"),
+             "subscription_type": status.get("subscriptionType")}
+    if not (status.get("loggedIn") and status.get("authMethod") == "claude.ai"
+            and status.get("apiProvider") == "firstParty"):
+        return f"auth method is {status.get('authMethod')!r} via {status.get('apiProvider')!r}, not the subscription login", facts
+    return None, facts
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset", required=True, help="july or a holdout ID such as H2")
@@ -915,15 +987,26 @@ def main(argv: list[str] | None = None) -> int:
     if not holdout_root:
         print("usage: set holdout_root in config.local.yaml or pass --holdout-root")
         return EXIT_USAGE
+    auth = None
+    if args.real:
+        problem, auth = subscription_auth(dict(os.environ))
+        if problem:
+            print(f"REFUSED: {problem}")
+            return EXIT_USAGE
     try:
-        result, results, out = run_series(args.dataset, Path(holdout_root), runs=args.runs, real=args.real, gated=args.gated)
+        result, results, out = run_series(args.dataset, Path(holdout_root), runs=args.runs, real=args.real,
+                                          gated=args.gated, auth=auth)
     except (ValueError, StorageError) as exc:
         print(f"usage: {exc}")
         return EXIT_USAGE
-    a_rows = results["component_a"]
+    a_rows = [r for r in results["component_a"] if not r["check_name"].startswith("diagnostic_")]
+    diagnostics = [r for r in results["component_a"] if r["check_name"].startswith("diagnostic_")]
     print(f"series: {results['series']['series_id']}")
     print(f"component A: {sum(r['passed'] is True for r in a_rows)} passed, "
           f"{sum(r['passed'] is False for r in a_rows)} failed, {sum(r['passed'] is None for r in a_rows)} not run")
+    if diagnostics:
+        print(f"failed tasks (diagnostic): check {sum(r['count'] for r in diagnostics if 'check' in r['check_name'])}, "
+              f"plan {sum(r['count'] for r in diagnostics if 'plan' in r['check_name'])}")
     agg = results["aggregates"]
     if agg:
         print(f"component B: {agg['cases_passed']} cases passed, {agg['cases_failed']} failed, "

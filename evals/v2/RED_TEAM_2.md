@@ -234,6 +234,8 @@ record the raw provider error type in `payload_ref` so the decision is
 
 Disposition: pending owner ruling (gate clarification: do `server_error` and a missing ResultMessage count as provider overload, that is INVALID RUN?). No change made.
 
+Owner ruling 2026-11-03 (option b; gate text unchanged): INVALID RUN only when the logged provider type or status shows auth failure, rate limit or overload, and a subscription usage-limit message counts as a provider rate limit. `server_error` without such a status and a missing ResultMessage stay agent errors (a miss), with the raw types logged. Changed the build: `agents/outcome.py` (usage-limit message on an error result is a provider error; every agent-error message logs the raw assistant error types, `api_error_status` and, when a ResultMessage exists, the first 300 characters of its error text), `nodes/verifier_runner.py` (prints the error text and errors of an errored run), `nodes/verifier.py` (usage-limit message is a provider error). Remaining gap, accepted: a verifier run that ends without a ResultMessage has no logged type and stays a miss (the shipped verifier is not changed). Tests: `test_d6_outcome_mapping` (new rows), `test_rt2_05_*`.
+
 ---
 
 ## RT2-06: One agent failure makes component A fail, although the gate says it should not
@@ -270,6 +272,8 @@ failure or only a recorded diagnostic; then align the three checks and
 add keyless tests.
 
 Disposition: pending owner ruling (the gate lines conflict; the build keeps the stricter reading until the owner rules). No change made.
+
+Owner clarification 2026-11-03 (gate v2.0 text unchanged; recorded before any judged run): under lines 33-35, an A2 line that needs an artifact of a task (an audit row, a proposal) applies to tasks that ended DONE. A check task that ended FAILED or DEAD_LETTER, or a plan task that ended FAILED, passes A2 when it is terminal, recorded with an error class and stored no finding or proposal; their counts are published as diagnostic rows. Changed the build (`evals/run_eval.py`): independence counts DONE check tasks only (FAILED and DEAD_LETTER check tasks store no finding and are misses in B); the leak check fails on any marker, and on a missing audit DB or no rows only when a DONE task should have logged there (checker and planner DB: a DONE check task; verifier DB: a DONE verify task); planner integrity needs zero proposals for a CONFIRMED finding whose plan task ended FAILED and exactly one for every other, and every stored proposal still passes every planner check. A plan task that ended DONE without a proposal or DEAD_LETTER still fails A. New component A rows `diagnostic_check_tasks_failed_or_dead_letter` and `diagnostic_plan_tasks_failed` (passed is None, count is the number of tasks). Tests: `test_rt2_06_*`.
 
 ---
 
@@ -308,6 +312,8 @@ sessions in a neutral per-run directory whose path holds no
 
 Disposition: pending owner ruling. Facts: our prompts hold no marker (code reading); whether the CLI tells the model its working directory is not verified. Proposed: check it in the authorized real dry run on a July page (transcript of public data); if the directory reaches the model, the owner decides between a neutral per-run agent directory (amends decision 2A) and accepting it. No change made.
 
+Owner ruling 2026-11-03: approved as proposed. No change now; the check is made in the real July dry run (not yet authorized), and a neutral per-run directory follows only if the path reaches the model.
+
 ---
 
 ## RT2-08: A hidden void element hides the rest of the page from the reader and the grader
@@ -333,6 +339,8 @@ Smallest fix: code: do not push void elements on the skip stack; add
 the case to the RT1-11 shared-text-rule test.
 
 Disposition: pending owner ruling. The fix is in the shared text rule, which is also the grader (RT1-11), and the gate and scorer are frozen. No change made.
+
+Owner ruling 2026-11-03: fix approved; it brings the code in line with the frozen `shared_text_rule` text (no judged run exists yet; the H2 manifest hashes files, not extracted text). Changed the build: `intake/textrule.py` drops a hidden void element on its own and never opens a skip region for it. Probe page above now gives `'offer 100% risk-free bet markets: gbr'`. Test: the RT1-11 shared-text-rule test (`test_shared_text_rule_same_text_for_grader_reader_and_tool`) gained a hidden `<input>` and `<img>` before trailing text. H2 manifest check and self-check rerun: "manifest: match", "Holdout self-check: PASS". A3 on H2 rerun (keyless, counts only): `a3_grader_blocks_in_reader`, `a3_triggers_and_spans_in_reader` and `a3_absent_content_not_in_reader` passed, 0 failures each, 30 cases.
 
 ---
 
@@ -446,7 +454,7 @@ Disposition of the sweep rows:
 - keyless test, added: one sentence triggers rules in two markets (`test_sweep_one_sentence_triggers_rules_in_two_markets`); verifier failure on one of two findings fails the whole task, neither asserted (`test_sweep_verifier_failure_on_one_of_two_findings_fails_the_whole_task`);
 - dev case, listed for the D10 batch (public development pages; their briefs and keys are written when D10 is authorized, keys by the three-actor protocol): a distractor next to the real trigger; terms split between a heading and a paragraph; an injected instruction on a page (RT2-10 is fixed);
 - fix, done: RT2-01, RT2-03, RT2-04, RT2-09 rows;
-- owner ruling: RT2-06 rows (planner failure, session with no tool call) and RT2-08 (hidden void element).
+- owner ruling: RT2-06 rows (planner failure, session with no tool call) and RT2-08 (hidden void element). Ruled 2026-11-03 and fixed (see RT2-06 and RT2-08).
 
-Four findings (RT2-05 to RT2-08) wait for an owner ruling; this line is updated when they are ruled.
-Findings: 11; changed the build: 7; changed the test: 0; no change: 0; pending owner ruling: 4
+RT2-05 to RT2-08 were ruled by the owner on 2026-11-03: RT2-05, RT2-06 and RT2-08 changed the build; RT2-07 is checked in the real July dry run.
+Findings: 11; changed the build: 10; changed the test: 0; no change: 1; pending owner ruling: 0

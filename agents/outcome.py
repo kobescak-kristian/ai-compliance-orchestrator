@@ -5,6 +5,8 @@ fields, so it is testable without a model call.
 """
 from __future__ import annotations
 
+import re
+
 from orchestrator.pipeline import BudgetExceededError, ProviderError
 
 BUDGET_SUBTYPES = {"error_max_turns", "error_max_budget_usd"}
@@ -12,6 +14,15 @@ BUDGET_SUBTYPES = {"error_max_turns", "error_max_budget_usd"}
 PROVIDER_ASSISTANT_ERRORS = {"authentication_failed", "rate_limit", "billing_error"}
 # ResultMessage.api_error_status codes: auth, forbidden, rate limit, overload.
 PROVIDER_STATUS_CODES = {401, 403, 429, 529}
+# Subscription usage-limit messages (Claude Code error reference). Owner
+# ruling RT2-05 (2026-11-03): a provider rate limit, so INVALID RUN; any
+# other error without a provider type or status stays an agent error.
+SUBSCRIPTION_LIMIT_RE = re.compile(r"hit your (session|weekly|opus|sonnet) limit", re.IGNORECASE)
+
+
+def _error_texts(result) -> list[str]:
+    texts = [getattr(result, "result", None), *(getattr(result, "errors", None) or [])]
+    return [t for t in texts if isinstance(t, str)]
 
 
 class AgentRunError(Exception):
@@ -27,7 +38,8 @@ def raise_for_outcome(label: str, result, assistant_errors: list[str]) -> None:
             raise ProviderError(f"{label}: provider error {err}")
     if result is None:
         if assistant_errors:
-            raise AgentRunError(f"{label}: run ended with assistant error {assistant_errors[-1]}")
+            # RT2-05: the raw types are logged (payload_ref), never mapped to a provider error
+            raise AgentRunError(f"{label}: run ended without a ResultMessage; assistant errors {assistant_errors}")
         return
     status = getattr(result, "api_error_status", None)
     if status in PROVIDER_STATUS_CODES:
@@ -36,4 +48,11 @@ def raise_for_outcome(label: str, result, assistant_errors: list[str]) -> None:
         return
     if result.subtype in BUDGET_SUBTYPES:
         raise BudgetExceededError(f"{label}: run ended in error: {result.subtype}")
-    raise AgentRunError(f"{label}: run ended in error: {result.subtype}")
+    texts = _error_texts(result)
+    if any(SUBSCRIPTION_LIMIT_RE.search(t) for t in texts):
+        raise ProviderError(f"{label}: provider subscription usage limit")
+    # RT2-05: the raw provider types, status and error text are logged (payload_ref)
+    raise AgentRunError(
+        f"{label}: run ended in error: {result.subtype} api_error_status={status} "
+        f"assistant errors {assistant_errors} error text {' | '.join(texts)[:300]!r}"
+    )

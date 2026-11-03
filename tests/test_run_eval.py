@@ -69,7 +69,7 @@ def _planner(finding):
     return payload
 
 
-def _scenario(tmp_path, checker=_checker):
+def _scenario(tmp_path, checker=_checker, planner=_planner):
     july = re_.load_july()
     dataset = replace(july, cases=[c for c in july.cases if c.case_id == "p01"])
     tasks = re_.build_tasks(dataset, RULESETS)
@@ -80,7 +80,7 @@ def _scenario(tmp_path, checker=_checker):
     run_check_stage(tasks, checker, conn)
     findings = get_findings(conn)
     run_verify_stage(findings, RULES_BY_ID, verifier_stub.stub_verifier, conn, run_id)
-    run_plan_stage(re_._confirmed(conn, findings), _planner, conn)
+    run_plan_stage(re_._confirmed(conn, findings), planner, conn)
     ctx = re_.RunContext(dataset, CONFIG, 1, run_id, tmp_path, db_path, tmp_path / "audit.db", conn, tasks,
                          RULESETS, RULES_BY_ID, False, False, [])
     return ctx
@@ -221,6 +221,163 @@ def test_a2_leak_check_also_reads_the_verifier_audit_db(tmp_path, monkeypatch):
         conn.commit()
         conn.close()
     assert _a2(ctx)["no_key_or_holdout_marker"]["passed"] is False
+
+
+# --------------------------------------------------------------------------
+# RT2-06 owner clarification (2026-11-03): an A2 line that needs an
+# artifact of a task applies to DONE tasks; FAILED tasks (and DEAD_LETTER
+# check tasks) are counted as diagnostics instead
+# --------------------------------------------------------------------------
+
+def _audit_rows(db, run_id, task_ids):
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE tool_calls (id INTEGER PRIMARY KEY, run_id TEXT, task_id TEXT, tool_name TEXT, payload TEXT)")
+    for task_id in task_ids:
+        conn.execute("INSERT INTO tool_calls (run_id, task_id, tool_name, payload) VALUES (?, ?, "
+                     "'mcp__compliancecheck__fetch_page', '{}')", (run_id, task_id))
+    conn.commit()
+    conn.close()
+
+
+def _real(ctx, monkeypatch):
+    import nodes.verifier as verifier
+
+    monkeypatch.setattr(verifier, "check_verifier_checkout", lambda *a, **k: None)
+    ctx.real = True
+    return ctx
+
+
+def _planner_failing_on(rule_id):
+    def planner(finding):
+        if finding.rule_id == rule_id:
+            raise TimeoutError("planner timed out")
+        return _planner(finding)
+    return planner
+
+
+def test_rt2_06_failed_plan_task_needs_zero_proposals_and_is_counted(tmp_path):
+    rows = _a2(_scenario(tmp_path, planner=_planner_failing_on("MLT-BT-01")))
+    assert [n for n, r in rows.items() if r["passed"] is False] == []
+    assert rows["planner_one_pending_proposal_per_confirmed"]["count"] == 0
+    assert rows["diagnostic_plan_tasks_failed"] == {
+        "check_name": "diagnostic_plan_tasks_failed", "run_index": 1, "passed": None, "count": 1}
+    assert rows["diagnostic_check_tasks_failed_or_dead_letter"]["count"] == 0
+
+
+def test_rt2_06_failed_plan_task_with_a_stored_proposal_still_fails(tmp_path):
+    ctx = _scenario(tmp_path, planner=_planner_failing_on("MLT-BT-01"))
+    ctx.conn.execute(
+        "INSERT INTO proposals (content_hash, rule_id, task_id, page_path, offending_text, proposed_text, status, "
+        "created_by_run_id, created_at) SELECT 'planted', 'MLT-BT-01', 'p01.html::MLT-BT-01', page_path, "
+        "'ABSENT: wagering requirement', 'Add the missing term.', 'PENDING', created_by_run_id, created_at "
+        "FROM proposals LIMIT 1")
+    ctx.conn.commit()
+    _fail(ctx, "planner_one_pending_proposal_per_confirmed")
+
+
+@pytest.mark.parametrize("planner_result", [None, {}])  # DONE with no proposal; schema DEAD_LETTER
+def test_rt2_06_done_or_dead_letter_plan_task_without_proposal_still_fails(tmp_path, planner_result):
+    def planner(finding):
+        return planner_result if finding.rule_id == "MLT-BT-01" else _planner(finding)
+
+    ctx = _scenario(tmp_path, planner=planner)
+    _fail(ctx, "planner_one_pending_proposal_per_confirmed")
+    assert _a2(ctx)["diagnostic_plan_tasks_failed"]["count"] == 0
+
+
+@pytest.mark.parametrize("bad_checker_output", ["raise", "short"])  # FAILED; COVERAGE DEAD_LETTER
+def test_rt2_06_independence_skips_failed_check_task_without_audit_rows(tmp_path, monkeypatch, bad_checker_output):
+    def checker(task):
+        if task.jurisdiction == "MLT":
+            if bad_checker_output == "raise":
+                raise TimeoutError("checker timed out")
+            return _checker(task)[:1]  # one rule short: COVERAGE dead-letter
+        return _checker(task)
+
+    ctx = _real(_scenario(tmp_path, checker=checker), monkeypatch)
+    _audit_rows(ctx.audit_db, ctx.run_id, ["p01.html::GBR"])
+    _audit_rows(tmp_path / "verifier_audit.db", ctx.run_id, ["p01.html::GBR::GBR-BT-02"])
+    rows = _a2(ctx)
+    assert rows["independence_model_call_per_task"]["passed"] is True
+    assert rows["no_key_or_holdout_marker"]["passed"] is True
+    assert rows["diagnostic_check_tasks_failed_or_dead_letter"]["count"] == 1
+
+
+def test_rt2_06_done_check_task_without_audit_rows_still_fails_independence(tmp_path, monkeypatch):
+    ctx = _real(_scenario(tmp_path), monkeypatch)
+    _audit_rows(ctx.audit_db, ctx.run_id, ["p01.html::GBR"])  # p01.html::MLT is DONE with no audit row
+    _audit_rows(tmp_path / "verifier_audit.db", ctx.run_id, ["p01.html::GBR::GBR-BT-02"])
+    _fail(ctx, "independence_model_call_per_task")
+
+
+def test_rt2_06_missing_audit_trail_fails_only_when_a_done_task_should_have_one(tmp_path, monkeypatch):
+    # verify tasks are DONE but the verifier audit DB is missing: an audit gap
+    ctx = _real(_scenario(tmp_path / "a"), monkeypatch)
+    _audit_rows(ctx.audit_db, ctx.run_id, ["p01.html::GBR", "p01.html::MLT"])
+    _fail(ctx, "no_key_or_holdout_marker")
+    # the verifier DB exists but holds no rows for this run, with DONE verify tasks: also a gap
+    _audit_rows(tmp_path / "a" / "verifier_audit.db", ctx.run_id, [])
+    _fail(ctx, "no_key_or_holdout_marker")
+
+    # no VIOLATION, so no verify task ran: a missing verifier DB is not a gap
+    def compliant(task):
+        return [{**p, "verdict": "COMPLIANT", "evidence_excerpt": "ABSENT: n/a"} for p in _checker(task)]
+
+    ctx2 = _real(_scenario(tmp_path / "b", checker=compliant), monkeypatch)
+    _audit_rows(ctx2.audit_db, ctx2.run_id, ["p01.html::GBR", "p01.html::MLT"])
+    assert _a2(ctx2)["no_key_or_holdout_marker"]["passed"] is True
+
+    # DONE check tasks but no checker/planner audit rows at all: a gap
+    ctx3 = _real(_scenario(tmp_path / "c", checker=compliant), monkeypatch)
+    _audit_rows(ctx3.audit_db, ctx3.run_id, [])
+    _fail(ctx3, "no_key_or_holdout_marker")
+
+
+# --------------------------------------------------------------------------
+# D1 owner decision (2026-11-03): real runs use the subscription login only
+# --------------------------------------------------------------------------
+
+SUBSCRIPTION = {"loggedIn": True, "authMethod": "claude.ai", "apiProvider": "firstParty", "subscriptionType": "max"}
+
+
+def test_d1_subscription_guard():
+    def problem(env, status):
+        return re_.subscription_auth(env, auth_status=lambda: status)[0]
+
+    assert re_.subscription_auth({}, auth_status=lambda: {**SUBSCRIPTION, "email": "someone@example.invalid"}) == (
+        None, {"auth_method": "claude.ai", "api_provider": "firstParty", "subscription_type": "max"})  # never the email
+    refused = problem({"ANTHROPIC_API_KEY": "placeholder-value"}, SUBSCRIPTION)
+    assert "ANTHROPIC_API_KEY" in refused and "placeholder-value" not in refused
+    assert problem({"CLAUDE_CODE_USE_VERTEX": "1"}, SUBSCRIPTION)
+    for method in ("api_key", "api_key_helper", "oauth_token", "third_party", "none"):
+        assert problem({}, {**SUBSCRIPTION, "authMethod": method})
+    assert problem({}, {**SUBSCRIPTION, "apiProvider": "bedrock"})
+    assert problem({}, {**SUBSCRIPTION, "loggedIn": False})
+
+    def broken():
+        raise FileNotFoundError("no CLI")
+    assert "not confirmed" in re_.subscription_auth({}, auth_status=broken)[0]
+
+
+def test_d1_auth_facts_recorded_privately_beside_the_results(tmp_path):
+    root = _build(tmp_path)
+    mdir = _manifest(tmp_path, root)
+    page = root / "pages" / "h9-05.html"
+    page.write_text(page.read_text(encoding="utf-8") + " ", encoding="utf-8")  # fast path: INVALID RUN
+    facts = {"auth_method": "claude.ai", "api_provider": "firstParty", "subscription_type": "max"}
+    _result, results, out = re_.run_series("H9", tmp_path, runs=1, manifest_dir=mdir,
+                                           results_dir=tmp_path / "results", auth=facts)
+    assert json.loads((out.parent / "auth.json").read_text(encoding="utf-8")) == facts
+    assert out.parent.is_relative_to(tmp_path / "runs")  # private run directory, never Git
+    assert "auth_method" not in results["series"]  # the frozen results allowlist is unchanged
+
+
+def test_d1_real_run_refused_before_any_output(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "placeholder-value")
+    assert re_.main(["--dataset", "july", "--real", "--holdout-root", str(tmp_path)]) == re_.EXIT_USAGE
+    out = capsys.readouterr().out
+    assert "REFUSED" in out and "placeholder-value" not in out
+    assert not (tmp_path / "runs").exists()
 
 
 # --------------------------------------------------------------------------

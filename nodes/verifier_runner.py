@@ -34,10 +34,9 @@ def main() -> None:
     sys.path.insert(0, repo_path)
 
     try:
-        from dotenv import load_dotenv
-
-        load_dotenv()
-
+        # Owner decision D1 (2026-11-03): no dotenv load. load_dotenv()
+        # searched upward from this folder and could pick up an API key
+        # outside the repository; the session uses the subscription login.
         from agent.harness import run_case_result  # noqa: E402 -- shipped repo, unmodified
 
         # D3: keep the shipped agent's audit DB out of its checkout. Its
@@ -74,11 +73,13 @@ def main() -> None:
 
     if result.is_error:
         # api_error_status lets nodes/verifier.py tell a provider error
-        # (auth, rate limit, overload) from an agent error (D6).
+        # (auth, rate limit, overload) from an agent error (D6); the error
+        # text lets it see a subscription usage-limit message (RT2-05).
         status = getattr(result, "api_error_status", None)
         print(
             f"shipped agent run ended in error for case {case_id!r}: {result.subtype} "
-            f"api_error_status={status}",
+            f"api_error_status={status} error_text={(getattr(result, 'result', None) or '')[:300]!r} "
+            f"errors={(getattr(result, 'errors', None) or [])!r}",
             file=sys.stderr,
         )
         sys.exit(1)

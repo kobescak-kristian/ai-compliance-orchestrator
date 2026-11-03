@@ -38,6 +38,7 @@ from orchestrator.ledger import create_db
 from orchestrator.pipeline import (
     BudgetExceededError,
     ProviderError,
+    VerifierInvocationError,
     get_adjudications,
     get_findings,
     run_check_stage,
@@ -103,6 +104,7 @@ RT1_11_HTML = (
     "<ul><li>“quoted” – dash</li><li>zero​width...</li></ul>"
     "<table><tr><td>cell&nbsp;a</td><td>cell b</td></tr></table>"
     "<script>hidden()</script><div hidden>secret</div><!-- comment -->"
+    "<input type='hidden' name='t' hidden><img hidden src='x.png'><p>after void</p>"
     "</body></html>"
 )
 
@@ -119,6 +121,8 @@ def test_shared_text_rule_same_text_for_grader_reader_and_tool(tmp_path):
     assert "bigoffer" in grader and '"quoted" - dash' in grader
     assert "zerowidth…" in grader and "cell a cell b" in grader
     assert "hidden()" not in grader and "secret" not in grader and "comment" not in grader
+    # RT2-08: a hidden void element has no end tag and must not hide the rest
+    assert grader.endswith("cell a cell b after void")
     # the tool's excerpt check reads the same text
     assert textrule.excerpt_on_page("“Quoted” — dash", reader)
     assert textrule.excerpt_on_page("one ... cell a", reader)
@@ -289,6 +293,11 @@ def _result(**kw):
     (None, ["authentication_failed"], ProviderError),
     (_result(is_error=True, subtype="error_during_execution", api_error_status=500), [], AgentRunError),
     (None, ["server_error"], AgentRunError),
+    # RT2-05 ruling: a subscription usage-limit message is a provider rate limit, only on an error result
+    (_result(is_error=True, result="You've hit your weekly limit - resets 3am"), [], ProviderError),
+    (_result(is_error=True, errors=["You’ve hit your Sonnet limit"]), [], ProviderError),
+    (_result(result="You've hit your session limit"), [], None),
+    (_result(is_error=True, result="API Error: 500 server_error"), [], AgentRunError),
 ])
 def test_d6_outcome_mapping(result, errors, expected):
     if expected is None:
@@ -296,6 +305,17 @@ def test_d6_outcome_mapping(result, errors, expected):
     else:
         with pytest.raises(expected):
             raise_for_outcome("x", result, errors)
+
+
+def test_rt2_05_agent_error_logs_raw_provider_type_and_status():
+    """RT2-05: the raw error types and status reach payload_ref, so the
+    INVALID RUN decision is made from logged error types."""
+    with pytest.raises(AgentRunError, match=r"\['server_error', 'unknown'\]"):
+        raise_for_outcome("x", None, ["server_error", "unknown"])
+    with pytest.raises(AgentRunError, match="api_error_status=500") as exc:
+        raise_for_outcome("x", _result(is_error=True, subtype="success", api_error_status=500,
+                                       result="API Error: 500 internal"), ["server_error"])
+    assert "['server_error']" in str(exc.value) and "API Error: 500 internal" in str(exc.value)
 
 
 async def _slow_query(prompt, options):
@@ -385,6 +405,15 @@ FAKE_AGENT = {
             if mode == "rate_limit":
                 return SimpleNamespace(is_error=True, subtype="error_during_execution",
                                        api_error_status=429, total_cost_usd=0, num_turns=0), []
+            if mode == "subscription_limit":
+                return SimpleNamespace(is_error=True, subtype="success", api_error_status=None,
+                                       result="You've hit your session limit", total_cost_usd=0, num_turns=0), []
+            if mode == "server_error":
+                return SimpleNamespace(is_error=True, subtype="success", api_error_status=500,
+                                       result="API Error: 500", total_cost_usd=0, num_turns=0), []
+            for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_USE_BEDROCK"):
+                if os.environ.get(name):
+                    raise RuntimeError("non-subscription auth variable reached the verifier: " + name)
             if not (DATASET_ROOT / case_id).is_dir():
                 raise FileNotFoundError("no such case under the dataset root")
             pages.read_page(f"{case_id}/source_page.html")
@@ -453,6 +482,31 @@ def test_d6_verifier_timeout_and_provider_error(fake_verifier, monkeypatch):
     monkeypatch.setenv("FAKE_VERIFIER_MODE", "rate_limit")
     with pytest.raises(ProviderError):
         verifier.verify_finding(_finding(), _rule(), "run1", config=config)
+
+
+def test_rt2_05_verifier_subscription_limit_is_provider_error(fake_verifier, tmp_path, monkeypatch):
+    _repo, config = fake_verifier
+    audit_db = tmp_path / "verifier_audit.db"
+    monkeypatch.setenv("FAKE_VERIFIER_MODE", "subscription_limit")
+    with pytest.raises(ProviderError):
+        verifier.verify_finding(_finding(), _rule(), "run1", config=config, audit_db_path=audit_db)
+    monkeypatch.setenv("FAKE_VERIFIER_MODE", "server_error")  # no provider status: stays an agent-side failure, logged raw
+    with pytest.raises(VerifierInvocationError, match="api_error_status=500") as exc:
+        verifier.verify_finding(_finding(), _rule(), "run1", config=config, audit_db_path=audit_db)
+    assert not isinstance(exc.value, ProviderError)
+
+
+def test_d1_verifier_subprocess_gets_no_api_key_and_loads_no_dotenv(fake_verifier, monkeypatch):
+    """Owner decision D1: subscription login only. A key in the parent
+    environment never reaches the verifier, and the runner loads no
+    dotenv file (load_dotenv searched upward, outside the repository)."""
+    _repo, config = fake_verifier
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "placeholder-not-a-key")
+    monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "1")
+    record = verifier.verify_finding(_finding(), _rule(), "run1", config=config)
+    assert record["verdict"].value == "CONFIRMED"
+    runner_code = verifier.RUNNER_SCRIPT.read_text(encoding="utf-8")
+    assert not re.search(r"^\s*(from dotenv\b|import dotenv\b|load_dotenv\()", runner_code, re.MULTILINE)
 
 
 # --------------------------------------------------------------------------

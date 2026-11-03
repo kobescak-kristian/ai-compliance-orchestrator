@@ -200,16 +200,27 @@ BLUEPRINT.md §9.
     Git repository; keyless checks done. Still OPEN: the run-time
     metadata check before the first real run (see the P3 Change Log
     entry and `evals/PREFLIGHT.md` section 3);
-  - P3 owner rulings still open: RT2-05 (provider overload signals),
-    RT2-06 (does one failed agent task fail component A), RT2-07 (does
-    the CLI tell the model its working directory; checked in the real
-    dry run), RT2-08 (hidden void element in the shared text rule); see
-    `evals/v2/RED_TEAM_2.md`;
+  - P3 owner rulings RT2-05 to RT2-08: ruled 2026-11-03 (see the
+    post-P3 rulings Change Log entry and `evals/v2/RED_TEAM_2.md`).
+    Still open from them: RT2-07 is checked in the real July dry run;
   - D10 development pages (plus the three page-level sweep cases from
-    red team 2): need a separate authorization, before any Haiku run;
-  - paid-run authorization: proposed $30 notional for Haiku
-    development runs; $110 notional per official series on
-    claude-sonnet-4-6, unless the preflight finds it unavailable.
+    red team 2): need a separate authorization, before any Haiku run.
+    Exception approved in principle (owner, 2026-11-03, D6): one
+    infrastructure-only dry run on 1 public July page, `--runs 1`, not
+    a result, nothing tuned from it, may come before D10; the run itself
+    is not authorized;
+  - paid-run authorization: none given. Billing route (owner,
+    2026-11-03, D1): subscription login only, no API key; the budgets
+    ($30 notional for Haiku development runs, $110 notional per official
+    series on claude-sonnet-4-6) are client-side cost estimates, not
+    charges. Proposed enforcement for development runs (D6, not yet
+    exercised): runs authorized one at a time; after each, the actual
+    `cost_usd` total is recorded here; no next run if that total plus the
+    next run's hard upper bound exceeds $30. Owner action before any
+    real run: confirm usage credits (extra usage) and auto-reload are off
+    in Settings > Usage. Suggestion, not ruled: start real runs from a
+    plain terminal, because a Claude Code session passes its own
+    `CLAUDE_CODE_*` variables to child processes.
 - **Do not run `evals/run_eval.py` until P2 rewrites it.** It still
   reads the v1.0 gate keys, which gate v2 moved under `v1_reference`; a
   run would fail only at the end, after the model calls (review finding,
@@ -282,6 +293,50 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-03**, P-001 post-P3 rulings (local branch `repair/v2`;
+  keyless only: no model run, no real verifier run, no API spending,
+  no push). Owner rulings on the decision brief D1-D6; the frozen gate,
+  scoring rules, rulesets, H2 manifest and H2 files are unchanged.
+  - D1, billing: subscription login (option A). Facts found: the SDK's
+    bundled CLI (2.1.191) reports `authMethod` `claude.ai`, plan `max`,
+    with Claude variables removed; no API-key or cloud-provider variable
+    in the process or the persistent environment; no `env` or
+    `apiKeyHelper` in any settings file; SDK 0.2.110 does not pass
+    `--bare`. Risk found: `nodes/verifier_runner.py` called
+    `load_dotenv()`, which resolved to a dotenv file in the user's home
+    folder (its names were not read). Changed: that call is removed; the
+    verifier subprocess never gets `ANTHROPIC_API_KEY`,
+    `ANTHROPIC_AUTH_TOKEN` or a `CLAUDE_CODE_USE_*` provider variable;
+    `evals/run_eval.py --real` refuses to start (exit 64, before any
+    output) if one is set or if `auth status` does not report the
+    subscription login. The auth method, provider and plan type (never
+    the email) are written to `auth.json` in the private series folder;
+    the frozen results allowlist has no field for them, so they never
+    enter Git.
+  - D2, RT2-05 (option b): a subscription usage-limit message on an
+    error result is a provider rate limit (INVALID RUN); other errors
+    without a provider type or status stay agent errors, raw types
+    logged.
+  - D3, RT2-06: owner clarification of gate v2.0 lines 33-35 (text
+    unchanged): A2 lines that need a task's artifact apply to DONE tasks;
+    FAILED (and DEAD_LETTER check) tasks pass when terminal, recorded
+    and without stored output, and are counted in two diagnostic rows.
+  - D4, RT2-07: checked in the real July dry run; no change now.
+  - D5, RT2-08: hidden void elements no longer hide the rest of the
+    page (shared text rule).
+  - D6: one-page July dry run before D10 approved in principle; no run
+    authorized.
+  - Evidence: `python -m pytest -q -p no:cacheprovider` 176 passed, exit
+    0 (was 158). `python .githooks/validate_artifacts.py .` "Tier 0:
+    PASS", exit 0. H2 `check_holdout.py --verify-manifest`: "manifest:
+    match", "Holdout self-check: PASS", exit 0. A3 on H2 (keyless, counts
+    only, owner-approved in D5): 3 of 3 checks passed, 0 failures, 30
+    cases, manifest mismatches 0. Stub
+    July series, exit 0, output only under a scratch `holdout_root`;
+    component A and B counts equal to the same stub run of `2dcb29c`
+    (A 36 passed, 3 failed, 12 not run; B 5 passed, 7 failed, 10
+    unclean pages; stub results are not meaningful).
 
 - **2026-11-03**, P-001 P3 preparation (local branch `repair/v2`;
   keyless only: no model run, no real verifier run, no push). Owner
