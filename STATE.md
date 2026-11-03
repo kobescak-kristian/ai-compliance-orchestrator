@@ -219,6 +219,10 @@ BLUEPRINT.md §9.
     not resolved) and the p01 NO_OVERLAP observation (assess in P3
     development testing, before P4); any further run needs a new
     authorization (see the dry-run 2 Change Log entry);
+    **update 2026-11-03:** D10 preparation authorized by Kristian; 10
+    pages, briefs and a draft key built, awaiting blind labeling and
+    Kristian's adjudication (see the D10 Change Log entry). The runner
+    has no D10 dataset option yet;
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -303,6 +307,57 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-03**, P-001 D10 development pages, preparation up to blind
+  labeling (local branch `repair/v2`; no model evaluation, no H2 access,
+  no push). Authorized by Kristian: D10 preparation under the plan and
+  `evals/v2/SCENARIO_SPEC.md` §8, stop for the independent labeling.
+  - Status: **awaiting blind labeling and Kristian's adjudication.** The
+    key is a draft; it is not approved.
+  - Authors (§6 steps 1-3): spec author (Claude, fresh context) wrote
+    `evals/dataset/d10/briefs.md` and the draft key; page author (Claude,
+    a different fresh session, briefs only, never saw the key) built
+    `evals/dataset/d10/pages/d01.html` to `d10.html`; spec author second
+    pass: no cell changed, no page edit. One coordinator change before
+    the pages were built: the MLT-GE-01 violation moved from d03 to d10,
+    off a cell marked UNSURE. One required cell is still marked UNSURE:
+    d08 MLT-RG-01 (items V-MLT-RG-01 and INJ-hide); if adjudication makes
+    it COMPLIANT, both items are lost.
+    `evals/dataset/d10/key.yaml` is the second-pass draft (112 cells).
+    Neither author opened H1, H2, the private folder or the July pages
+    or key.
+  - Coverage: all 16 items. Violation cells for DEU-BT-01 (d06),
+    DEU-RG-01 (d07), MLT-BT-01 (d10), MLT-RG-01 (d08), MLT-RG-02 (d07),
+    MLT-GE-01 (d10); near-misses: terms only in a heading (d01), claim
+    only in a heading (d02), operator links only in a list (d03),
+    "risk-free" next to a real free offer (d04), calm reminder next to
+    real urgency (d05); injection hiding a violation (d08), creating a
+    false one (d09); red team 2 sweep: distractor (d06), terms split
+    between heading and paragraph (d07), injected instruction to fetch
+    another page (d10). Primaries: 5 VIOLATION, 4 COMPLIANT, 1
+    NOT_APPLICABLE. July plus D10: every rule has at least one VIOLATION
+    and one non-violation cell; DEU-BT-02, DEU-PC-01 and DEU-PC-03 have
+    no applicable COMPLIANT cell (only NOT_APPLICABLE).
+  - Checks (keyless). D10 page check: a one-off session check, not a
+    committed test, so it cannot be re-run from the repo. It ran the
+    frozen `evals/check_holdout.py` on the D10 folder and set aside the
+    rules that apply only to a holdout (30 cases, holdout case names,
+    the holdout verdict mix): 22 such holdout-only messages, 0 errors on
+    the D10 pages; the three reader-visibility checks (A3) passed, 3 of
+    3, count 0 each; every coverage item maps to a page; result "D10
+    check: PASS", exit 0. Repeatable from the repo:
+    `python -m pytest -q -p no:cacheprovider` 190 passed, exit 0;
+    `python .githooks/validate_artifacts.py .` "Tier 0: PASS", exit 0.
+  - Blind-labeling packet (pages, the 24 signed v1.1 rule texts,
+    instructions, an empty 112-cell template, hash list) and a handoff
+    note: in a private folder outside Git; packet built from the pages
+    and rule files only, no leak words, page copies byte-identical.
+    Three applicability-semantics wording changes for a labeler without
+    briefs need Kristian's approval before sending (listed in the
+    handoff note).
+  - Open: blind labeling (Kristian); adjudication (Kristian); runner
+    support for a D10 dataset before any D10 run; any model run needs
+    a new authorization.
 
 - **2026-11-03**, P-001 July dry run 2 (R1 regression check), Kristian's
   ruling R2 and its implementation (local branch `repair/v2`; no push).
