@@ -5,6 +5,8 @@ history (last at commit 35323ab) with the July FAIL it produced.
 One call runs one series on one dataset:
   - the July development set (evals/dataset/pages/, key v1.0, primaries
     in evals/v2/july_primaries.yaml): reported, never gated;
+  - the D10 development set (evals/dataset/d10/pages/, final key
+    evals/dataset/d10/key.yaml): reported, never gated;
   - a private holdout H<n> under holdout_root (config.local.yaml or
     --holdout-root): manifest check and self-check first, then A3, then
     N runs.
@@ -21,6 +23,7 @@ not used in P2.
 
 Usage (from the repo root):
   python evals/run_eval.py --dataset july [--runs N] [--holdout-root PATH] [--page ID] [--real]
+  python evals/run_eval.py --dataset d10 [--runs N] [--holdout-root PATH] [--real]
   python evals/run_eval.py --dataset H2 [--runs N] [--holdout-root PATH] [--real [--gated]]
 Exit codes: 0 completed series (PASS or FAIL); 2 INVALID RUN;
 3 NOT ENOUGH CASES; 64 usage error. Console output is IDs and counts
@@ -82,6 +85,8 @@ RULESETS_DIR = REPO_ROOT / "rulesets"
 JULY_PAGES_DIR = REPO_ROOT / "evals" / "dataset" / "pages"
 JULY_KEY_PATH = REPO_ROOT / "evals" / "answer_key.yaml"
 JULY_PRIMARIES_PATH = REPO_ROOT / "evals" / "v2" / "july_primaries.yaml"
+D10_DIR = REPO_ROOT / "evals" / "dataset" / "d10"
+DEV_DATASETS = ("july", "d10")
 MANIFEST_DIR = REPO_ROOT / "evals" / "v2" / "holdouts"
 RESULTS_DIR = REPO_ROOT / "evals" / "results"
 
@@ -154,6 +159,18 @@ def load_july() -> Dataset:
         name = f"{case_id}.html"
         cases.append(Case(case_id, name, JULY_PAGES_DIR / name, targets, cells, dict(primary)))
     return Dataset("july", False, JULY_PAGES_DIR, cases)
+
+
+def load_d10() -> Dataset:
+    """D10 development set (evals/v2/SCENARIO_SPEC.md §8), final key. The
+    cage root is the pages folder, so key.yaml beside it is out of reach."""
+    key = yaml.safe_load((D10_DIR / "key.yaml").read_text(encoding="utf-8"))
+    pages_dir = D10_DIR / "pages"
+    cases = []
+    for case_id, entry in sorted(key["pages"].items()):
+        cases.append(Case(str(case_id), entry["file"], pages_dir / entry["file"], list(entry["targets"]),
+                          dict(entry["cells"]), dict(entry["primary"])))
+    return Dataset("d10", False, pages_dir, cases)
 
 
 def load_holdout(holdout_root: Path, holdout_id: str) -> Dataset:
@@ -813,10 +830,10 @@ def run_series(
     For the same reason the R2 console diagnostics (failed verify tasks,
     estimated verifier cost) go to console_diagnostics, never to results."""
     console_diagnostics.clear()
-    if not (dataset_name == "july" or HOLDOUT_ID_RE.match(dataset_name)):
+    if not (dataset_name in DEV_DATASETS or HOLDOUT_ID_RE.match(dataset_name)):
         raise ValueError(f"unknown dataset {dataset_name!r}")
     if gated and not HOLDOUT_ID_RE.match(dataset_name):
-        raise ValueError("the July set is development data and is never gated")
+        raise ValueError(f"the {dataset_name} set is development data and is never gated")
     if page is not None:
         # Development only (owner, 2026-11-03): one July page, e.g. the real
         # dry run. Never on a holdout or in a gated series.
@@ -890,6 +907,9 @@ def run_series(
             if len(dataset.cases) < config["component_b"]["claim"]["min_cases"]:
                 raise NotEnoughCases(f"{len(dataset.cases)} valid cases")
             pages.configure_cage(dataset.pages_dir, dataset.aliases)
+        elif dataset_name == "d10":
+            dataset = load_d10()
+            pages.configure_cage(dataset.pages_dir)
         else:
             dataset = load_july()
             if page is not None:
@@ -912,7 +932,10 @@ def run_series(
         if dataset.gated and any(r["passed"] is False for r in results["component_a"]):
             return finish(FAIL)  # A1 or A3 failed: no series is run
 
-        leak_markers = [*HOLDOUT_FILE_MARKERS, str(holdout_root), holdout_root.as_posix()] if dataset.gated else []
+        if dataset.gated:
+            leak_markers = [*HOLDOUT_FILE_MARKERS, str(holdout_root), holdout_root.as_posix()]
+        else:  # D10 keeps its key, briefs and adjudication files beside its pages
+            leak_markers = [*HOLDOUT_FILE_MARKERS] if dataset.name == "d10" else []
         tasks = build_tasks(dataset, rulesets)
         run_results = []
         for k in range(1, runs + 1):
@@ -1005,7 +1028,7 @@ def subscription_auth(env: dict[str, str], auth_status=None) -> tuple[str | None
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset", required=True, help="july or a holdout ID such as H2")
+    ap.add_argument("--dataset", required=True, help="july, d10 or a holdout ID such as H2")
     ap.add_argument("--runs", type=int, default=None)
     ap.add_argument("--holdout-root", type=Path, default=None, help="overrides holdout_root in config.local.yaml")
     ap.add_argument("--real", action="store_true", help="real agents and verifier (paid; owner authorization only)")

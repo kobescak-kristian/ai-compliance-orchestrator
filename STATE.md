@@ -225,7 +225,10 @@ BLUEPRINT.md §9.
     has no D10 dataset option yet; **update 2026-11-04:** blind labeling
     done (110 of 112 agreed) and both disagreements adjudicated by
     Kristian; the D10 key is final (see the D10 adjudication Change Log
-    entry). Still open: runner support for a D10 dataset;
+    entry). Still open: runner support for a D10 dataset; **update
+    2026-11-04:** the runner has `--dataset d10` (development only,
+    keyless tests; see the D10 runner Change Log entry); a D10 model run
+    needs a new authorization;
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -310,6 +313,25 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-04**, P-001 D10 runner support (local branch `repair/v2`;
+  no model run, no H2 access, no push). Authorized by Kristian.
+  - `evals/run_eval.py` gains `--dataset d10`: it loads the 10 pages and
+    the final key `evals/dataset/d10/key.yaml` the same way as July, with
+    the cage root set to the D10 pages folder, so the key, briefs and
+    adjudication files beside it are out of the agents' reach. Their file
+    names are leak markers for D10 runs. D10 is development data: never
+    gated, no `--page`, output only under `holdout_root/runs/d10/`.
+    July, holdout runs and every scoring rule are unchanged.
+  - New keyless tests: `tests/test_d10_dataset.py` (6 tests: selection,
+    pages and cells as committed, key files outside the cage, no key
+    material in agent inputs, July unchanged, development only).
+  - Checks: `python -m pytest -q -p no:cacheprovider` 196 passed, exit
+    0; `python .githooks/validate_artifacts.py .` "Tier 0: PASS", exit 0;
+    `git diff` shows no change to `evals/eval_config.yaml`,
+    `evals/dataset/`, `evals/v2/`, `rulesets/`, `agents/`, `nodes/` or
+    `config.yaml`.
+  - Open: any D10 model run needs a new authorization.
 
 - **2026-11-04**, P-001 D10 blind labeling and adjudication, key final
   (local branch `repair/v2`; no model evaluation, no H2 access, no
