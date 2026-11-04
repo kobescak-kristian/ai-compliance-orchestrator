@@ -232,7 +232,11 @@ BLUEPRINT.md §9.
     run 1 ran once: 7 of 10 primaries passed,
     all 3 misses are wrong verifier rejections; assembler repair for the
     two injection misses made (see the D10 run 1 Change Log entry); a
-    second D10 run needs a new authorization;
+    second D10 run needs a new authorization; **update 2026-11-04:** D10
+    development run 2 ran once: 8 of 10 primaries passed; d08 and d10
+    still fail on checker evidence; checker evidence repair made (see the
+    D10 run 2 Change Log entry); target 10 of 10 on D10 before the
+    official evaluation; a further D10 run needs a new authorization;
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -317,6 +321,91 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-04**, P-001 D10 development run 2, investigation and
+  checker evidence repair (local branch `repair/v2`; no push).
+  - Run: `run_eval.py --dataset d10 --runs 1 --real` at `9b7fb1a`, Haiku
+    4.5, subscription login (claude.ai / firstParty / max), series
+    `d10-2026-11-04-347df8`, exit 0. Run once in a plain PowerShell
+    terminal, no retry, with the private procedure
+    `D10_DEV_RUN2_PROCEDURE.ps1` (SHA-256 `E50AC2EA...`), a copy of the
+    run 1 procedure, which stays unchanged. Development result, not
+    gated.
+    - Component A: 19 of 19 passed. Tasks: 14 check, 8 verify, 8 plan,
+      all DONE; 0 retries, 0 dead letters.
+    - Component B: 8 of 10 primaries passed. tp 8, fp 0, fn 1;
+      precision 1.0, recall 0.8889. Adjudications: 8 CONFIRMED,
+      1 REJECTED (wrong), 0 DISPUTED.
+    - Misses: d08 MLT-RG-01 (REJECTED) and d10 MLT-BT-01 (CONFIRMED,
+      graded NO_OVERLAP).
+    - Storage checks: H1/H2 fingerprint unchanged, run 1 evidence
+      fingerprint unchanged (50 files), repo and clone unchanged,
+      `verifier_cases` empty: PASS. R1: 9 of 9 verifier sessions clean.
+      RT2-07: 0 hits in message content; `cwd` metadata hits as before.
+      REVIEW on two checks: transcript folders and hook records of 7
+      sessions in other repositories changed during the run.
+    - Cost: `cost_usd` 0.9795 notional, 282 turns, wall clock 1541.6 s,
+      as the runner reports.
+  - Comparison with run 1, all 10 cases: d02 REJECTED -> CONFIRMED (PASS);
+    d10 REJECTED -> CONFIRMED (still a miss, on evidence); d08 REJECTED in
+    both runs; the other 7 PASS in both. No material regression in any
+    cell: one new COMPLIANT vs NOT_APPLICABLE difference (d07 DEU-PC-01),
+    two earlier ones gone (d01 GBR-BT-02, d09 GBR-PC-02).
+  - Investigation (read-only: both run ledgers, both verifier audit DBs,
+    file metadata):
+    - d08: the verifier received the untrusted-page markers and the
+      boundary note and did not cite the planted line. The checker
+      quoted a line that meets the rule (the responsible-gambling
+      notice) instead of naming the missing minimum-age statement; the
+      verifier rejected the claim as stated and noted that the statement
+      is missing. Cause: checker evidence selection.
+    - d10: the verifier confirmed. The checker quoted only the line that
+      points to the terms, without the offer. The approved rule for a
+      `missing_term` cell (`evals/eval_config.yaml`
+      `expected_violation_missing_term`, `evals/v2/SCENARIO_SPEC.md`)
+      accepts an `ABSENT:` excerpt or an overlap with the offer span.
+      Run 1's excerpt (offer joined to the pointer line) meets it, run
+      2's does not. Cause: checker evidence selection; the grading rule
+      is applied as approved and is not a grader defect, because the
+      offer quote is what shows which offer breaks the rule.
+    - d02: passed with no targeted change; the run 1 error is treated as
+      run-to-run verifier variation, not as fixed.
+    - Isolation REVIEW: none of the 7 other session IDs is among the 31
+      D10 sessions, no load stamp names a D10 session, and the other
+      sessions have subagent and custom-title files that D10 sessions do
+      not have. The changes did not come from the D10 run; what started
+      them is not visible in the metadata. D10 output stayed isolated;
+      the `no-repo.jsonl` check is less clean for this run.
+  - Decision (Kristian, 2026-11-04): option B, a minimal checker
+    evidence repair; target 10 of 10 on D10 before the official
+    evaluation. The d08 and d10 failures stay open.
+  - Repair, checker prompt and tool description only
+    (`agents/checker/prompts.py`, `agents/checker/tools.py`); verifier,
+    assembler, grader, key and gate unchanged. Evidence rules:
+    - a VIOLATION's evidence shows the breach, never text that meets
+      the rule; if only some required elements are missing, the
+      evidence is what is missing;
+    - words that break the rule are quoted, never `ABSENT:`;
+    - required content missing from the page uses `ABSENT:`, stated as
+      a claim that is checked against the page;
+    - an offer that lacks a required term is quoted as the offer itself
+      (it may be joined to the line that refers to the term), or
+      `ABSENT:` names the missing term and the offer.
+    - General rules only: no page name, case ID, key span or expected
+      answer.
+  - New keyless tests in `tests/test_p3_storage.py` (6): the prompt
+    carries the evidence rules and no D10 page name, key span, required
+    content or trigger; the checker tool accepts an offer quote joined
+    to its pointer line and `ABSENT:` claims, and still refuses a quote
+    that is not on the page; an `ABSENT:` violation goes to the verifier
+    with the claim and a fresh page copy, and a rejection stands.
+  - Checks: `python -m pytest -q -p no:cacheprovider` 205 passed, exit
+    0; `python .githooks/validate_artifacts.py .` "Tier 0: PASS", exit 0;
+    on the previous checker code the prompt test fails (one-off session
+    check: 1 failed, 5 passed; the other 5 pin behaviour that already
+    held).
+  - Open: d08 and d10 not yet passed; the repair is untested by a model
+    run. A further D10 diagnostic run needs a new authorization.
 
 - **2026-11-04**, P-001 D10 development run 1, investigation and
   assembler repair (local branch `repair/v2`; no push).

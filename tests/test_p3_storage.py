@@ -426,6 +426,86 @@ def test_d10_injection_page_cannot_forge_the_end_marker(tmp_path):
     assert again[-1] != paras[-1]  # a fresh nonce for every case
 
 
+# --------------------------------------------------------------------------
+# D10 checker evidence for missing content (d08, d10 in run 2)
+# --------------------------------------------------------------------------
+
+EVIDENCE_PAGE = (
+    "<html><head><title>T</title></head><body>"
+    "<p>Get 50 spins on Example Slot.</p><p>Terms: see the bonus terms page.</p>"
+    "<p>Please gamble responsibly.</p></body></html>"
+)
+
+
+def test_d10_checker_prompt_asks_for_the_breach_as_evidence():
+    from agents.checker.prompts import build_system_prompt
+
+    key_text = [
+        str(t) for case in re_.load_d10().cases
+        for t in [*(case.primary.get("spans") or []), *(case.primary.get("required_content") or []), case.primary.get("trigger")]
+        if t
+    ]
+    for jurisdiction in RULESETS:
+        prompt = build_system_prompt(jurisdiction)
+        evidence = " ".join(prompt.split("EVIDENCE", 1)[1].split("PROCESS", 1)[0].split())
+        assert "Never quote text that meets the rule as the evidence for a VIOLATION" in evidence
+        assert "the evidence is what is missing, not what the page does show" in evidence
+        assert 'Never use "ABSENT:" for them' in evidence
+        assert '"ABSENT:" is your claim that the content is not on the page and will be checked against the page' in evidence
+        assert "quote the offer itself, so the evidence shows which offer breaks the rule" in evidence
+        # General guidance only: no D10 page name, key span, required content or trigger.
+        assert not re.search(r"\bd\d\d\b", prompt)
+        assert not any(t.casefold() in prompt.casefold() for t in key_text)
+
+
+@pytest.mark.parametrize("rule_id, excerpt, accepted", [
+    ("MLT-BT-01", "Get 50 spins on Example Slot... Terms: see the bonus terms page.", True),  # offer joined to its pointer line
+    ("MLT-BT-01", "ABSENT: wagering requirement for the Example Slot spins", True),
+    ("MLT-RG-01", "ABSENT: minimum-age statement", True),
+    ("MLT-RG-01", "Players must be 18 or over.", False),  # a quote must still be on the page
+])
+def test_d10_checker_tool_takes_the_offer_quote_and_the_absent_claim(conn, tmp_path, rule_id, excerpt, accepted):
+    import asyncio
+
+    from agents.checker import tools as checker_tools
+
+    (tmp_path / "x.html").write_text(EVIDENCE_PAGE, encoding="utf-8")
+    pages.configure_cage(tmp_path)
+    task = CheckTask(page_path="x.html", jurisdiction="MLT", ruleset_version=RULES_BY_ID[rule_id].ruleset_version,
+                     assigned_rules=[rule_id])
+    *_, emit = checker_tools.build_tools(task, conn)
+    out = asyncio.run(emit.handler({"rule_id": rule_id, "verdict": "VIOLATION", "evidence_excerpt": excerpt, "rationale": "r"}))
+    assert (out.get("is_error") is None) is accepted
+    checker_tools.reset_run_state()
+
+
+def test_d10_absent_claim_goes_to_the_verifier_and_is_not_proof(conn, tmp_path):
+    from nodes import assembler, verifier_stub
+    from orchestrator.pipeline import finding_id_for, get_adjudications, get_confirmed_findings, run_verify_stage
+
+    (tmp_path / "x.html").write_text(EVIDENCE_PAGE, encoding="utf-8")
+    pages.configure_cage(tmp_path)
+    rule = RULES_BY_ID["MLT-RG-01"]
+    finding = ViolationFinding(page_path="x.html", jurisdiction="MLT", rule_id=rule.rule_id, ruleset_version=rule.ruleset_version,
+                               verdict=Verdict.VIOLATION, evidence_excerpt="ABSENT: minimum-age statement", rationale="r",
+                               task_id="x.html::MLT")
+    verifier_stub.configure_verdict(finding_id_for(finding), "REJECTED")
+    cases = []
+
+    def verifier_fn(f, r, run_id):
+        cases.append(assembler.assemble_case(f, r))
+        return verifier_stub.stub_verifier(f, r, run_id)
+
+    run_verify_stage([finding], {rule.rule_id: rule}, verifier_fn, conn, "run")
+    # The verifier gets the ABSENT claim and a fresh copy of the whole page to check the omission against.
+    [files] = cases
+    assert _verifier_view(files["target.html"])[1] == [assembler.build_claim_text(finding, rule)]
+    assert "Please gamble responsibly." in _verifier_view(files["source_page.html"])[1]
+    # Its rejection stands: an ABSENT claim is never confirmed by itself.
+    assert [a.verdict.value for a in get_adjudications(conn)] == ["REJECTED"]
+    assert get_confirmed_findings(conn) == []
+
+
 def test_rt2_10_checker_reads_only_its_own_page(conn):
     import asyncio
 

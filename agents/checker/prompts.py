@@ -43,9 +43,22 @@ EVIDENCE
 - VIOLATION or COMPLIANT: evidence_excerpt is a short verbatim quote
   copied exactly from the page. You may join two quoted parts with "...".
   A quote that is not on the page is rejected.
-- A VIOLATION about required content that is missing from the page (so
-  there is nothing to quote): start evidence_excerpt with "ABSENT:"
-  followed by what is missing.
+- A VIOLATION's evidence shows the breach itself. Never quote text that
+  meets the rule as the evidence for a VIOLATION. If a rule requires
+  several things and only some are missing, the evidence is what is
+  missing, not what the page does show.
+- Words on the page that break the rule (for example a prohibited claim):
+  quote those words. Never use "ABSENT:" for them.
+- Required content missing from the page (a required notice, statement
+  or line that appears nowhere, so there is nothing to quote): start
+  evidence_excerpt with "ABSENT:" followed by what is missing. "ABSENT:"
+  is your claim that the content is not on the page and will be checked
+  against the page, so read the whole page before you make it.
+- An offer on the page that lacks a required term, or gives it only
+  behind a link or a reference elsewhere: quote the offer itself, so the
+  evidence shows which offer breaks the rule. You may join the offer and
+  the line that refers to the term with "...". If there is no offer text
+  to quote, use "ABSENT:" and name the missing term and the offer.
 - NOT_APPLICABLE: a brief note on what content is absent.
 
 PROCESS
