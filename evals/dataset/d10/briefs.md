@@ -24,8 +24,8 @@ Roles (three-actor protocol, ADR-0004):
 
 Status: briefs by the spec author; pages built by the page author in
 `evals/dataset/d10/pages/`; spec author second pass and filler sweep
-done; key (`evals/dataset/d10/key.yaml`) is a draft awaiting blind
-labeling and Kristian's adjudication. Before the pages were built, the
+done; key (`evals/dataset/d10/key.yaml`) blind-labeled and adjudicated
+by Kristian, now final (`evals/dataset/d10/adjudication.md`). Before the pages were built, the
 coordinator moved the MLT-GE-01 violation from d03 to d10, because the
 original d03 cell was marked UNSURE.
 

@@ -222,7 +222,10 @@ BLUEPRINT.md §9.
     **update 2026-11-03:** D10 preparation authorized by Kristian; 10
     pages, briefs and a draft key built, awaiting blind labeling and
     Kristian's adjudication (see the D10 Change Log entry). The runner
-    has no D10 dataset option yet;
+    has no D10 dataset option yet; **update 2026-11-04:** blind labeling
+    done (110 of 112 agreed) and both disagreements adjudicated by
+    Kristian; the D10 key is final (see the D10 adjudication Change Log
+    entry). Still open: runner support for a D10 dataset;
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -307,6 +310,33 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-04**, P-001 D10 blind labeling and adjudication, key final
+  (local branch `repair/v2`; no model evaluation, no H2 access, no
+  push). Authorized by Kristian.
+  - Blind labeling (Kristian, GPT-6, blind packet only): the returned
+    file is valid (112 cells, no missing, duplicate or extra IDs) and
+    kept privately outside Git; pages and rule texts unchanged since
+    the packet. Agreement with the draft key at `9a9b7b0`: 110 of 112
+    cells (98.2%). All 16 required coverage cells and all five UNSURE
+    draft cells agreed; d08 MLT-RG-01 is no longer a coverage risk.
+  - Rulings (Kristian): d03 GBR-PC-02 and d09 GBR-PC-02 are
+    NOT_APPLICABLE (draft COMPLIANT, blind label NOT_APPLICABLE):
+    neither page presents a gambling offer governed by the rule.
+    Recorded in `evals/dataset/d10/adjudication.md`.
+  - `evals/dataset/d10/key.yaml` is final: the two rulings, nothing
+    else. The July key `evals/answer_key.yaml` is unchanged.
+  - Checks (keyless). Repeatable from the repo:
+    `python -m pytest -q -p no:cacheprovider` 190 passed, exit 0;
+    `python .githooks/validate_artifacts.py .` "Tier 0: PASS", exit 0;
+    `git diff` shows no change to the D10 pages, `rulesets/`,
+    `evals/answer_key.yaml` or the frozen gate and scorer files. One-off
+    session checks, not in the repo: the D10 page check on the final
+    key, "D10 check: PASS", exit 0 (0 errors on the pages, A3 3 of 3
+    passed, all 16 coverage items map to the expected verdicts); the
+    final key against the blind labels: 112 of 112 cells equal.
+  - Open: runner support for a D10 dataset before any D10 run; any
+    model run needs a new authorization.
 
 - **2026-11-03**, P-001 D10 development pages, preparation up to blind
   labeling (local branch `repair/v2`; no model evaluation, no H2 access,
