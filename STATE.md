@@ -186,7 +186,9 @@ BLUEPRINT.md §9.
 - **Open owner decisions (P-001):**
   - H2: frozen 2026-11-02 (blind labeling, adjudication and the full
     33-file manifest done, see Change Log). Open: one offline backup of
-    the H2 folder and its records folder (owner action);
+    the H2 folder and its records folder (owner action); **update
+    2026-11-04:** copy made by Kristian; its check against the manifest
+    is pending;
   - authorize P2: done, 2026-11-03 (see the P2 Change Log entry);
   - P2 requirement (owner, 2026-11-02): `holdout_root` is the parent
     private folder; official run DBs and logs go under
@@ -243,7 +245,11 @@ BLUEPRINT.md §9.
     (D10 only, never gated); one 3-run D10 series on claude-sonnet-5-5 is
     prepared, its run not yet authorized. Target:
     10 of 10 primaries in all 3 runs; P4 needs a separate decision (see
-    the D10 run 3 Change Log entry);
+    the D10 run 3 Change Log entry); **update 2026-11-04:** run 4 got 9
+    of 10; d10 corrected (`bb6d475`); the d06/d10 targeted trial passed;
+    development testing complete; gate v2.1 makes an unrecovered
+    record-hook refusal INVALID RUN; P4 not yet authorized (see the targeted trial Change
+    Log entry);
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -328,6 +334,90 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-04**, P-001 D10 targeted trial, development complete, gate
+  v2.1 (local branch `repair/v2`; no push).
+  - Trial at `bb6d475` (`D10_TARGETED_TRIAL.ps1`, SHA-256
+    `CAF2FEF9...2CE1`), run once in a plain PowerShell terminal with no
+    Claude process running: d06 and d10, 3 runs, claude-sonnet-5-5,
+    series `d10-2026-11-04-42aa06` in a scratch root outside the private
+    runs folder. `OK: TRIAL PASSED`:
+    - d06 and d10 PASS in 3 of 3 runs; component A 51 of 51; all tasks
+      DONE, 0 retries, 0 dead letters; 0 material off-target errors;
+    - 24 of 24 sessions served claude-sonnet-5-5, 0 API errors, stderr
+      empty;
+    - isolation PASS: H1/H2 fingerprint unchanged; runs 1-4 and preflight
+      evidence unchanged; transcripts in the run folders only; hook records
+      only in `no-repo.jsonl`; repository and verifier clone unchanged;
+      `verifier_cases` empty; R1 3 of 3 per run; RT2-07 0 hits;
+    - d10: in all 3 runs the checker quoted the offer joined to the
+      pointer line;
+    - cost 1.4496 USD as the CLI reports it, 147 turns, wall clock
+      508.3 s.
+  - Development testing complete (Kristian's condition, 2026-11-04: the
+    trial confirmed); no further D10 run. Limit: the trial covered d06
+    and d10 only. The other 8 D10 primaries passed in 3 of 3 runs in run
+    4 at `dcfc5cf`, before the `bb6d475` prompt change, and are not
+    retested.
+  - Ruling (Kristian, 2026-11-04): the model change to Sonnet 5.5
+    needed no version change; the model is a free item.
+  - Problem: the machine-policy `record` hook (outside this repository)
+    refuses an `mcp__*`
+    agent tool call before it runs when it cannot write its record, for
+    example when its shared lock stays busy for 10 s (a lock is broken
+    as stale only after 30 s). Gate v2.0 had no INVALID RUN condition
+    for this: an unrecovered refusal was scored as a model miss. One
+    refusal is on record on this machine (a coding session in another
+    project, 2026-10-28); the agent retried the identical call and it
+    succeeded.
+  - Decision (Kristian, 2026-11-04): gate v2.1, prospective, before any
+    official v2 series, solely for this rule. A refusal does not by
+    itself invalidate a run. A refused call is recovered only when, later
+    in the same session, the agent retried it with the same tool and
+    identical input, the hook allowed the retry, and the retried call
+    completed successfully. Otherwise, or when recovery cannot be
+    verified, the series is INVALID RUN. A run without technical failure
+    that gives wrong compliance results is scored as usual (PASS or
+    FAIL). The check is automatic, from execution evidence, before any
+    score. Datasets, holdouts, keys, scoring, thresholds, case count,
+    runs per case and all other acceptance rules are unchanged. An
+    earlier staged rule (any refusal is INVALID RUN) was not approved
+    and was replaced before commit.
+    - Gate (`evals/eval_config.yaml`): version 2.1; one
+      `result_rules.INVALID_RUN.when` condition; the `decided` line names
+      the recovery check. If the runner cannot make the check (no
+      transcript folder), that is a runner failure, already INVALID RUN.
+    - Runner (`evals/run_eval.py`): `cli_transcript_dir`,
+      `hook_refusals` and `_raise_for_hook_refusals` read the run's own
+      CLI transcripts after each real run and after a system crash,
+      before any score. Evidence that cannot establish recovery (an
+      unreadable line with the refusal text, a refused call missing from
+      the session, a retry with no result) counts as not recovered.
+      Recovered refusals are printed as a count only. No transcript text
+      is kept or shown. The hook itself is unchanged.
+    - Refusal marker (Kristian's decision, 2026-11-04, after the
+      public-safety scan refused the first commit attempt): the hook's
+      exact refusal text is kept out of all tracked files. A real run
+      reads it from `ORCH_RECORD_HOOK_MARK`, set by the private run
+      procedure; unset or blank, the run stops before the series starts
+      and nothing is recorded. Tests use a synthetic marker.
+    - New keyless tests, `tests/test_hook_refusal.py` (38), including the
+      six approved scenarios and the missing-marker stop.
+    - Prevention kept: no other Claude process runs during an official
+      series.
+    - `tests/test_d10_dataset.py`: one real-mode test sets a synthetic
+      marker.
+  - Checks: `python -m pytest -q -p no:cacheprovider` 249 passed, exit
+    0; `python .githooks/validate_artifacts.py .` "Tier 0: PASS", exit 0;
+    the commit hook's public-safety scan of the staged change, 0 hits.
+    Keyless check of real transcripts with the new functions and the
+    marker from the environment: trial runs 1-3 folders found, 0
+    refusals; the 2026-10-28 coding-session folder, 1 refusal, recovered.
+  - H2 offline backup: copy made by Kristian, 2026-11-04; check against
+    the committed manifest pending.
+  - Open before P4: the backup check; P4 authorization (budget included);
+    the private P4 procedure sets the marker and is pinned to this commit
+    after it lands.
 
 - **2026-11-04**, P-001 D10 on claude-sonnet-5-5: preflight, run 4,
   d10 diagnosis and a checker evidence correction (local branch

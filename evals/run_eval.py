@@ -720,6 +720,88 @@ def _raise_for_provider_rows(ctx: RunContext) -> None:
         raise InvalidRun(f"run {ctx.run_index}: {provider} provider error rows (auth, rate limit or overload)")
 
 
+# Gate v2.1 (2026-11-04): a refusal by the machine-policy record hook
+# (outside this repository) that is not recovered makes the series INVALID
+# RUN. The hook refuses before the tool runs; the CLI hands its stderr to the
+# agent as an error tool result. The hook's refusal marker is not kept in
+# this repository: a real run reads it from this environment variable, set
+# by the private run procedure, and stops before it starts without it.
+HOOK_MARK_ENV = "ORCH_RECORD_HOOK_MARK"
+
+
+def hook_refusal_mark(environ) -> str | None:
+    """The record-hook refusal marker from the environment; None when unset or blank."""
+    mark = (environ.get(HOOK_MARK_ENV) or "").strip()
+    return mark or None
+
+
+def cli_transcript_dir(run_dir: Path) -> Path:
+    """The CLI's transcript folder for sessions started in run_dir."""
+    base = os.environ.get("CLAUDE_CONFIG_DIR")
+    return (Path(base) if base else Path.home() / ".claude") / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(run_dir))
+
+
+def hook_refusals(folder: Path, mark: str) -> tuple[int, int]:
+    """(refusals, not recovered) over every session transcript under folder.
+    A refused call is recovered only when, later in the same session, the
+    agent made the same call (same tool, identical input) and that call
+    completed without error (so the hook allowed it). Incomplete evidence
+    counts as not recovered: a line with the refusal marker that cannot be
+    read, or a refusal whose call is not in the session. Counts only: no
+    transcript text is kept or shown."""
+    refusals = unrecovered = 0
+    for path in sorted(folder.rglob("*.jsonl")):
+        calls: list[tuple[str, tuple]] = []  # (tool_use id, (tool name, input)) in session order
+        results: dict[str, tuple[bool, bool]] = {}  # tool_use id -> (is_error, refused)
+        with path.open(encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    record = json.loads(line)
+                except ValueError:
+                    unrecovered += mark in line
+                    refusals += mark in line
+                    continue
+                message = record.get("message") if isinstance(record, dict) else None
+                content = message.get("content") if isinstance(message, dict) else None
+                for block in content if isinstance(content, list) else []:
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("type") == "tool_use":
+                        calls.append((block.get("id"), (block.get("name"), json.dumps(block.get("input"), sort_keys=True))))
+                    elif block.get("type") == "tool_result":
+                        error = bool(block.get("is_error"))
+                        refused = error and mark in json.dumps(block.get("content"), ensure_ascii=False)
+                        results[block.get("tool_use_id")] = (error, refused)
+        known = {use_id for use_id, _ in calls}
+        for use_id, (_error, refused) in results.items():
+            if refused and use_id not in known:
+                refusals += 1
+                unrecovered += 1  # the refused call is not in the session: recovery cannot be checked
+        for i, (use_id, call) in enumerate(calls):
+            if not results.get(use_id, (False, False))[1]:
+                continue
+            refusals += 1
+            if not any(later == call and results.get(later_id, (True, False))[0] is False for later_id, later in calls[i + 1:]):
+                unrecovered += 1
+    return refusals, unrecovered
+
+
+def _raise_for_hook_refusals(ctx: RunContext, mark: str | None) -> None:
+    if not ctx.real:
+        return  # stub agents start no CLI session
+    # The runner cannot make the check: a runner failure (gate INVALID_RUN.when, first condition).
+    if not mark:
+        raise InvalidRun(f"run {ctx.run_index}: runner could not make the record-hook check (no refusal marker)")
+    folder = cli_transcript_dir(ctx.run_dir)
+    if not folder.is_dir():
+        raise InvalidRun(f"run {ctx.run_index}: runner could not make the record-hook check (CLI transcript folder not found)")
+    refusals, unrecovered = hook_refusals(folder, mark)
+    if unrecovered:
+        raise InvalidRun(f"run {ctx.run_index}: {unrecovered} of {refusals} machine-policy record-hook refusal(s) not recovered")
+    if refusals:
+        print(f"run {ctx.run_index}: {refusals} record-hook refusal(s), all recovered (diagnostic, counts only)")
+
+
 def run_once(ctx: RunContext, model: str | None) -> dict:
     checker_fn, verifier_fn, planner_fn, stats = _agent_fns(ctx, model)
     t0 = time.monotonic()
@@ -846,6 +928,10 @@ def run_series(
         # Development only (owner, 2026-11-04): the D10 set on the official
         # model and its per-task budgets. Never on a holdout or gated.
         raise ValueError("--official-model runs the d10 development set only; never with --gated or a holdout")
+    hook_mark = hook_refusal_mark(os.environ) if real else None
+    if real and hook_mark is None:
+        # Gate v2.1: without the marker the record-hook check cannot be made; stop before any run.
+        raise ValueError(f"a real run needs the record-hook refusal marker in {HOOK_MARK_ENV} (set by the private run procedure)")
     config = load_eval_config()
     holdout_root = Path(holdout_root).resolve()
     series_id = f"{dataset_name}-{date.today().isoformat()}-{uuid.uuid4().hex[:6]}"
@@ -962,8 +1048,11 @@ def run_series(
                     if _raised_in_runner(exc):
                         raise InvalidRun(f"run {k}: exception in runner code: {type(exc).__name__}") from exc
                     _raise_for_provider_rows(ctx)  # RT2-04: a provider error stays INVALID RUN after a crash too
+                    _raise_for_hook_refusals(ctx, hook_mark)  # gate v2.1: so does an unrecovered record-hook refusal
                     run_results.append({"cells": cell_outcomes(conn, tasks), "cost_usd": 0.0, "turns": 0, "wall_clock_s": 0.0,
                                         "verify_failed": verify_tasks_failed(conn)})
+                else:
+                    _raise_for_hook_refusals(ctx, hook_mark)  # gate v2.1: after each run, before any score
                 results["component_a"].extend(a2_checks(ctx))
             finally:
                 conn.close()

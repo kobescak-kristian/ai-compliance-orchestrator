@@ -7,9 +7,9 @@
 # copied under v1_reference for comparison only. Red team 1 report:
 # evals/v2/RED_TEAM_1.md (findings resolved in this version).
 
-version: "2.0"
+version: "2.1"
 written: 2026-11-02
-status: "FROZEN. Owner approved this gate, the scenario spec, the ruleset v1.1 text (14 rules), the RT1-06 rule and the one-time H1 exception on 2026-11-02 (P1 stop). Next: H2 authoring and P2, each only on the owner's separate authorization. Amended 2026-11-04 by owner decision, before any official v2 series: model_routing.official is claude-sonnet-5-5 (was claude-sonnet-4-6); nothing else changed."
+status: "FROZEN. Owner approved this gate, the scenario spec, the ruleset v1.1 text (14 rules), the RT1-06 rule and the one-time H1 exception on 2026-11-02 (P1 stop). Next: H2 authoring and P2, each only on the owner's separate authorization. Amended 2026-11-04 by owner decision, before any official v2 series: model_routing.official is claude-sonnet-5-5 (was claude-sonnet-4-6); a free item, no version change. v2.1, decided 2026-11-04, before any official v2 series: one INVALID RUN condition added (an unrecovered machine-policy record-hook refusal, result_rules.INVALID_RUN.when); cases, keys, grading, claim, thresholds, case count and runs per case unchanged."
 
 eval_level:
   proposed: "Light (portfolio demo; a human approves every proposal)"
@@ -147,7 +147,8 @@ result_rules:
       - "provider auth failure, provider rate limit or provider overload, identified from the provider's logged error type"
       - "holdout files do not match the committed manifest at series start"
       - "verifier checkout not at the pin, or not clean, at series start"
-    decided: "from exit codes and logged error types only, before any score is computed or read"
+      - "v2.1: an agent tool call refused by the machine-policy record hook (outside this repository) and not recovered. A refused call is recovered only when, later in the same session, the agent retried it with the same tool and identical input, the hook allowed the retry, and the retried call completed without error. Evidence: the run's own CLI transcripts, where a refusal is an error tool result carrying the hook's refusal marker. The marker is not kept in this repository: the private run procedure supplies it in the ORCH_RECORD_HOOK_MARK environment variable, and a real run without it stops before the series starts. Evidence that cannot establish recovery counts as not recovered. The runner decides after each run, before any score; counts only, no transcript text is kept or shown. If the runner cannot make this check, that is a failure in runner code (the first condition above)"
+    decided: "from exit codes, logged error types and the v2.1 record-hook recovery check only, before any score is computed or read"
     next: "fix the machinery and rerun the whole series (all 3 runs); the invalid series stays recorded; no extra approval"
   inside_the_automation_is_a_miss: "any exception, hang or timeout raised while code under orchestrator/, agents/, nodes/, intake/ or gate/ runs, agent error, budget cap, schema dead-letter: the run is scored as is; non-terminal tasks fail A2"
   valid_case: "listed in the holdout manifest committed before the first run and passing the self-check; a case ruled wrong after a run does not change that run's result (eval-gate §7)"

@@ -129,6 +129,7 @@ def test_d10_official_model_selects_the_official_model_and_budgets(tmp_path, mon
 
     monkeypatch.setattr(re_, "run_once", run_once)
     monkeypatch.setattr(nodes.verifier, "check_verifier_checkout", lambda: None)
+    monkeypatch.setenv(re_.HOOK_MARK_ENV, "SYNTHETIC-RECORD-REFUSAL")  # gate v2.1: a real run needs a marker
     results_dir = tmp_path / "results"
     _result, results, out = re_.run_series("d10", tmp_path, runs=1, real=True, results_dir=results_dir,
                                            official_model=official_model)
