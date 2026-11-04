@@ -329,6 +329,80 @@ with this file.*
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
 
+- **2026-11-04**, P-001 D10 on claude-sonnet-5-5: preflight, run 4,
+  d10 diagnosis and a checker evidence correction (local branch
+  `repair/v2`; no push).
+  - Preflight at `dcfc5cf` (`D10_SONNET55_PREFLIGHT.ps1`, SHA-256
+    `9713769A...427F`): d06 and d08, 1 run, series
+    `d10-2026-11-04-3aefa8` in a scratch root outside the private runs
+    folder. `OK: PREFLIGHT PASSED`: 6 of 6 sessions served
+    claude-sonnet-5-5; 6 of 6 tasks DONE; component A 19 of 19; d06 and
+    d08 PASS; isolation checks PASS; R1 2 of 2. CLI-reported cost 0.4502
+    USD (0.146 USD at list price from transcript token counts; the CLI
+    prices this unknown model at a fallback rate); wall clock 167.1 s.
+  - Run 4 at `dcfc5cf`: `run_eval.py --dataset d10 --runs 3 --real
+    --official-model` (`D10_DEV_RUN4_PROCEDURE.ps1`, SHA-256
+    `23902FF0...CCF4`), series `d10-2026-11-04-439347`, exit 0,
+    development result, not gated.
+    - Component A: 51 passed, 0 failed. Tasks per run: 14 check, 8
+      verify, 9 plan, all DONE; 0 retries, 0 dead letters.
+    - Component B: 9 of 10 primaries passed in all 3 runs. d10 MLT-BT-01
+      missed in all 3 (CONFIRMED, graded NO_OVERLAP). tp 27, fp 0, fn 0;
+      precision 1.0, recall 1.0; 27 CONFIRMED, 0 REJECTED, 0 DISPUTED.
+      COMPLIANT vs NOT_APPLICABLE differences (not material): 4, 2, 2.
+      Other differences: 0.
+    - Storage and isolation: H1/H2 and runs 1-3 evidence fingerprints
+      unchanged; transcripts and hook records isolated; repo and clone
+      unchanged; `verifier_cases` empty. R1: 27 of 27 verifier sessions
+      clean. RT2-07: 0 hits in message content; `cwd` metadata hits as
+      before.
+    - Cost: 6.3117 USD as the CLI reports it, 705 turns, wall clock
+      2188.6 s.
+    - Target (Kristian, 2026-11-04: all 10 primaries in all 3 runs) not
+      met. Kristian, 2026-11-04: no further full D10 series; diagnose d10,
+      make the smallest general correction, check for regressions, then
+      one short targeted trial.
+  - d10 diagnosis (read-only: ledgers, checker transcripts, offline
+    grading with the runner's own functions; no model call).
+    - Fact: in all 3 Sonnet runs, and in Haiku runs 2 and 3, the
+      checker quoted only the line that points to the terms. Under the
+      frozen gate, a missing_term primary passes only with `ABSENT:` or
+      an excerpt that overlaps the offer span. Run offline against the
+      page, the pointer line alone gives NO_OVERLAP; the offer line, the
+      offer joined to the pointer line with "...", and `ABSENT:` all
+      pass. Haiku run 1 (before `2144fec`) quoted the joined form.
+    - Ruled out: the offer line is in the `fetch_page` output as its own
+      block; the euro sign is intact (U+20AC; the console shows it as
+      another character); the verifier confirmed the finding in all 3
+      runs, and grading uses the checker's excerpt only. d06, the other
+      missing_term primary, has no pointer line and passed 3 of 3 with
+      the offer quoted.
+    - Likely cause (inference; the transcripts show no reasoning text):
+      the checker prompt points two ways. One rule says the evidence is
+      the breach and what is missing; the offer rule then makes joining
+      the offer to the pointer line optional ("may join"). On a page
+      with a pointer line, the model reads the pointer line as the
+      breach and quotes only it.
+    - Grader: implemented as the gate states (first key span = the
+      offer span). Justified: a pointer line alone does not show which
+      offer breaks the rule. Not changed.
+  - Correction (checker instruction only): the offer rule now says what
+    the offer is, requires the offer joined with "..." to any line that
+    points to the term, and forbids quoting that line alone; the
+    general evidence rule refers to it. The `emit_finding` description
+    says the same. One keyless test asserts the new text (in the existing
+    test that the prompt carries no D10 page name, span or trigger).
+    Gate, scorer, keys, datasets, holdouts, verifier and its pin
+    unchanged. Regression risk: the changed text applies only to a
+    VIOLATION for an offer that lacks a term; d06 is the only other D10
+    primary under it.
+  - Checks: `python -m pytest -q -p no:cacheprovider` 211 passed, exit
+    0; `python .githooks/validate_artifacts.py .` Tier 0: PASS, exit 0.
+  - Next (proposed, not run): one targeted trial on this commit, d06 and
+    d10 only, 3 runs, official model, scratch root, in the preflight's
+    page-subset way (no runner change). Pass: d10 and d06 PASS in 3 of
+    3, component A all pass, isolation checks PASS.
+
 - **2026-11-04**, P-001 D10 development run 3, analysis, new official
   model claude-sonnet-5-5 and a development-only official-model option
   (local branch `repair/v2`; no push).

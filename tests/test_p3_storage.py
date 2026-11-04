@@ -453,6 +453,9 @@ def test_d10_checker_prompt_asks_for_the_breach_as_evidence():
         assert 'Never use "ABSENT:" for them' in evidence
         assert '"ABSENT:" is your claim that the content is not on the page and will be checked against the page' in evidence
         assert "quote the offer itself, so the evidence shows which offer breaks the rule" in evidence
+        assert "For an offer that lacks a term, follow the offer rule below" in evidence
+        assert 'quote the offer, then "...", then that line' in evidence
+        assert "Never quote only the line that points to the term" in evidence
         # General guidance only: no D10 page name, key span, required content or trigger.
         assert not re.search(r"\bd\d\d\b", prompt)
         assert not any(t.casefold() in prompt.casefold() for t in key_text)

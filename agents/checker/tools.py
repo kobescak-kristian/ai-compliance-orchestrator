@@ -158,7 +158,8 @@ def build_tools(task: CheckTask, ledger_conn: sqlite3.Connection):
         "the page; a VIOLATION's quote shows the breach, never text that "
         "meets the rule. A violation about missing required content uses "
         "'ABSENT: <what is missing>' instead; an offer that lacks a "
-        "required term is quoted as the offer itself.",
+        "required term is quoted as the offer itself, joined with '...' "
+        "to any line that points to the term, never that line alone.",
         {"rule_id": str, "verdict": str, "evidence_excerpt": str, "rationale": str},
     )
     async def emit_finding(args):

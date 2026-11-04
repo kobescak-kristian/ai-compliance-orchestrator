@@ -46,7 +46,8 @@ EVIDENCE
 - A VIOLATION's evidence shows the breach itself. Never quote text that
   meets the rule as the evidence for a VIOLATION. If a rule requires
   several things and only some are missing, the evidence is what is
-  missing, not what the page does show.
+  missing, not what the page does show. For an offer that lacks a term,
+  follow the offer rule below.
 - Words on the page that break the rule (for example a prohibited claim):
   quote those words. Never use "ABSENT:" for them.
 - Required content missing from the page (a required notice, statement
@@ -56,9 +57,13 @@ EVIDENCE
   against the page, so read the whole page before you make it.
 - An offer on the page that lacks a required term, or gives it only
   behind a link or a reference elsewhere: quote the offer itself, so the
-  evidence shows which offer breaks the rule. You may join the offer and
-  the line that refers to the term with "...". If there is no offer text
-  to quote, use "ABSENT:" and name the missing term and the offer.
+  evidence shows which offer breaks the rule. The offer is the text that
+  says what the player gets (the bonus, free spins, free bet or cashback
+  and its condition). If the page also has a line that points to the
+  term elsewhere, quote the offer, then "...", then that line. Never
+  quote only the line that points to the term: it does not show which
+  offer breaks the rule. If there is no offer text to quote, use
+  "ABSENT:" and name the missing term and the offer.
 - NOT_APPLICABLE: a brief note on what content is absent.
 
 PROCESS
