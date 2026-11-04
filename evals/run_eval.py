@@ -823,6 +823,7 @@ def run_series(
     run_a1: bool | None = None,
     auth: dict | None = None,
     page: str | None = None,
+    official_model: bool = False,
 ) -> tuple[str, dict, Path | None]:
     """Run one series; return (result, sanitized results, results path).
     auth (D1: auth method, provider, plan type) goes to auth.json in the
@@ -841,6 +842,10 @@ def run_series(
             raise ValueError("--page selects one July development page; never with --gated or a holdout")
         if page not in {c.case_id for c in load_july().cases}:
             raise ValueError(f"unknown July page {page!r}")
+    if official_model and (gated or dataset_name != "d10"):
+        # Development only (owner, 2026-11-04): the D10 set on the official
+        # model and its per-task budgets. Never on a holdout or gated.
+        raise ValueError("--official-model runs the d10 development set only; never with --gated or a holdout")
     config = load_eval_config()
     holdout_root = Path(holdout_root).resolve()
     series_id = f"{dataset_name}-{date.today().isoformat()}-{uuid.uuid4().hex[:6]}"
@@ -860,7 +865,7 @@ def run_series(
             raise ValueError(f"{dataset_name} already has a completed official series and is retired")
     rulesets = load_rulesets(RULESETS_DIR)
     rules_by_id = {r.rule_id: r for rules in rulesets.values() if rules for r in rules}
-    model = config["model_routing"]["official" if gated else "development"] if real else "stub"
+    model = config["model_routing"]["official" if gated or official_model else "development"] if real else "stub"
     series = {
         "series_id": series_id, "date": date.today().isoformat(), "commit": _git_head(),
         "config_sha256": lf_sha256(EVAL_CONFIG_PATH), "holdout_id": dataset_name, "manifest_sha256": None,
@@ -948,7 +953,7 @@ def run_series(
             conn = create_db(str(db_path))
             try:
                 ctx = RunContext(dataset, config, k, f"run-{uuid.uuid4().hex[:8]}", run_dir, db_path, audit_db,
-                                 conn, tasks, rulesets, rules_by_id, real, gated, leak_markers)
+                                 conn, tasks, rulesets, rules_by_id, real, gated or official_model, leak_markers)
                 try:
                     run_results.append(run_once(ctx, None if model == "stub" else model))
                 except InvalidRun:
@@ -1034,6 +1039,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--real", action="store_true", help="real agents and verifier (paid; owner authorization only)")
     ap.add_argument("--gated", action="store_true", help="official series: writes evals/results/<series_id>.json")
     ap.add_argument("--page", default=None, help="development only: one July page ID such as p01; never with --gated or a holdout")
+    ap.add_argument("--official-model", action="store_true",
+                    help="development only: d10 on the official model and its per-task budgets; never with --gated or a holdout")
     try:
         args = ap.parse_args(argv)
     except SystemExit:
@@ -1053,7 +1060,8 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_USAGE
     try:
         result, results, out = run_series(args.dataset, Path(holdout_root), runs=args.runs, real=args.real,
-                                          gated=args.gated, auth=auth, page=args.page)
+                                          gated=args.gated, auth=auth, page=args.page,
+                                          official_model=args.official_model)
     except (ValueError, StorageError) as exc:
         print(f"usage: {exc}")
         return EXIT_USAGE

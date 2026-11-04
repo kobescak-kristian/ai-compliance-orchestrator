@@ -110,3 +110,37 @@ def test_d10_is_development_only(tmp_path):
     results_dir = tmp_path / "results"
     _result, _results, out = re_.run_series("d10", tmp_path, runs=1, results_dir=results_dir)
     assert not results_dir.exists() and out.is_relative_to(tmp_path / "runs" / "d10")
+
+
+# --official-model (owner, 2026-11-04): D10 on the official model, development only
+
+@pytest.mark.parametrize("official_model,model,official", [
+    (False, "claude-haiku-4-5-20251001", False),
+    (True, "claude-sonnet-5-5", True),  # owner decision 2026-11-04
+])
+def test_d10_official_model_selects_the_official_model_and_budgets(tmp_path, monkeypatch, official_model, model, official):
+    import nodes.verifier
+
+    seen = {}
+
+    def run_once(ctx, model):
+        seen["ctx"], seen["model"] = ctx, model
+        raise re_.InvalidRun("stop before any stage")  # no agent is started
+
+    monkeypatch.setattr(re_, "run_once", run_once)
+    monkeypatch.setattr(nodes.verifier, "check_verifier_checkout", lambda: None)
+    results_dir = tmp_path / "results"
+    _result, results, out = re_.run_series("d10", tmp_path, runs=1, real=True, results_dir=results_dir,
+                                           official_model=official_model)
+    assert seen["model"] == model and results["series"]["model"] == model
+    assert seen["ctx"].official is official  # per-task budgets follow the model
+    assert not results_dir.exists() and out.is_relative_to(tmp_path / "runs" / "d10")
+
+
+@pytest.mark.parametrize("dataset,gated", [("july", False), ("H2", False), ("d10", True), ("H9", True)])
+def test_official_model_refused_off_d10_or_gated(tmp_path, dataset, gated):
+    with pytest.raises(ValueError, match="--official-model|never gated"):
+        re_.run_series(dataset, tmp_path, official_model=True, gated=gated)
+    assert re_.main(["--dataset", "july", "--official-model", "--holdout-root", str(tmp_path)]) == re_.EXIT_USAGE
+    assert re_.main(["--dataset", "d10", "--official-model", "--gated", "--holdout-root", str(tmp_path)]) == re_.EXIT_USAGE
+    assert not (tmp_path / "runs").exists()

@@ -10,7 +10,7 @@ verifier_agent:
   pinned_commit: "d444b13c3ba07b9f4798d3298ec3bfc92da5a960"
   models:
     dev: "claude-haiku-4-5-20251001"
-    official_gate: "claude-sonnet-4-6"
+    official_gate: "claude-sonnet-5-5"  # owner decision 2026-11-04 (was claude-sonnet-4-6)
   max_budget_usd:
     dev: 0.25
     official_gate: 1.50

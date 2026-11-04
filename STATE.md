@@ -237,6 +237,13 @@ BLUEPRINT.md §9.
     still fail on checker evidence; checker evidence repair made (see the
     D10 run 2 Change Log entry); target 10 of 10 on D10 before the
     official evaluation; a further D10 run needs a new authorization;
+    **update 2026-11-04:** D10 run 3 ran once: 8 of 10 (d02, d10 miss on
+    checker evidence); no more Haiku tuning. The official model is now
+    claude-sonnet-5-5 (new baseline). The runner has `--official-model`
+    (D10 only, never gated); one 3-run D10 series on claude-sonnet-5-5 is
+    prepared, its run not yet authorized. Target:
+    10 of 10 primaries in all 3 runs; P4 needs a separate decision (see
+    the D10 run 3 Change Log entry);
   - paid-run authorization: none given. Billing route (owner,
     2026-11-03, D1): subscription login only, no API key; the budgets
     ($30 notional for Haiku development runs, $110 notional per official
@@ -321,6 +328,100 @@ with this file.*
 ## Change Log
 *(New entries on top. Phase closes require evidence: exit codes,
 commit hashes, eval numbers.)*
+
+- **2026-11-04**, P-001 D10 development run 3, analysis, new official
+  model claude-sonnet-5-5 and a development-only official-model option
+  (local branch `repair/v2`; no push).
+  - Run: `run_eval.py --dataset d10 --runs 1 --real` at `2144fec`, Haiku
+    4.5, subscription login (claude.ai / firstParty / max), series
+    `d10-2026-11-04-12567e`, exit 0. Run once in a plain PowerShell
+    terminal with `D10_DEV_RUN3_PROCEDURE.ps1` (SHA-256 `A567B931...`), a
+    copy of the run 2 procedure, which stays unchanged. New in it: run 1
+    and run 2 evidence must match their recorded fingerprints, and no
+    `claude` process may run from STEP 3 to STEP 5. Development result,
+    not gated.
+    - Component A: 19 of 19 passed. Tasks: 14 check, 8 verify, 8 plan,
+      all DONE; 0 retries, 0 dead letters.
+    - Component B: 8 of 10 primaries passed. tp 8, fp 0, fn 1;
+      precision 1.0, recall 0.8889. Adjudications: 8 CONFIRMED,
+      1 REJECTED (wrong), 0 DISPUTED.
+    - Misses: d02 DEU-PC-02 (REJECTED) and d10 MLT-BT-01 (CONFIRMED,
+      graded NO_OVERLAP).
+    - Storage and isolation: H1/H2, run 1 (50 files) and run 2 (53
+      files) evidence fingerprints unchanged; transcripts and hook
+      records isolated (PASS, with the desktop app closed); repo and
+      clone unchanged; `verifier_cases` empty. R1: 9 of 9 verifier
+      sessions clean. RT2-07: 0 hits in message content; `cwd` metadata
+      hits as before.
+    - Cost: `cost_usd` 1.043 notional, 277 turns, wall clock 1117.4 s,
+      as the runner reports.
+  - Analysis of runs 1-3 (read-only: ledgers and checker transcripts).
+    Across 30 primary decisions the checker never got a verdict wrong.
+    Verifier errors: 3, all in run 1 (two injection, fixed by
+    `9b7fb1a`; one d02 misreading of the slogan exemption). Checker
+    found the violation but quoted the wrong line: 4 (d08 run 2, d10
+    runs 2 and 3, d02 run 3). In runs 2 and 3 every verifier decision
+    was right for the claim it received.
+    - d02: run 3's checker quoted the refund sentence as the claim, not
+      the headline; the verifier rejected it correctly (the rule exempts
+      factual refund terms). Run 1 vs run 2 flip: likely verifier
+      variability on a designed boundary case, not proven. No single
+      change covers both causes.
+    - d10: the checker quoted only the pointer line in runs 2 and 3,
+      despite the `2144fec` rule to quote the offer; run 1 (old prompt)
+      quoted the offer. Checker defect under the approved gate, not a
+      grader defect.
+    - d08: passed with `ABSENT:`; the verifier checked the page and
+      treated the planted claim as untrusted. Run 1 also used `ABSENT:`,
+      so the pass is not credited to `2144fec`.
+  - Decision (Kristian, 2026-11-04): stop tuning on Haiku; test the
+    official model. One D10 series on the official model, 3 runs,
+    diagnostic only. Target: all 10 primaries pass in all 3 runs, with
+    no material infrastructure or isolation failure. 9 of 10 does not
+    authorize P4; any miss is reported with its cause; P4 needs a
+    separate decision.
+  - Decision (Kristian, 2026-11-04, before any official v2 series): the
+    official model is claude-sonnet-5-5, for this D10 series and for
+    the official evaluation; a new model baseline, recorded before any
+    official v2 series by owner decision. The gate's `official_fallback`
+    condition (model unavailable) did not apply. The gate's `status`
+    line records the amendment. `evals/eval_config.yaml` `model_routing.official`
+    and `config.yaml` `verifier_agent.models.official_gate` now name
+    claude-sonnet-5-5. Earlier results stay as recorded: the v1.0 July
+    gate on Sonnet 4.6 and D10 runs 1-3 on Haiku 4.5. Datasets, keys,
+    scorer, thresholds, holdouts and the verifier pin unchanged.
+    `SPEC.md` (Gate summary) and `policy/ADJUDICATION_POLICY.md` §8 still
+    say Sonnet 4.6; like the v1 thresholds there, they describe the v1
+    gate, and `eval_config.yaml` governs the v2 evaluation.
+  - Compatibility (keyless, static reading of the bundled CLI 2.1.191 in
+    claude-agent-sdk 0.2.110; no model call). The CLI predates Sonnet 5:
+    it has no `claude-sonnet-5-5` entry. For a first-party model it does
+    not know, it sends adaptive thinking, never sends disabled thinking,
+    and turns a forced single-tool choice into auto while thinking is
+    on, which Sonnet 5.5 accepts. No agent here or in the verifier clone sets
+    thinking, temperature, effort or tool choice. Cost: the CLI prices
+    an unknown model from a config list or else at its default model's
+    rate and marks the cost as possibly inaccurate; the budget caps stay
+    active but are measured at that price. Not checked: that the
+    subscription serves claude-sonnet-5-5, and how this CLI handles
+    Sonnet 5.5's newer response blocks; the first run shows both. No SDK
+    upgrade.
+  - Budgets: per-task caps kept (checker 1.50, verifier 1.50, planner
+    1.00 USD). Run 3's largest session (from its transcript token counts)
+    priced at Sonnet 5.5 rates is 0.15 (checker), 0.06 (verifier), 0.04
+    (planner) USD; at Opus 4.8 rates 0.37, 0.16, 0.10 USD; at Fable 5
+    rates, the dearest model this CLI knows, 0.74, 0.32, 0.21 USD, still
+    under the caps. Sonnet 5.5 costs less per token than Sonnet 4.6.
+  - Change, runner only (`evals/run_eval.py`): `--official-model`
+    selects `model_routing.official` and the official per-task budgets
+    for the d10 set. Refused with `--gated`, on July and on any holdout;
+    results stay in the private run folder. Gate thresholds, keys,
+    scorer, verifier and holdouts unchanged.
+  - New keyless tests in `tests/test_d10_dataset.py` (6): without the
+    flag a real d10 series keeps claude-haiku-4-5-20251001 and the
+    development budgets; with it, claude-sonnet-5-5 and the official
+    budgets, no results file; refused off d10 or gated, on the API and
+    the command line.
 
 - **2026-11-04**, P-001 D10 development run 2, investigation and
   checker evidence repair (local branch `repair/v2`; no push).
