@@ -176,7 +176,7 @@ def build_tools(task: CheckTask, ledger_conn: sqlite3.Connection):
 
         # D5: a quoted excerpt must occur on the page (shared text rule).
         # An ABSENT: excerpt reports missing content and skips this check;
-        # the verifier and the grader still judge it (owner, 2026-11-02).
+        # the verifier and the grader still judge it (2026-11-02).
         excerpt = args.get("evidence_excerpt")
         if (
             args.get("verdict") in ("VIOLATION", "COMPLIANT")

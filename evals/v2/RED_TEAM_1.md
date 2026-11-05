@@ -225,7 +225,7 @@ Evidence:
   unclean) = 0.60; p=0.01 gives 0.04; n=10, p=0.01 gives 0.30.
 - `evals/EVAL_RESULTS.md` July miss analysis and the 2026-11-02 note.
 
-Proposed resolution: Owner decision before freeze, one of: (a) count an
+Proposed resolution: Decision before freeze, one of: (a) count an
 off-target cell as a material error only if it is wrong in at least 2 of
 3 runs, and exclude cells that share the primary's trigger (sibling
 rules); (b) widen to at most 9 of 30 unclean (about 53% supported);
@@ -277,7 +277,7 @@ What breaks:
   read. Seeing partial scores and then calling a run invalid is a
   re-roll.
 - NOT ENOUGH CASES is "fewer than 30 valid cases", but "valid case" is
-  not defined. If the owner later rules one case wrong, a FAIL could be
+  not defined. If the maintainer later rules one case wrong, a FAIL could be
   turned into NOT ENOUGH CASES.
 - A1 and A3 run before the series. If one fails, no class applies,
   because FAIL requires "series completed".
@@ -287,7 +287,7 @@ What breaks:
 
 Evidence: `evals/eval_config.yaml:113-125`, `:38-39`, `:65`; the
 eval-gate skill §6 and §7 (a wrong case is corrected only by a recorded
-owner decision; the old result stays).
+decision; the old result stays).
 
 Proposed resolution: (1) Any exception or hang raised while code under
 `orchestrator/`, `agents/`, `nodes/`, `intake/` or `gate/` is running is
@@ -300,7 +300,7 @@ valid case: listed in the manifest committed before the first run and
 passing the self-check. A case ruled wrong after a run does not change
 that run's result. (4) A1 or A3 failure before the series is recorded
 as FAIL for that commit. (5) The manifest is immutable after the first
-run; a changed holdout gets a new holdout ID by owner decision.
+run; a changed holdout gets a new holdout ID by decision.
 
 Disposition hint: change the test
 
@@ -331,7 +331,7 @@ completed official series, PASS or FAIL; later versions use a fresh
 holdout. Or keep `rule_id` and `miss_category` in the private results
 only. (2) Define `false_alarm_cells` and `missed_cells` as integer
 counts. (3) Add one allowed free-text field `miss_pattern`, written by
-the owner, with no page text, spans or rule wording from a page.
+the maintainer, with no page text, spans or rule wording from a page.
 
 Disposition hint: change the test
 
@@ -441,7 +441,7 @@ Evidence: `evals/eval_config.yaml:9-11, 164` (version string only);
 Proposed resolution: After signature, record the SHA-256 of the three
 JSON files in the config. Add `ruleset_sha256` to the series allowlist
 and an A2 check that the run used those exact files. Set the status to
-"FROZEN on ruleset signature" until the owner signs.
+"FROZEN on ruleset signature" until it is signed.
 
 Disposition hint: change the test
 
@@ -655,14 +655,14 @@ did. Files: `evals/eval_config.yaml`, `evals/v2/SCENARIO_SPEC.md`,
 | RT1-03 | New evidence type `missing_term`: `ABSENT:` or overlap with the offer span passes | changed the test |
 | RT1-04 | Rule families (computed from the rule files) capped at 2 cases; GEO minimum lowered to 2, other categories stay at 5 | changed the test |
 | RT1-05 | v1.1 notes narrowed (offers only for "free"; odds boost is not a bonus offer for BT rules; DEU-RG-02 needs a named operator, product or offer; GBR-RG-02 definition "for this rule"); the named cells added to the July table | changed the test |
-| RT1-06 | Not changed by the builder: the approved reading stays in the config. Owner decision requested at the P1 stop (count a cell only if wrong in at least 2 of 3 runs; do not score sibling cells). Both readings are reported as diagnostics | resolved: changed the test (owner ruling 2026-11-02, see below) |
+| RT1-06 | Not changed by the builder: the approved reading stays in the config. Decision requested at the P1 stop (count a cell only if wrong in at least 2 of 3 runs; do not score sibling cells). Both readings are reported as diagnostics | resolved: changed the test (ruling 2026-11-02, see below) |
 | RT1-07 | Fresh ledger and audit DB per run; A2 check that each task has a model call in its own run | changed the test |
 | RT1-08 | INVALID only for runner or grader code errors, provider auth, rate-limit or overload errors, manifest or pin mismatch at start; decided before scoring; whole series reruns; valid case defined; A1 or A3 failure is FAIL for that commit; manifest immutable after first run | changed the test |
-| RT1-09 | Holdout retired after any completed series; off-target fields are integer counts; owner-approved `miss_pattern` field added | changed the test |
+| RT1-09 | Holdout retired after any completed series; off-target fields are integer counts; approved `miss_pattern` field added | changed the test |
 | RT1-10 | `.gitignore` keeps everything except `*.sha256` out of `evals/v2/holdouts/`, and ignores `config.local.yaml`; P2 switches the cage root to `holdout_root`, writes DBs and logs there, sanitizes console output | changed the build (P2) |
 | RT1-11 | Normalize extended (all quotes and dashes, format characters removed, fixed order); one shared text rule; P2 makes grader, reader and tool share one module; A1 test with these inputs required | changed the test |
 | RT1-12 | A2: every CONFIRMED VIOLATION has exactly one PENDING proposal | changed the test |
-| RT1-13 | Config status is "frozen on owner sign-off"; rule-file SHA-256 recorded after signature; A2 check and allowlist field added | changed the test |
+| RT1-13 | Config status is "frozen on sign-off"; rule-file SHA-256 recorded after signature; A2 check and allowlist field added | changed the test |
 | RT1-14 | A3 also checks every text block of the grader's text and every primary trigger | changed the test |
 | RT1-15 | Near-duplicate trigger check (60% shared words) and class-free tag-sequence check added; claim says "separately briefed" | changed the test |
 | RT1-16 | Public claim wording rewritten as proposed (sample count, rate claim, evidence only for text violations, earlier series count) | changed the test |
@@ -672,7 +672,7 @@ did. Files: `evals/eval_config.yaml`, `evals/v2/SCENARIO_SPEC.md`,
 | RT1-20 | Recorded as a known limit in `RULESET_V1_1.md` and the config | no change (known limit) |
 | RT1-21 | Recorded as a known limit in the spec §6 | no change (known limit) |
 
-Owner ruling on RT1-06 (2026-11-02): an off-target material error counts
+Ruling on RT1-06 (2026-11-02): an off-target material error counts
 toward the guardrail only when the same cell is wrong in at least 2 of 3
 runs; all non-primary cells stay scored (no sibling cells left out);
 one-off errors are reported as a diagnostic. Written into

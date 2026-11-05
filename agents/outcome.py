@@ -14,8 +14,8 @@ BUDGET_SUBTYPES = {"error_max_turns", "error_max_budget_usd"}
 PROVIDER_ASSISTANT_ERRORS = {"authentication_failed", "rate_limit", "billing_error"}
 # ResultMessage.api_error_status codes: auth, forbidden, rate limit, overload.
 PROVIDER_STATUS_CODES = {401, 403, 429, 529}
-# Subscription usage-limit messages (Claude Code error reference). Owner
-# ruling RT2-05 (2026-11-03): a provider rate limit, so INVALID RUN; any
+# Subscription usage-limit messages (Claude Code error reference).
+# Ruling RT2-05 (2026-11-03): a provider rate limit, so INVALID RUN; any
 # other error without a provider type or status stays an agent error.
 SUBSCRIPTION_LIMIT_RE = re.compile(r"hit your (session|weekly|opus|sonnet) limit", re.IGNORECASE)
 

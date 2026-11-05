@@ -1,26 +1,12 @@
 # BLUEPRINT — ai-compliance-orchestrator
-*v1.1 — 2026-07-07. Branch B LOCKED (multi-jurisdiction compliance surveillance). Authoritative build document; SPEC.md is condensed from this at Phase 0. Written for Claude Code (executor). House patterns apply throughout: eval gate committed before code, truth on disk, done means checked (exit-code-0 + ledger status), bounded-AI rule v2, secrets never in transcripts.*
+*v1.1 — 2026-07-07. Multi-jurisdiction compliance surveillance. Authoritative build document; SPEC.md is condensed from this at Phase 0. Patterns applied throughout: eval gate committed before code, truth on disk, done means checked (exit-code-0 + ledger status), bounded-AI rule v2, secrets never in transcripts.*
 
-**BRANCH DECISION (resolved 2026-07-07):** Rule was "an external hiring process
-second-stage confirmation before Phase 0 → A (offer-sync); otherwise →
-B." The external-process timeline reported as 3–4 weeks, Phase 0 starting now → rule
-fires → **Branch B.** Branch A (offer-sync) archived as §13 note; may be
-revived as a v2 skin — the control plane is shared.
+**Scope decision (2026-07-07):** the project took Branch B,
+multi-jurisdiction compliance surveillance. Branch A (offer-sync) is
+archived as a §13 note; it could be revived as a v2 skin because the
+control plane is shared.
 
-**SEQUENCING REVISION (recorded 2026-07-07):** The original gate "Phase 0
-blocked behind claim-verification-agent flip" is REVISED — removed by
-explicit decision (reason: the external-process timeline uncertainty; recording
-deprioritized). The recording/flip remains an open item on its own track
-in kristian-os STATE. This is a formal lock revision, not drift.
-
-*Redaction note (2026-07-14): a third-party company name was
-removed from this section before publication; the decision logic
-is unchanged. Reason recorded in the private governance record.*
-
-Classification: PROJECT. Named reader: recruiters/hiring managers at
-iGaming operators and affiliates (majority of active applications).
-Trigger: multi-agent slot decision + branch lock, 2026-07-07.
-Timebox: ~2 weekends.
+Classification: PROJECT.
 
 ---
 
@@ -40,18 +26,15 @@ findings, a full audit trail, and a human gate. Nothing publishes,
 nothing auto-remediates; every finding is traceable to a rule ID and an
 evidence excerpt.
 
-**What this proves that the existing portfolio does not:** orchestration.
-The five engines are single systems; ai-claim-verification-agent is a
-single bounded agent. This is the first artifact with agent-to-agent
-fan-out, contract-enforced boundaries, aggregation, and failure modes
-committed as tests.
+**What this demonstrates:** orchestration: agent-to-agent fan-out,
+contract-enforced boundaries, aggregation, and failure modes committed as
+tests.
 
 **Rule-fidelity stance (ADR-0003, written at Phase 0):** the rule sets
 are synthetic and deliberately simplified — modeled on publicly known
 regulatory themes, NOT real regulatory text, and the README says so
 explicitly. The system demonstrates the architecture for compliance
-surveillance; it does not claim legal accuracy. This is the honest
-version of the eval and the mitigation for domain-literate reviewers.
+surveillance; it does not claim legal accuracy.
 
 ## 2. What it does (one pass, v1)
 
@@ -205,7 +188,7 @@ Each row is a test in `tests/test_failures.py`, not a README promise.
 
 ## 7. Eval gate (committed Phase 1, before any agent code — hard PASS/FAIL in `evals/eval_config.yaml`)
 
-**Dataset (synthetic, ground truth authored first, Kristian approves before freeze):**
+**Dataset (synthetic, ground truth authored first, human-approved before freeze):**
 - 3 jurisdiction rule sets (synthetic, simplified — per ADR-0003):
   ~8 rules each across the four categories, each with severity class.
 - 12 seeded published pages (mix: operator-style + affiliate-style).
@@ -228,10 +211,10 @@ Each row is a test in `tests/test_failures.py`, not a README promise.
 - Orchestration invariants at 100%: every task terminal; zero lost
   tasks; FI-1..FI-7 green; idempotent re-run.
 - Cost + turns recorded per run; official gate run on Sonnet 4.6, dev
-  on Haiku 4.5 (house model routing; Max plan auth — no per-token key).
+  on Haiku 4.5 (subscription login, no per-token key).
 - `evals/EVAL_RESULTS.md` with dated runs, miss-pattern analysis on any
-  FAIL, gates never adjusted post-run (Context-engine precedent: report
-  FAIL honestly rather than gate-shop).
+  FAIL, gates never adjusted post-run (a FAIL is reported as it
+  stands).
 
 ### §7 amendment (2026-11-02, repair program P-001): gate v2
 
@@ -240,9 +223,9 @@ result (`gate-9328e564`, FAIL) stands. The next version of this system is
 gated by v2.
 
 Eval level: Proposed Light (portfolio demo; a human approves every proposal)
-Eval level: Decided Standard, owner, 2026-11-02 (public rate claim)
+Eval level: Decided Standard, maintainer, 2026-11-02 (public rate claim)
 
-Eval-gate exception, owner, 2026-11-02, ai-compliance-orchestrator only:
+Eval-gate exception, maintainer, 2026-11-02, ai-compliance-orchestrator only:
 official tests are private holdouts of independently authored scenario
 cases. Their pages and keys never enter Git, before or after a run,
 including after a FAIL. In their place Git holds the scenario spec
@@ -267,8 +250,12 @@ error on another cell (the same cell wrong in at least 2 of 3 runs;
 one-off errors are reported, not gated). Exact definitions, grading, result rules and the sanitized-results
 allowlist: `evals/eval_config.yaml` (version 2.0). Case rules:
 `evals/v2/SCENARIO_SPEC.md`. Rule clarifications (D7):
-`evals/v2/RULESET_V1_1.md`, approved by the owner 2026-11-02; P2 writes
+`evals/v2/RULESET_V1_1.md`, approved 2026-11-02; P2 writes
 them into `rulesets/`. Gate v2 and the spec were approved the same day.
+
+Amended 2026-11-04, before any official v2 series: the official model is
+claude-sonnet-5-5, and gate v2.1 adds one INVALID RUN condition
+(`evals/eval_config.yaml`). Result of 2026-11-05: `evals/EVAL_RESULTS.md`.
 
 ## 8. Repo structure (target)
 
@@ -297,23 +284,22 @@ ai-compliance-orchestrator/
 | Phase | Deliverable | Accept when |
 |---|---|---|
 | 0 | Private repo, scaffold, SPEC.md (condensed from this), CLAUDE.md, ADR-0001/0003 drafts, BLUEPRINT.md committed | Repo pushed; structure matches §8; §10 decisions recorded in SPEC |
-| 1 | Contracts (§5) + ledger schema + rule sets + full eval dataset + answer key + eval_config + FI test skeletons | Kristian approved rule sets, dataset + gates; committed; **no agent code exists yet** |
+| 1 | Contracts (§5) + ledger schema + rule sets + full eval dataset + answer key + eval_config + FI test skeletons | Rule sets, dataset + gates approved; committed; **no agent code exists yet** |
 | 2 | Orchestrator core + intake + aggregation, end-to-end with **stub agents** (deterministic fakes returning fixture payloads) | Full pipeline green on stubs; FI-1..FI-4, FI-6, FI-7 pass with stubs; zero LLM calls so far |
 | 3 | Checker agent (caged, jurisdiction-parameterized) replacing its stubs | Checker gate leg green on dev model; bounds + rule-isolation tests green |
 | 4 | Verifier subprocess node (ADR-0002) replacing its stub | Shipped agent runs unmodified inside pipeline; FI-5 implemented + green |
 | 5 | Planner agent + human-gate CLI | Proposal queue populated from a full run; approve/reject round-trip in ledger |
 | 6 | Official gate run (Sonnet 4.6) + EVAL_RESULTS.md + FI suite full green | GATE GREEN or honest FAIL with miss-pattern analysis committed |
-| 7 | README (house structure, '## System' heading) + architecture diagram + demo recording | Stop conditions met |
+| 7 | README ('## System' heading) + architecture diagram + demo recording | Stop conditions met |
 
 Phase 2 is deliberate: **orchestration is proven deterministically before
 any model is invoked** — the multi-agent claim is tested at its own
 layer, cheaply, and the stubs remain as fixtures for the FI suite forever.
 
-## 10. Decisions (resolved 2026-07-07 unless overridden at Phase 0 paste)
+## 10. Decisions (resolved 2026-07-07)
 
-1. **Branch:** B — compliance surveillance. LOCKED (rule fired).
-2. **Repo name:** `ai-compliance-orchestrator` (T0; rename at flip is
-   near-free for a private repo).
+1. **Branch:** B — compliance surveillance.
+2. **Repo name:** `ai-compliance-orchestrator`.
 3. **Verifier integration:** subprocess + JSON contract, as optional
    fourth checker (claim-accuracy dimension), Phase 4.
    **Phase 4 amendment (2026-07-08):** verifier role superseded by
@@ -324,10 +310,9 @@ layer, cheaply, and the stubs remain as fixtures for the FI suite forever.
    NOT_APPLICABLE ≥ 0.90.
 5. **Dataset sizing:** 3 jurisdictions × ~8 rules; 12 pages;
    ~25 violations + distractors.
-6. **Positioning (deferred):** flagship question reopens after first
-   external signal; not decided here.
-7. **OPEN — must be answered before Phase 1 kickoff:** answer-key
-   authorship split (§7). Not Code's decision.
+6. **Positioning:** not part of this design.
+7. **Answer-key authorship split (§7):** resolved 2026-07-07, see
+   `adr/0004-three-actor-answer-key-protocol.md`.
 
 ## 11. Stop conditions (done means all four)
 
@@ -345,5 +330,5 @@ anything · more than the four node types.
 
 Branch A (offer/deal synchronization) — same control plane, different
 skin (OfferRecord/ChangeEvent contracts, drift-injection dataset,
-verifier as centerpiece). Archived 2026-07-07 when the decision rule
-fired for B. Revivable as v2 without architectural change.
+verifier as centerpiece). Archived 2026-07-07. Revivable as v2 without
+architectural change.

@@ -539,7 +539,7 @@ def test_r2_other_verifier_failures_record_no_cost(fake_verifier, tmp_path, monk
 
 
 def test_d1_verifier_subprocess_gets_no_api_key_and_loads_no_dotenv(fake_verifier, monkeypatch):
-    """Owner decision D1: subscription login only. A key in the parent
+    """Decision D1: subscription login only. A key in the parent
     environment never reaches the verifier, and the runner loads no
     dotenv file (load_dotenv searched upward, outside the repository)."""
     _repo, config = fake_verifier

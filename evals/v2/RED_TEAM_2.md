@@ -125,7 +125,7 @@ Severity: Medium
 
 What breaks: (1) The gate retires a holdout after any completed official
 series, PASS or FAIL. The runner counts earlier result files but still
-starts a new gated series on the same holdout, so the owner could rerun
+starts a new gated series on the same holdout, so the maintainer could rerun
 H2 until it passes and each run would write an official result file.
 (2) `verify_manifest` decides "pages-only or full" from the manifest
 itself. If a future holdout's committed manifest lists only `pages/`,
@@ -227,14 +227,14 @@ Evidence:
   `result.is_error`); pinned verifier `agent/harness.py`
   `run_case_result` raises `RuntimeError` when no ResultMessage arrives.
 
-Smallest fix: code plus gate clarification (owner): decide whether
+Smallest fix: code plus gate clarification (maintainer): decide whether
 `server_error` and a missing ResultMessage count as provider overload;
 record the raw provider error type in `payload_ref` so the decision is
 "from logged error types", as the gate asks.
 
-Disposition: pending owner ruling (gate clarification: do `server_error` and a missing ResultMessage count as provider overload, that is INVALID RUN?). No change made.
+Disposition: pending ruling (gate clarification: do `server_error` and a missing ResultMessage count as provider overload, that is INVALID RUN?). No change made.
 
-Owner ruling 2026-11-03 (option b; gate text unchanged): INVALID RUN only when the logged provider type or status shows auth failure, rate limit or overload, and a subscription usage-limit message counts as a provider rate limit. `server_error` without such a status and a missing ResultMessage stay agent errors (a miss), with the raw types logged. Changed the build: `agents/outcome.py` (usage-limit message on an error result is a provider error; every agent-error message logs the raw assistant error types, `api_error_status` and, when a ResultMessage exists, the first 300 characters of its error text), `nodes/verifier_runner.py` (prints the error text and errors of an errored run), `nodes/verifier.py` (usage-limit message is a provider error). Remaining gap, accepted: a verifier run that ends without a ResultMessage has no logged type and stays a miss (the shipped verifier is not changed). Tests: `test_d6_outcome_mapping` (new rows), `test_rt2_05_*`.
+Ruling 2026-11-03 (option b; gate text unchanged): INVALID RUN only when the logged provider type or status shows auth failure, rate limit or overload, and a subscription usage-limit message counts as a provider rate limit. `server_error` without such a status and a missing ResultMessage stay agent errors (a miss), with the raw types logged. Changed the build: `agents/outcome.py` (usage-limit message on an error result is a provider error; every agent-error message logs the raw assistant error types, `api_error_status` and, when a ResultMessage exists, the first 300 characters of its error text), `nodes/verifier_runner.py` (prints the error text and errors of an errored run), `nodes/verifier.py` (usage-limit message is a provider error). Remaining gap, accepted: a verifier run that ends without a ResultMessage has no logged type and stays a miss (the shipped verifier is not changed). Tests: `test_d6_outcome_mapping` (new rows), `test_rt2_05_*`.
 
 ---
 
@@ -266,14 +266,14 @@ Evidence:
   `TimeoutError`): `planner_one_pending_proposal_per_confirmed`
   `passed: False, count: 1`, result `FAIL`.
 
-Smallest fix: gate or spec change (owner): say whether a terminal FAILED
+Smallest fix: gate or spec change (maintainer): say whether a terminal FAILED
 plan task (and a checker or verifier session with no tool call) is an A
 failure or only a recorded diagnostic; then align the three checks and
 add keyless tests.
 
-Disposition: pending owner ruling (the gate lines conflict; the build keeps the stricter reading until the owner rules). No change made.
+Disposition: pending ruling (the gate lines conflict; the build keeps the stricter reading until it is ruled). No change made.
 
-Owner clarification 2026-11-03 (gate v2.0 text unchanged; recorded before any judged run): under lines 33-35, an A2 line that needs an artifact of a task (an audit row, a proposal) applies to tasks that ended DONE. A check task that ended FAILED or DEAD_LETTER, or a plan task that ended FAILED, passes A2 when it is terminal, recorded with an error class and stored no finding or proposal; their counts are published as diagnostic rows. Changed the build (`evals/run_eval.py`): independence counts DONE check tasks only (FAILED and DEAD_LETTER check tasks store no finding and are misses in B); the leak check fails on any marker, and on a missing audit DB or no rows only when a DONE task should have logged there (checker and planner DB: a DONE check task; verifier DB: a DONE verify task); planner integrity needs zero proposals for a CONFIRMED finding whose plan task ended FAILED and exactly one for every other, and every stored proposal still passes every planner check. A plan task that ended DONE without a proposal or DEAD_LETTER still fails A. New component A rows `diagnostic_check_tasks_failed_or_dead_letter` and `diagnostic_plan_tasks_failed` (passed is None, count is the number of tasks). Tests: `test_rt2_06_*`.
+Clarification 2026-11-03 (gate v2.0 text unchanged; recorded before any judged run): under lines 33-35, an A2 line that needs an artifact of a task (an audit row, a proposal) applies to tasks that ended DONE. A check task that ended FAILED or DEAD_LETTER, or a plan task that ended FAILED, passes A2 when it is terminal, recorded with an error class and stored no finding or proposal; their counts are published as diagnostic rows. Changed the build (`evals/run_eval.py`): independence counts DONE check tasks only (FAILED and DEAD_LETTER check tasks store no finding and are misses in B); the leak check fails on any marker, and on a missing audit DB or no rows only when a DONE task should have logged there (checker and planner DB: a DONE check task; verifier DB: a DONE verify task); planner integrity needs zero proposals for a CONFIRMED finding whose plan task ended FAILED and exactly one for every other, and every stored proposal still passes every planner check. A plan task that ended DONE without a proposal or DEAD_LETTER still fails A. New component A rows `diagnostic_check_tasks_failed_or_dead_letter` and `diagnostic_plan_tasks_failed` (passed is None, count is the number of tasks). Tests: `test_rt2_06_*`.
 
 ---
 
@@ -286,7 +286,7 @@ agent input or output". The build checks only the `tool_calls` payloads
 (tool input and tool response) in the audit DBs. It never checks the
 system prompt, the user prompt, or context that the CLI adds to a
 session. By code reading our prompts hold no marker (fact). But since
-P3 (owner decision 2A) every real agent session, including the
+P3 (decision 2A) every real agent session, including the
 verifier subprocess, runs with its working directory at
 `<holdout_root>/runs/<H>/<series>/run<k>`, and that path contains the
 `holdout_root` marker. Whether the CLI puts the working directory into
@@ -310,9 +310,9 @@ whether the model is told its working directory), or code: run agent
 sessions in a neutral per-run directory whose path holds no
 `holdout_root` marker.
 
-Disposition: pending owner ruling. Facts: our prompts hold no marker (code reading); whether the CLI tells the model its working directory is not verified. Proposed: check it in the authorized real dry run on a July page (transcript of public data); if the directory reaches the model, the owner decides between a neutral per-run agent directory (amends decision 2A) and accepting it. No change made.
+Disposition: pending ruling. Facts: our prompts hold no marker (code reading); whether the CLI tells the model its working directory is not verified. Proposed: check it in the authorized real dry run on a July page (transcript of public data); if the directory reaches the model, the maintainer decides between a neutral per-run agent directory (amends decision 2A) and accepting it. No change made.
 
-Owner ruling 2026-11-03: approved as proposed. No change now; the check is made in the real July dry run (not yet authorized), and a neutral per-run directory follows only if the path reaches the model.
+Ruling 2026-11-03: approved as proposed. No change now; the check is made in the real July dry run (not yet authorized), and a neutral per-run directory follows only if the path reaches the model.
 
 ---
 
@@ -338,9 +338,9 @@ Evidence:
 Smallest fix: code: do not push void elements on the skip stack; add
 the case to the RT1-11 shared-text-rule test.
 
-Disposition: pending owner ruling. The fix is in the shared text rule, which is also the grader (RT1-11), and the gate and scorer are frozen. No change made.
+Disposition: pending ruling. The fix is in the shared text rule, which is also the grader (RT1-11), and the gate and scorer are frozen. No change made.
 
-Owner ruling 2026-11-03: fix approved; it brings the code in line with the frozen `shared_text_rule` text (no judged run exists yet; the H2 manifest hashes files, not extracted text). Changed the build: `intake/textrule.py` drops a hidden void element on its own and never opens a skip region for it. Probe page above now gives `'offer 100% risk-free bet markets: gbr'`. Test: the RT1-11 shared-text-rule test (`test_shared_text_rule_same_text_for_grader_reader_and_tool`) gained a hidden `<input>` and `<img>` before trailing text. H2 manifest check and self-check rerun: "manifest: match", "Holdout self-check: PASS". A3 on H2 rerun (keyless, counts only): `a3_grader_blocks_in_reader`, `a3_triggers_and_spans_in_reader` and `a3_absent_content_not_in_reader` passed, 0 failures each, 30 cases.
+Ruling 2026-11-03: fix approved; it brings the code in line with the frozen `shared_text_rule` text (no judged run exists yet; the H2 manifest hashes files, not extracted text). Changed the build: `intake/textrule.py` drops a hidden void element on its own and never opens a skip region for it. Probe page above now gives `'offer 100% risk-free bet markets: gbr'`. Test: the RT1-11 shared-text-rule test (`test_shared_text_rule_same_text_for_grader_reader_and_tool`) gained a hidden `<input>` and `<img>` before trailing text. H2 manifest check and self-check rerun: "manifest: match", "Holdout self-check: PASS". A3 on H2 rerun (keyless, counts only): `a3_grader_blocks_in_reader`, `a3_triggers_and_spans_in_reader` and `a3_absent_content_not_in_reader` passed, 0 failures each, 30 cases.
 
 ---
 
@@ -441,8 +441,8 @@ Disposition: changed the build. Both harnesses reset `last_result` at the start 
 | Two errors in one task | Yes: the first error wins (circuit breaker, then outcome; schema before coverage) | `test_failures.py::test_fi1_budget_turn_cap`, `::test_fi2_schema_invalid_payload` | nothing |
 | Two errors in one run (provider error, then a system crash) | No: scored as FAIL, gate says INVALID RUN (RT2-04) | none | fix |
 | Injected instruction on a page | Checker: page delimited, prompt rule. Verifier: page copy not delimited (shipped agent). Planner: excerpt shown raw. Checker can fetch other pages (RT2-10) | `test_p2_repairs.py::test_d8_fetch_page_delimits_page_content`, `::test_d8_assembler_escapes_html` | dev case; fix (RT2-10) |
-| Planner fails for one confirmed finding | Fails component A (RT2-06) | probe only | fix (after owner ruling) |
-| Checker or verifier ends without any tool call | Fails component A (RT2-06) | none | fix (after owner ruling) |
+| Planner fails for one confirmed finding | Fails component A (RT2-06) | probe only | fix (after ruling) |
+| Checker or verifier ends without any tool call | Fails component A (RT2-06) | none | fix (after ruling) |
 | Gated series with a run count other than 3 | No (RT2-01) | none | fix |
 | Same holdout run again after a completed official series | No (RT2-03) | none | fix |
 | Excerpt made of small `...` fragments | Grading yes (one part must overlap the core span by 15 characters); the verbatim and planner on-page checks accept any fragments | `test_run_eval.py::test_grade_evidence_categories` | nothing |
@@ -454,7 +454,7 @@ Disposition of the sweep rows:
 - keyless test, added: one sentence triggers rules in two markets (`test_sweep_one_sentence_triggers_rules_in_two_markets`); verifier failure on one of two findings fails the whole task, neither asserted (`test_sweep_verifier_failure_on_one_of_two_findings_fails_the_whole_task`);
 - dev case, listed for the D10 batch (public development pages; their briefs and keys are written when D10 is authorized, keys by the three-actor protocol): a distractor next to the real trigger; terms split between a heading and a paragraph; an injected instruction on a page (RT2-10 is fixed);
 - fix, done: RT2-01, RT2-03, RT2-04, RT2-09 rows;
-- owner ruling: RT2-06 rows (planner failure, session with no tool call) and RT2-08 (hidden void element). Ruled 2026-11-03 and fixed (see RT2-06 and RT2-08).
+- ruling: RT2-06 rows (planner failure, session with no tool call) and RT2-08 (hidden void element). Ruled 2026-11-03 and fixed (see RT2-06 and RT2-08).
 
-RT2-05 to RT2-08 were ruled by the owner on 2026-11-03: RT2-05, RT2-06 and RT2-08 changed the build; RT2-07 is checked in the real July dry run.
-Findings: 11; changed the build: 10; changed the test: 0; no change: 1; pending owner ruling: 0
+RT2-05 to RT2-08 were ruled on 2026-11-03: RT2-05, RT2-06 and RT2-08 changed the build; RT2-07 is checked in the real July dry run.
+Findings: 11; changed the build: 10; changed the test: 0; no change: 1; pending ruling: 0

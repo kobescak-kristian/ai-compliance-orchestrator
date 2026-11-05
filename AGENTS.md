@@ -20,8 +20,8 @@ accuracy is claimed. Human overview: `README.md`.
 | Behavioural contract: invariants, agent tool boundaries, gate definition | `SPEC.md`; `BLUEPRINT.md` for full rationale |
 | Why a design decision was made, and what it superseded | `adr/` |
 | Verifier / adjudication behaviour, verdicts, scoring treatment | `policy/ADJUDICATION_POLICY.md` |
-| Eval thresholds, ground truth, official results | `evals/eval_config.yaml`, `evals/answer_key.yaml`, `evals/EVAL_RESULTS.md` |
-| Build status, open loops, change history | `STATE.md` |
+| Eval thresholds, ground truth, official results | `evals/eval_config.yaml`, `evals/answer_key.yaml`, `evals/EVAL_RESULTS.md`, `evals/results/` |
+| Build status, open loops, change-history pointer | `STATE.md` |
 | What the implementation actually does | affected source, tests, configuration, and executable schemas inspected together |
 
 When sources disagree:
@@ -35,7 +35,7 @@ When sources disagree:
   status from historical design documents.
 - If canonical sources conflict, surface the conflict and do not resolve
   it by assumption. If the requested task depends on that conflict,
-  stop and ask the owner.
+  stop and ask the human repository owner.
 
 `AGENTS.md` is routing guidance, never evidence of implementation or
 project state.
@@ -63,7 +63,7 @@ These are starting points, not exhaustive reading lists.
   a whitelist or bypass a boundary merely to make a task easier.
 - Development and keyless verification paths use stub/no-model
   execution. Do not opt into paid or real-model execution without
-  explicit owner authorization.
+  explicit human repository owner authorization.
 - The verifier is a reused external agent pinned by commit in
   `config.yaml`. Do not edit that external agent or change its pin
   without an explicit recorded decision.
@@ -73,8 +73,8 @@ These are starting points, not exhaustive reading lists.
   `evals/INJECTION_SPEC.md` must never enter model-agent input or
   prompts.
 - If canonical design material does not cover a material design
-  decision required by the task, stop and ask the owner rather than
-  silently creating the policy.
+  decision required by the task, stop and ask the human repository owner
+  rather than silently creating the policy.
 - Git history is evidence and published records are hash-pinned. Never
   rewrite repository history.
 - No secrets or machine-local absolute paths in tracked files. Secrets
@@ -98,8 +98,8 @@ These are starting points, not exhaustive reading lists.
       python .githooks/validate_artifacts.py .
 
 - Do not run paid/real-model evaluation or a verifier-subprocess path
-  without explicit owner authorization. Such runs can incur cost and
-  may create temporary files in the sibling verifier checkout.
+  without explicit human repository owner authorization. Such runs can
+  incur cost and may create temporary files in the sibling verifier checkout.
 
 ## Repository landmarks
 

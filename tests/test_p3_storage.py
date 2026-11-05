@@ -1,4 +1,4 @@
-"""P3 storage-isolation tests (repair program P-001, owner decisions 1A,
+"""P3 storage-isolation tests (repair program P-001, decisions 1A,
 2A and 3A, 2026-11-03), keyless: verifier case files go to a private
 case root and never into the verifier checkout; run output is refused
 inside any Git work tree; real runs execute in the private run directory,
@@ -165,7 +165,7 @@ def test_agent_options_hooks_and_cli_command_do_not_depend_on_cwd(monkeypatch, t
 
 
 # --------------------------------------------------------------------------
-# R1 (owner decision 2026-11-03): the verifier session gets the 3A isolation
+# R1 (decision 2026-11-03): the verifier session gets the 3A isolation
 # --------------------------------------------------------------------------
 
 

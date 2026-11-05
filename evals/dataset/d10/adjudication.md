@@ -1,13 +1,13 @@
 # D10 adjudication
 
-Step 6 of `evals/v2/SCENARIO_SPEC.md` §6: Kristian rules on every cell
+Step 6 of `evals/v2/SCENARIO_SPEC.md` §6: the human adjudicator rules on every cell
 where the draft key and the blind labels disagree. D10 is public
 development data; results on it are reported only and never gate.
 
 ## Blind labeling
 
 - Labeler: GPT-6 (a different model family from the Claude authors),
-  run by Kristian with the blind packet only: the 10 pages, the 24
+  run with the blind packet only: the 10 pages, the 24
   signed v1.1 rule texts, the applicability semantics and an empty
   112-cell template. It never saw the briefs or the draft key.
 - Returned file: kept privately outside Git; SHA-256
@@ -20,7 +20,7 @@ development data; results on it are reported only and never gate.
   labeler agreed with all five draft cells marked UNSURE and with all
   16 required coverage cells.
 
-## Rulings (Kristian, 2026-11-04)
+## Rulings (2026-11-04)
 
 | Cell | Draft | Blind label | Ruling |
 |---|---|---|---|

@@ -17,15 +17,15 @@ Roles (three-actor protocol, ADR-0004):
    `d01.html` to `d10.html` from these briefs alone.
 3. Spec author, second pass: reads the finished pages, finalizes the
    draft key and runs a filler sweep.
-4. Blind labeler (another model family, run by Kristian): labels every
+4. Blind labeler (another model family): labels every
    cell from the pages, the signed v1.1 rule texts and the applicability
    semantics only.
-5. Kristian adjudicates the draft key against the blind labels.
+5. A human adjudicator rules on the draft key against the blind labels.
 
 Status: briefs by the spec author; pages built by the page author in
 `evals/dataset/d10/pages/`; spec author second pass and filler sweep
-done; key (`evals/dataset/d10/key.yaml`) blind-labeled and adjudicated
-by Kristian, now final (`evals/dataset/d10/adjudication.md`). Before the pages were built, the
+done; key (`evals/dataset/d10/key.yaml`) blind-labeled and adjudicated,
+now final (`evals/dataset/d10/adjudication.md`). Before the pages were built, the
 coordinator moved the MLT-GE-01 violation from d03 to d10, because the
 original d03 cell was marked UNSURE.
 

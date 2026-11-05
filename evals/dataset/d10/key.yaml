@@ -1,4 +1,4 @@
-status: "FINAL: spec author draft, blind-labeled (110 of 112 agreed), adjudicated by Kristian 2026-11-04 (see adjudication.md)"
+status: "FINAL: spec author draft, blind-labeled (110 of 112 agreed), adjudicated 2026-11-04 (see adjudication.md)"
 ruleset: v1.1
 pages:
   d01:
@@ -58,7 +58,7 @@ pages:
       GBR-RG-01: COMPLIANT
       GBR-RG-02: NOT_APPLICABLE   # primary: operator links only, no incentive; tagline removed on purpose
       GBR-PC-01: COMPLIANT
-      GBR-PC-02: NOT_APPLICABLE   # Kristian ruling 2026-11-04 (draft COMPLIANT): no gambling offer on the page
+      GBR-PC-02: NOT_APPLICABLE   # ruling 2026-11-04 (draft COMPLIANT): no gambling offer on the page
       GBR-PC-03: COMPLIANT
       GBR-GE-01: COMPLIANT
       MLT-BT-01: NOT_APPLICABLE
@@ -200,7 +200,7 @@ pages:
       GBR-RG-01: COMPLIANT
       GBR-RG-02: NOT_APPLICABLE   # UNSURE (low): a jackpot game story read as no promotional incentive
       GBR-PC-01: COMPLIANT
-      GBR-PC-02: NOT_APPLICABLE   # Kristian ruling 2026-11-04 (draft COMPLIANT): no gambling offer on the page
+      GBR-PC-02: NOT_APPLICABLE   # ruling 2026-11-04 (draft COMPLIANT): no gambling offer on the page
       GBR-PC-03: COMPLIANT
       GBR-GE-01: COMPLIANT
       MLT-BT-01: NOT_APPLICABLE

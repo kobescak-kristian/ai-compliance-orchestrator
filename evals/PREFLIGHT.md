@@ -9,9 +9,14 @@ Status of each line: **DONE <date>** with the command and its result, or
 **OPEN** (to be done at run time). "Preflight done <date time>" and every
 item that needed action go into the first run's results entry.
 
+**Status at 2026-11-05:** the official series ran
+(`H2-2026-11-05-a7871a`). Its run-time checks are recorded in
+`evals/EVAL_RESULTS.md`. Lines still marked OPEN below show the state when
+this checklist was written.
+
 ## 1. Storage map (where a run writes, and whether that is inside Git)
 
-Owner rules: nothing that contains holdout data is written inside a Git
+Rules: nothing that contains holdout data is written inside a Git
 repository or inside a holdout folder; console output is sanitized.
 
 | What | Where | Holds page text? | Inside Git? | How verified |
@@ -21,18 +26,18 @@ repository or inside a holdout folder; console output is sanitized.
 | Verifier case files | `run<k>/verifier_cases/<case>/`, removed after each call (env `VERIFIER_DATASET_ROOT`) | yes | no | `tests/test_p3_storage.py` (fake verifier); probe below |
 | Results file | private run dir; `evals/results/<series>.json` only for `--gated` (sanitized allowlist) | no | the gated file only, sanitized | allowlist tests in `tests/test_run_eval.py` |
 | Console | counts, IDs and result class only | no | no | `evals/run_eval.py` `main` |
-| CLI session transcripts (checker, planner, verifier) | `~/.claude/projects/<folder named after the run dir>/` (owner decision 2A: real runs execute in the run dir) | yes | no | cwd tests in `tests/test_p3_storage.py`; location: OPEN, metadata check in section 3 |
-| Machine-policy hook action records (managed-policy hook `record` on every `mcp__*` call) | `~/.claude/kos-core/records/no-repo.jsonl` when the cwd is the run dir | fragments (tool input up to 200 chars, result up to 120 chars) | no | `~/.claude/kos-core` is not a Git repository (`git rev-parse` exit 128); file: OPEN, section 3 |
-| Machine-policy hook session stamps and `loaded` files | `~/.claude/kos-core/stamps/`, `loaded/` | no (metadata) | no | as above |
+| CLI session transcripts (checker, planner, verifier) | `~/.claude/projects/<folder named after the run dir>/` (decision 2A: real runs execute in the run dir) | yes | no | cwd tests in `tests/test_p3_storage.py`; location: OPEN, metadata check in section 3 |
+| Machine-policy hook action records (managed-policy hook `record` on every `mcp__*` call) | the machine's hook record store (`no-repo.jsonl`), outside this repository, when the cwd is the run dir | fragments (tool input up to 200 chars, result up to 120 chars) | no | the store is not a Git repository (`git rev-parse` exit 128); file: OPEN, section 3 |
+| Machine-policy hook session stamps and `loaded` files | the same store | no (metadata) | no | as above |
 | Verifier clone `__pycache__` | `<verifier clone>/agent/__pycache__/` | no (verifier code only) | gitignored in the clone | clone `git status --porcelain` stays empty |
 | A1 keyless suite temp dirs | system temp | no (fixtures, July pages) | no | tests use `tmp_path` |
 
-Agent context (owner decision 3A): the checker and planner run with
+Agent context (decision 3A): the checker and planner run with
 `setting_sources=[]` and `strict_mcp_config=True`, so no user, project or
 local settings, no CLAUDE.md and no other MCP server load, whatever the
 working directory. The managed machine-policy hooks still run (machine policy, not
-changed by this repo). The verifier session gets the same isolation (Kristian's
-ruling R1, 2026-11-03): `nodes/verifier_runner.py` wraps the pinned agent's
+changed by this repo). The verifier session gets the same isolation (ruling
+R1, 2026-11-03): `nodes/verifier_runner.py` wraps the pinned agent's
 `build_options` at runtime and sets only these two options; the pinned
 clone is not edited, and its tools, whitelist, budget, turns and hooks stay
 as shipped (ADR-0002). Verified in the second real July dry run
@@ -70,8 +75,8 @@ first-request context about 2,080 tokens, and only the verifier's own tools.
      stub runs through the alias cage: output only under
      `<temp>/runs/H9/`, holdout files unchanged, repository `git status`
      unchanged, no case ID in any ledger row.
-   - Real dry run (1 July page, `--runs 1`, Haiku): OPEN, needs the owner's
-     paid-run authorization.
+   - Real dry run (1 July page, `--runs 1`, Haiku): DONE 2026-11-03, series
+     `july-2026-11-03-9bdc94` and `july-2026-11-03-80e513` (`STATE.md`).
 6. **Blueprint reliability table.** N/A: `BLUEPRINT.md` has no "Reliability
    and security defaults" table (it predates that template).
 
@@ -79,6 +84,8 @@ Model availability (gate `model_routing`): `claude-haiku-4-5-20251001` and
 `claude-sonnet-4-6` are listed Active with no retirement date in the
 claude-api reference cached 2026-10-06. Not checked live. OPEN: confirmed
 by the dry run for Haiku, and before the official series for Sonnet.
+**Update:** the official model became claude-sonnet-5-5 on 2026-11-04. All
+195 sessions of the official series served it (`evals/EVAL_RESULTS.md`).
 
 ## 3. Keyless checks (DONE 2026-11-03) and run-time metadata checks (OPEN)
 
@@ -104,8 +111,9 @@ DONE 2026-11-03:
 
 OPEN, run in the authorized dev preflight on public data (July or D10
 pages), metadata only: before and after the real dry run, list path, size
-and modification time (never contents) under `~/.claude/projects`,
-`~/.claude/kos-core`, this repository and the verifier clone. Pass when:
+and modification time (never contents) under `~/.claude/projects`, the
+machine's hook record store, this repository and the verifier clone. Pass
+when:
 - new transcript files appear only under the project folder named after
   the run dir;
 - machine-policy hook records grow only in `no-repo.jsonl`;
@@ -114,6 +122,6 @@ and modification time (never contents) under `~/.claude/projects`,
 - `verifier_cases/` is empty after the run.
 - RT2-07 (public data only): in the dry run's July transcript, check
   whether the working directory reaches the model's context; the result
-  goes to the owner's RT2-07 ruling.
+  goes to the RT2-07 ruling.
 For a holdout run (P4) the same listing is taken, and holdout transcripts
 are never opened.

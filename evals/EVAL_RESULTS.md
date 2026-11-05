@@ -1,10 +1,187 @@
 # EVAL_RESULTS
 
+## Latest official result
+
+**November 5, 2026: gate v2.1 PASS.** Official series
+`H2-2026-11-05-a7871a` on claude-sonnet-5-5: 30 synthetic compliance scenarios
+from private holdout H2, 3 runs each. Each scenario is scored as one case.
+
+| Measure | Result | Gate limit |
+|---|---|---|
+| Scenarios passed in all 3 runs | 29 of 30 | at most 2 may fail |
+| Component A deterministic checks | 52 of 52 | all must pass |
+| Unclean pages | 0 of 30 | at most 6 |
+
+One scenario failed on evidence overlap. In `h2-22` (`DEU-PC-03`) the violation
+was found and CONFIRMED in all 3 runs, but the evidence excerpt did not
+overlap the key's core span (NO_OVERLAP). The cause was not examined.
+
+Limitations:
+
+- This is one series on one holdout. Pages and rule sets are synthetic, and
+  no legal accuracy is claimed.
+- Under the predeclared binomial calculation, the result supports a pass rate
+  of at least 80% (one-sided 95%) for scenarios drawn under
+  `evals/v2/SCENARIO_SPEC.md`, if those scenarios are a representative random
+  sample. The 30 scenarios are a deliberately balanced, purpose-authored
+  synthetic set, which does not establish representative random sampling.
+- The result does not show 30 of 30 cases, perfect accuracy, production
+  readiness, legal compliance or whole-page screening.
+- Holdout pages and keys are private, so this result cannot be recomputed from
+  a public clone.
+
+The July 2026 gate v1.0 FAIL (`gate-9328e564`) remains below as historical
+evidence, with its original findings. It used a different gate, test set, rule
+text and model, so the two results are not directly comparable.
+
+## OFFICIAL: gate v2.1 series (claude-sonnet-5-5, private holdout H2)
+
+### 2026-11-05: series H2-2026-11-05-a7871a
+
+Sanitized results, with per-case and per-page detail:
+`evals/results/H2-2026-11-05-a7871a.json` (fields limited by
+`sanitized_results_allowlist` in `evals/eval_config.yaml`). Its SHA-256 as
+Git stores it (LF) is
+`788f79f1b67c09d922b8100b56c2d5152b6de06da1d7375c5dd93871d31fb9fc`. Holdout
+pages and keys are private and are not in this repository
+(`evals/v2/SCENARIO_SPEC.md` §7), so this result cannot be recomputed from a
+public clone.
+
+| Item | Value |
+|---|---|
+| Result | **PASS**, runner exit 0 |
+| Series window | 2026-11-05, 00:43:55 to 01:51:39 local, one series, no retry |
+| Commit | `91105caeb7178f744cbc91c5a1ea04bb33e672a0` |
+| Gate | v2.1, `evals/eval_config.yaml`, SHA-256 (LF) `e2b16c2a005911846ba834b00605c737e315110ebe958b9ff3b84f2d6764de24` |
+| Dataset | holdout H2, 30 cases (10 DEU, 10 GBR, 10 MLT), 3 runs each; manifest `evals/v2/holdouts/H2.sha256`, SHA-256 (LF) `c72c3b565b5ccc9f76ef121446ae0f0088593beb609615b447d02f92251ccd13` |
+| Ruleset | v1.1; file hashes in the results file, equal to `evals/eval_config.yaml` |
+| Model | claude-sonnet-5-5: checker, verifier and planner |
+| Verifier pin | `d444b13c3ba07b9f4798d3298ec3bfc92da5a960` |
+| Earlier official series under gate v2 | 0 |
+
+#### Gate result
+
+| Gate item | Result | Limit | Outcome |
+|---|---|---|---|
+| Component A checks | 52 of 52 passed | 100% | PASS |
+| Valid cases | 30 | at least 30 | PASS |
+| Failing cases | 1 (29 of 30 passed in all 3 runs) | at most 2 | PASS |
+| Unclean pages | 0 of 30 | at most 6 | PASS |
+| **GATE** | | | **PASS** |
+
+Component A: 4 checks on the frozen commit (A1 keyless suite, 3 A3 reader
+checks) and 16 checks in each of the 3 runs (A2). The results file holds 6
+more rows, diagnostic counts with no pass or fail value; all are 0.
+
+#### Failed case and miss analysis
+
+| Case | Market | Rule | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|---|---|
+| `h2-22` | DEU | `DEU-PC-03` | NO_OVERLAP | NO_OVERLAP | NO_OVERLAP |
+
+The same miss in all 3 runs: the violation was found and CONFIRMED, but the
+evidence excerpt did not overlap the key's core span, so the case failed
+evidence grading. The cause was not examined. No holdout content was opened
+for this record. Any later page-level analysis treats H2 as development data.
+
+#### Diagnostics (recorded, not gated; cells clustered by page, no binomial claim)
+
+| Measure | Value |
+|---|---|
+| TP / FP / FN | 42 / 0 / 0, pooled over all cells and all 3 runs |
+| Precision / recall | 1.000 / 1.000 |
+| Adjudication | 42 CONFIRMED, 0 REJECTED, 0 DISPUTED |
+| NOT_APPLICABLE accuracy | 0.9804 |
+| Flips between runs | 4 cells, all COMPLIANT vs NOT_APPLICABLE (derived: every cell was decided, and FP, FN, REJECTED and DISPUTED are all 0) |
+| One-off off-target errors | 0 |
+| Failed tasks | check 0, verify 0, plan 0 |
+
+Precision and recall count assertions only; they do not grade evidence. The
+3 `h2-22` misses count as TP here, so recall 1.000 does not mean every case
+passed. The gated number is the case result above.
+
+#### Execution and isolation
+
+- Sessions: 195 model sessions, 65 per run (37 checker, 14 verifier, 14
+  planner per run). All served claude-sonnet-5-5, 0 API errors. Runner
+  stderr empty.
+- Machine-policy record hook: no refusal line appears in the runner output.
+  This is not a separately measured zero: the runner prints a line only when
+  it counts at least one refusal, and it saves no count. An unrecovered
+  refusal would have made the series INVALID RUN, and it did not. No INVALID
+  RUN condition applied.
+- Login: subscription (claude.ai, first party). No other Claude process ran
+  at series start.
+- Frozen inputs: commit, gate, ruleset and manifest hashes in the results
+  file match the commit. Repository clean at series start; the only Git-visible
+  change after the series is the results file (2 ignored `tests/__pycache__`
+  files also changed).
+- Holdouts: H1 and H2, 77 files, fingerprint `073bc869600b761d` before and
+  after the series and again on 2026-11-05 at recording. H2 matches its
+  committed manifest.
+- Verifier clone at the pin; Git status unchanged, and no change apart from
+  any ignored `__pycache__` files. `verifier_cases` empty after each run.
+  Transcripts stayed in the three transcript folders named for the runs. Hook
+  records changed only in the no-repository record file and its index file.
+- Exposure: no holdout page, key, brief, adjudication file or transcript is
+  tracked or in Git history (309 blobs compared with the manifest hashes,
+  0 matches; no such path in history). The results file has only allowlisted
+  fields.
+
+#### Cost and time
+
+- Cost: 13.9717 USD, notional, as the CLI reports it. The CLI has no price
+  entry for this model and may use a fallback rate, so this is not a measured
+  charge. The series ran on a subscription login.
+- Turns: 1,620.
+- Wall clock: 3963.3 s, the sum of the 3 runs; about 4,064 s for the whole
+  series with A1 and A3.
+
+#### Changed variables and newly broken cases
+
+Against the previous official entry (`gate-9328e564`): gate v1.0 to v2.1
+(case pass rate, 3 runs per case); July pages to private holdout H2; ruleset
+text to v1.1; model claude-sonnet-4-6 to claude-sonnet-5-5; repairs D1 to D9
+and the D10 development changes (`STATE.md`). The two results are not like
+for like, and the July v1.0 FAIL stands under its own gate.
+
+Newly broken cases: not applicable. This is the first series on H2.
+
+#### What this result supports
+
+Frozen claim (`public_claim_wording`, N = 29, k = 0):
+
+> 29 of 30 separately briefed synthetic compliance scenarios (at most 2
+> failed) got their predeclared decision right in all 3 runs, with evidence
+> checked for text violations. This supports a pass rate of at least 80%
+> (one-sided 95%) for scenarios drawn under this spec. At most 6 of 30 pages
+> showed a repeated material error on another cell (wrong in at least 2 of 3
+> runs), and all deterministic reliability and planner-integrity checks
+> passed. Earlier official series: 0, all recorded.
+
+Observed unclean pages: 0. "Earlier official series" counts gate v2 only.
+
+This result does not show 30 of 30 cases, perfect accuracy, production
+readiness, legal compliance, legal accuracy or whole-page screening.
+
+Limits:
+
+- One series on one holdout. Pages and rule sets are synthetic.
+- The holdout was authored for this spec, so the claim covers scenarios drawn
+  under it, not real marketing pages.
+- The agent sessions probably received the startup text of a machine-level
+  session hook outside this repository, as in the development trial
+  (inference, not measured).
+- H2 is retired under `result_rules.holdout_retirement` and is now local
+  development data. A later version needs a fresh holdout.
+
+## Historical record: July 2026, gate v1.0 (FAIL)
+
 *Dated runs per BLUEPRINT §7: cost + turns recorded per run. The official
 gate run (Sonnet 4.6, full 12-page corpus, thresholds enforced) is recorded
 below as the OFFICIAL section (Phase 6, 2026-07-09) — result: **FAIL**
 (violation-detection precision). Gates were not adjusted; the dev-leg
-sections above remain leg reports, not gate results.*
+sections further below remain leg reports, not gate results.*
 
 ## OFFICIAL — Phase 6 gate run (Sonnet 4.6, full 12-page corpus)
 

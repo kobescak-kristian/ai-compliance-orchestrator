@@ -43,37 +43,30 @@ for execution.*
 
 ## Phase discipline (BLUEPRINT §9)
 
-One phase per session. Stop at each phase's acceptance criteria; do not
-proceed into the next phase in the same session unless explicitly told.
+Each phase stops at its acceptance criteria before the next phase starts.
 
 | Phase | Deliverable | Accept when |
 |---|---|---|
 | 0 | Private repo, scaffold, SPEC.md (condensed from this), CLAUDE.md, ADR-0001/0003 drafts, BLUEPRINT.md committed | Repo pushed; structure matches §8; §10 decisions recorded in SPEC |
-| 1 | Contracts (§5) + ledger schema + rule sets + full eval dataset + answer key + eval_config + FI test skeletons | Kristian approved rule sets, dataset + gates; committed; **no agent code exists yet** |
+| 1 | Contracts (§5) + ledger schema + rule sets + full eval dataset + answer key + eval_config + FI test skeletons | Rule sets, dataset + gates approved; committed; **no agent code exists yet** |
 | 2 | Orchestrator core + intake + aggregation, end-to-end with **stub agents** (deterministic fakes returning fixture payloads) | Full pipeline green on stubs; FI-1..FI-4, FI-6, FI-7 pass with stubs; zero LLM calls so far |
 | 3 | Checker agent (caged, jurisdiction-parameterized) replacing its stubs | Checker gate leg green on dev model; bounds + rule-isolation tests green |
 | 4 | Verifier subprocess node (ADR-0002) replacing its stub | Shipped agent runs unmodified inside pipeline; FI-5 implemented + green |
 | 5 | Planner agent + human-gate CLI | Proposal queue populated from a full run; approve/reject round-trip in ledger |
 | 6 | Official gate run (Sonnet 4.6) + EVAL_RESULTS.md + FI suite full green | GATE GREEN or honest FAIL with miss-pattern analysis committed |
-| 7 | README (house structure, '## System' heading) + architecture diagram + demo recording | Stop conditions met |
+| 7 | README ('## System' heading) + architecture diagram + demo recording | Stop conditions met |
 
-**Amendment (2026-07-07):** Phase 1 split by Kristian's decision into 1a
+**Amendment (2026-07-07):** Phase 1 split into 1a
 (contracts + ledger schema + eval config + FI test skeletons,
 authorship-independent) and 1b (rule sets + seeded pages + answer key,
 per the §10.7 authorship split).
 
-**Phase-tracking note (2026-07-09):** per-phase completion status no
-longer lives here. GOVERNANCE.md §3 clause 8 (kristian-os) supersedes
-the 2026-07-07 convention of tracking it in this file — build-repo
-STATE.md (this repo's STATE.md, Phase History section) is now the sole
-owner of phase/build status; SPEC stays the contract. This note is a
-fact-boundary pointer, not a phase update — do not add DONE/status
-markers here again.
+**Phase-tracking note (2026-07-09):** per-phase completion status does
+not live here. `STATE.md` holds phase and build status; SPEC stays the
+contract. Do not add DONE or status markers here.
 
-**Amendment (2026-07-10):** Phase 7 recording does NOT gate the
-flip — README + diagram + published FAIL table suffice; recording
-follows. Decision Kristian 2026-07-10, anti-keystone precedent
-(agent recording queued 3 artifacts for days).
+**Amendment (2026-07-10):** the Phase 7 recording does not gate
+publication: README, diagram and the published FAIL table suffice.
 
 Phase 2 is deliberate: orchestration is proven deterministically before any
 model is invoked — the multi-agent claim is tested at its own layer,
@@ -85,22 +78,20 @@ resolves geo-applicability deterministically (one CheckTask per targeted
 page×jurisdiction); Phase 6 scoring reconstructs geo-N/A cells from
 intake skip records (184 judged + 104 derived = 288).
 
-## Decisions (BLUEPRINT §10, resolved 2026-07-07 unless overridden at Phase 0 paste)
+## Decisions (BLUEPRINT §10, resolved 2026-07-07)
 
-1. **Branch:** B — compliance surveillance. LOCKED (rule fired).
-2. **Repo name:** `ai-compliance-orchestrator` (T0; rename at flip is
-   near-free for a private repo).
+1. **Branch:** B — compliance surveillance.
+2. **Repo name:** `ai-compliance-orchestrator`.
 3. **Verifier integration:** subprocess + JSON contract, as optional
    fourth checker (claim-accuracy dimension), Phase 4.
 4. **Gate thresholds:** 0.95 / 0.90 pooled and per jurisdiction;
    NOT_APPLICABLE ≥ 0.90.
 5. **Dataset sizing:** 3 jurisdictions × ~8 rules; 12 pages; ~25
    violations + distractors.
-6. **Positioning (deferred):** flagship question reopens after first
-   external signal; not decided here.
+6. **Positioning:** not part of this specification.
 7. **RESOLVED 2026-07-07:** Option A — three-actor split (spec author:
    strongest model; page author: Code; blind labeler: ChatGPT;
-   adjudicator: Kristian). Protocol in evals/INJECTION_SPEC.md.
+   adjudicator: human reviewer). Protocol in evals/INJECTION_SPEC.md.
 
 ## Gate (BLUEPRINT §7, summary)
 
@@ -109,6 +100,13 @@ jurisdiction. NOT_APPLICABLE handling ≥ 0.90. Orchestration invariants at
 100%: every task terminal; zero lost tasks; FI-1..FI-7 green; idempotent
 re-run. Official gate run on Sonnet 4.6, dev on Haiku 4.5. Gates never
 adjusted post-run — report FAIL honestly rather than gate-shop.
+
+**Amendment (2026-11-02, 2026-11-04):** the text above is gate v1.0; its
+July FAIL stands. Gate v2.1 governs the repaired system: component A,
+deterministic checks at 100%; component B, at least 80% of 30 scenario
+cases, at most 2 failing, 3 runs per case, on a private holdout. Official
+model: claude-sonnet-5-5. `evals/eval_config.yaml` has the exact rules
+and `evals/EVAL_RESULTS.md` the results.
 
 ## Out of scope (BLUEPRINT §12 — README "production upgrades" section only)
 

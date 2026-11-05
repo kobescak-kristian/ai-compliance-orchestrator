@@ -49,7 +49,7 @@ AUDIT_DB_ENV = "VERIFIER_AUDIT_DB"
 # folder instead of <checkout>/evals/dataset (nodes/verifier_runner.py).
 DATASET_ROOT_ENV = "VERIFIER_DATASET_ROOT"
 TIMEOUT_S = 600  # D6: wall-clock cap per verifier subprocess
-# Owner decision D1 (2026-11-03): agent sessions run on the owner's
+# Decision D1 (2026-11-03): agent sessions run on the
 # subscription login only. These variables would make the CLI use API
 # billing or a cloud provider instead, so the subprocess never gets them
 # and evals/run_eval.py --real refuses to start while one is set.
@@ -66,7 +66,7 @@ BUDGET_STOP_RE = re.compile(r"Reached maximum budget|error_max_budget_usd")
 # Populated by every verify_finding() call: {finding_id, cost_usd,
 # num_turns} -- for dev/eval-leg cost+turns reporting only (BLUEPRINT.md
 # §7), never part of the strict AdjudicationRecord contract. Mirrors
-# agents/checker/harness.py's last_result convention. R2 (Kristian's ruling
+# agents/checker/harness.py's last_result convention. R2 (ruling
 # 2026-11-03, option B): a budget stop has no result, so its row is
 # {finding_id, cost_usd: None, cost_usd_estimated: <the budget cap>,
 # num_turns: None}; the cap is an estimated notional cost, not a measured

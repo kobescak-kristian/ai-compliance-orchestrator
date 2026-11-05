@@ -15,7 +15,7 @@ every adjudication ruling that produced the frozen key.*
    finished pages and the three rule sets plus the applicability semantics
    (no INJECTION_SPEC.md, no draft answer key). Labeled every
    (page × jurisdiction × rule) cell — 288 cells across 12 pages × 24 rules.
-4. **Adjudicator (Kristian):** diffed the spec-author's draft key against
+4. **Adjudicator (human reviewer):** diffed the spec-author's draft key against
    the blind labels; agreements froze into `evals/answer_key.yaml`;
    disagreements adjudicated case-by-case below.
 
@@ -30,7 +30,7 @@ offer combined a "free bet" claim with an adjacent deposit requirement —
 structurally identical to the P01/P10 GBR-BT-02 pattern, but not part of
 any brief and not counted in the spec author's violation total. Fixed by
 rewording the offer to remove the free/deposit collision entirely (commit
-`fa5d6a1`, prior session) before the blind pass began, so the blind labeler
+`fa5d6a1`) before the blind pass began, so the blind labeler
 never saw the defect.
 
 ## Blind-label diff

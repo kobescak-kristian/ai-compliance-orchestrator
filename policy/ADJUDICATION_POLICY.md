@@ -1,13 +1,13 @@
 # ai-compliance-orchestrator — Phase 4 adjudication policy
 *v1.0 — 2026-07-08. Pre-committed policy: written before any Phase 4 code
 exists (gates before agents). Governs how verifier and checker disagreement
-is resolved. Sonnet builds Phase 4 following this document; deviations
+is resolved. Phase 4 follows this document; deviations
 require an ADR, not silent adaptation. Target path:
 `ai-compliance-orchestrator/policy/ADJUDICATION_POLICY.md`, committed
 before the first verifier code file.*
 
-*Phase 4 session amendments (§§10–15, and the inline §4 citation swap)
-folded in 2026-07-08 per Kristian's Phase-4 instruction — each marked
+*Phase 4 amendments (§§10–15, and the inline §4 citation swap) folded in
+2026-07-08 — each marked
 "Phase 4 amendment" at its point of insertion.*
 
 ## 1. Roles (hard boundary)
@@ -58,7 +58,7 @@ citation burden as a finding.
   substance of this clause is unchanged.]**)
 - One adjudication cycle only. The verifier's verdict is final for the
   run — no checker rebuttal, no loops. The pipeline stays acyclic.
-  Escalation path for DISPUTED is a human (Kristian) at report-review
+  Escalation path for DISPUTED is a human reviewer at report-review
   time, outside the run.
 - Adjudication is deterministic in structure: same finding set in, same
   ledger states out (idempotent re-run per FI-6 — re-adjudicating a
@@ -112,6 +112,11 @@ honest-limitations section verbatim intent: "checker and verifier share
 a model; adjudication guards against per-finding error, not
 model-family blind spots."
 
+**Amendment (2026-11-04):** the official model under gate v2 is
+claude-sonnet-5-5 for both roles (`evals/eval_config.yaml`
+`model_routing`). The July run used Sonnet 4.6. The same-model limitation
+still applies.
+
 ## 9. Decisions locked (override by ADR only)
 
 1. Verifier challenges; never detects. 2. Three verdicts; uncertainty →
@@ -160,7 +165,7 @@ repo.
   `../ai-claim-verification-agent` relative to this repo's root — path
   is environment-specific, see `config.yaml`; remote
   `https://github.com/kobescak-kristian/ai-claim-verification-agent.git`,
-  **PRIVATE** as of 2026-07-08).
+  private when this was written; verified public on 2026-07-20).
 - **Pinned commit:** `d444b13c3ba07b9f4798d3298ec3bfc92da5a960`
   ("pre-flip: scrub internal references (CLAUDE.md, SPEC.md); ADR-002
   records DEMO_SCRIPT Tier-1 exception per 2026-07-05 locked decision").
@@ -176,9 +181,9 @@ repo.
 - **Publication dependency:** the reuse claim ("we didn't fork the
   shipped agent, we reused it") only holds up publicly once the shipped
   repo is public and this pinned hash is verifiable by a reader. Both
-  `ai-claim-verification-agent` and `ai-compliance-orchestrator` are
-  private as of this writing — this is a named gate on the orchestrator's
-  public card, not yet met, tracked outside this session (kristian-os).
+  `ai-claim-verification-agent` and `ai-compliance-orchestrator` were
+  private when this was written. Both were verified public on 2026-07-20,
+  so this condition is met.
 
 ## 13. Fallback trigger — purpose-built adjudicator (Phase 4 amendment)
 

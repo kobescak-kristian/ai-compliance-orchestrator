@@ -7,7 +7,7 @@ a distractor, or present furniture (evals/check_pages.py's PAGE_SPECS/
 FURNITURE, the single source of truth for what's on a page on purpose).
 
 A hit outside a specified string means either a real residual collision
-or a gap in PAGE_SPECS/FURNITURE -- that's Kristian's ruling, not a code
+or a gap in PAGE_SPECS/FURNITURE -- that's a human ruling, not a code
 fix. Do not edit a page or PAGE_SPECS to make this test pass; report the
 hit instead. 8 such hits were adjudicated 2026-07-09 into
 evals/provenance/SWEEP_ALLOWLIST.md rather than folded into PAGE_SPECS --
@@ -46,7 +46,7 @@ SWEEP_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Adjudicated residuals (evals/provenance/SWEEP_ALLOWLIST.md, Kristian,
+# Adjudicated residuals (evals/provenance/SWEEP_ALLOWLIST.md,
 # 2026-07-09): hits outside PAGE_SPECS/FURNITURE that are not new rule
 # surfaces -- elaboration of an already-adjudicated offer, or content on
 # a cell that's already NOT_APPLICABLE. Matched by (page, text) substring
@@ -104,7 +104,7 @@ def _line_around(text: str, start: int, end: int) -> str:
 def test_sweep_all_hits_inside_specified_strings():
     """Every trigger-pattern hit on every committed page falls inside a
     spec-specified verbatim string (injection/distractor/furniture) OR a
-    Kristian-adjudicated allowlist entry (evals/provenance/
+    human-adjudicated allowlist entry (evals/provenance/
     SWEEP_ALLOWLIST.md). Any hit in neither is printed with the page, the
     exact hit, and its surrounding line -- fail loudly, change nothing
     automatically. Allowlist entries are also checked for staleness: an
@@ -144,5 +144,5 @@ def test_sweep_all_hits_inside_specified_strings():
     assert not unexplained, (
         "unexplained sweep hit(s) -- outside any spec-specified string and "
         "outside the adjudicated allowlist; do not edit the page to fix "
-        "this, report to Kristian:\n" + "\n".join(unexplained)
+        "this, report it for review:\n" + "\n".join(unexplained)
     )

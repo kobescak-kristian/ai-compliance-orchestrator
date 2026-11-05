@@ -57,7 +57,7 @@ def test_d10_pages_and_final_cells_load_as_committed():
         assert case.cells == entry["cells"] and case.primary == entry["primary"]
         assert sorted(case.targets) == sorted(extract_markets(case.file.read_text(encoding="utf-8")))
     by_id = {c.case_id: c for c in dataset.cases}
-    assert by_id["d03"].cells["GBR-PC-02"] == by_id["d09"].cells["GBR-PC-02"] == "NOT_APPLICABLE"  # Kristian, 2026-11-04
+    assert by_id["d03"].cells["GBR-PC-02"] == by_id["d09"].cells["GBR-PC-02"] == "NOT_APPLICABLE"  # ruling 2026-11-04
 
 
 def test_d10_key_files_are_outside_the_page_cage():
@@ -112,11 +112,11 @@ def test_d10_is_development_only(tmp_path):
     assert not results_dir.exists() and out.is_relative_to(tmp_path / "runs" / "d10")
 
 
-# --official-model (owner, 2026-11-04): D10 on the official model, development only
+# --official-model (2026-11-04): D10 on the official model, development only
 
 @pytest.mark.parametrize("official_model,model,official", [
     (False, "claude-haiku-4-5-20251001", False),
-    (True, "claude-sonnet-5-5", True),  # owner decision 2026-11-04
+    (True, "claude-sonnet-5-5", True),  # decision 2026-11-04
 ])
 def test_d10_official_model_selects_the_official_model_and_budgets(tmp_path, monkeypatch, official_model, model, official):
     import nodes.verifier

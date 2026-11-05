@@ -224,7 +224,7 @@ def test_a2_leak_check_also_reads_the_verifier_audit_db(tmp_path, monkeypatch):
 
 
 # --------------------------------------------------------------------------
-# RT2-06 owner clarification (2026-11-03): an A2 line that needs an
+# RT2-06 clarification (2026-11-03): an A2 line that needs an
 # artifact of a task applies to DONE tasks; FAILED tasks (and DEAD_LETTER
 # check tasks) are counted as diagnostics instead
 # --------------------------------------------------------------------------
@@ -334,7 +334,7 @@ def test_rt2_06_missing_audit_trail_fails_only_when_a_done_task_should_have_one(
 
 
 # --------------------------------------------------------------------------
-# D1 owner decision (2026-11-03): real runs use the subscription login only
+# D1 decision (2026-11-03): real runs use the subscription login only
 # --------------------------------------------------------------------------
 
 SUBSCRIPTION = {"loggedIn": True, "authMethod": "claude.ai", "apiProvider": "firstParty", "subscriptionType": "max"}
@@ -381,7 +381,7 @@ def test_d1_real_run_refused_before_any_output(tmp_path, monkeypatch, capsys):
 
 
 # --------------------------------------------------------------------------
-# --page (owner, 2026-11-03): one July development page, never gated or a holdout
+# --page (2026-11-03): one July development page, never gated or a holdout
 # --------------------------------------------------------------------------
 
 def test_page_selects_exactly_one_july_page(tmp_path):

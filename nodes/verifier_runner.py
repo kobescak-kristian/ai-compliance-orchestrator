@@ -27,7 +27,7 @@ import sys
 
 
 def isolate_settings(build_options):
-    """R1 (owner decision 2026-11-03): the checker's and planner's settings
+    """R1 (decision 2026-11-03): the checker's and planner's settings
     isolation (3A) for the shipped agent's session. No user, project or
     local settings load (no permission mode, no user CLAUDE.md) and no MCP
     server beyond the shipped agent's own (no claude.ai connectors). Only
@@ -53,7 +53,7 @@ def main() -> None:
     sys.path.insert(0, repo_path)
 
     try:
-        # Owner decision D1 (2026-11-03): no dotenv load. load_dotenv()
+        # Decision D1 (2026-11-03): no dotenv load. load_dotenv()
         # searched upward from this folder and could pick up an API key
         # outside the repository; the session uses the subscription login.
         from agent.harness import run_case_result  # noqa: E402 -- shipped repo, unmodified
