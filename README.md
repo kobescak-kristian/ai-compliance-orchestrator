@@ -4,8 +4,9 @@
 
 Multi-jurisdiction iGaming compliance surveillance, built to demonstrate
 **orchestration**: bounded agents fanning out across a deterministic
-control plane, with contract-enforced handoffs, a full audit trail, and a
-human gate that nothing in the system can bypass.
+control plane, with contract-enforced handoffs, SQLite records of every
+task state and agent tool call, and a human gate that nothing in the
+system can bypass.
 
 **Latest official result: gate v2.1 PASS on November 5, 2026. 29 of 30
 synthetic compliance scenarios passed in all 3 runs, and one failed. The
@@ -14,20 +15,19 @@ earlier July 2026 gate v1.0 run failed; that result stays published.**
 This repository publishes the evaluation record: the gate configuration,
 the official results (including the failed run), and the analysis. It does
 not ship a runnable demo; the committed configs and result tables are the
-artifact. The July numbers can be checked against the files in this repo.
-The November test pages and keys are private by design, so that result is
-published as sanitized results with a hash manifest and cannot be
-recomputed from a public clone.
+artifact. The July record is committed with its answer key, test pages and
+miss analysis. The November test pages and keys are private by design, so
+that result is published as sanitized results with a hash manifest.
 
 ## Problem
 
-iGaming content — operator sites and affiliate sites alike — is published
-under multiple regulatory regimes at once (MGA, UKGC, German
-GlüStV-style themes). Content compliant in one jurisdiction violates
-another; rules change; manual review doesn't scale; and a single
-unbounded agent "checking compliance" can't be trusted or audited. Every
-finding needs to trace back to a specific rule and a specific piece of
-evidence, or it isn't worth anything.
+The motivating challenge: iGaming content — operator sites and affiliate
+sites alike — can fall under several regulatory regimes at once (MGA,
+UKGC, German GlüStV-style themes). Content compliant in one jurisdiction
+can violate another, rules change, manual review is hard to scale, and a
+single unbounded agent "checking compliance" is hard to trust or audit.
+Every finding needs to trace back to a specific rule and a specific piece
+of evidence, or it isn't worth anything.
 
 **Rule-fidelity, stated up front:** all three jurisdictions' rule sets
 are synthetic — modeled on publicly known regulatory *themes*, not
@@ -44,16 +44,18 @@ rules. A second agent, the shipped [`ai-claim-verification-agent`](https://githu
 [`d444b13c`](https://github.com/kobescak-kristian/ai-claim-verification-agent/commit/d444b13c3ba07b9f4798d3298ec3bfc92da5a960)), adjudicates each checker's VIOLATION
 findings as CONFIRMED / REJECTED / DISPUTED before anything counts as an
 assertion. A third agent drafts remediation proposals for confirmed
-violations only. A human approves or rejects every proposal through a
-CLI. Every step in between — task state, severity ranking, schema
-enforcement, dead-lettering, resume-from-crash — is deterministic Python
-with no model in the loop. Nothing in the system can modify a page.
+violations only. Each proposal stays pending until a human approves or
+rejects it through a CLI. Everything around the agents — task state,
+severity ranking, schema enforcement, dead-lettering, resume-from-crash —
+is deterministic Python with no model in the loop. Nothing in the system
+can modify a page.
 
 ## System
 
 Nodes, their tool boundaries, and what each may never do — not just
 labels, the actual `allowed_tools` whitelist enforced in code
-(`tests/test_bounds.py`). No internal prompt or reasoning content is
+(`agents/checker/harness.py`, `agents/planner/harness.py`; boundary tests
+in `tests/test_bounds.py`). No internal prompt or reasoning content is
 shown; this is structure only.
 
 ```
@@ -108,13 +110,15 @@ shown; this is structure only.
                     │  upstream can either                │
                     └───────────────────────────────┘
 
-   Every node above also writes to, and is bounded by, the same store:
+   The system records to three SQLite databases:
    ┌─────────────────────────────────────────────────────────────────┐
-   │  LEDGER (SQLite) — task_ledger (state machine, every stage) ·    │
-   │  findings · proposals · adjudication_log (append-only, never     │
-   │  overwritten) · dead_letter (schema-invalid payloads) ·          │
-   │  audit_log / path_access_log / tool_calls (every tool call,      │
+   │  LEDGER DB: task_ledger (state machine, every stage) ·          │
+   │  findings · proposals · adjudication_log (append-only, never    │
+   │  overwritten) · dead_letter (invalid payloads) · audit_log /    │
+   │  path_access_log                                                │
+   │  AUDIT DB: tool_calls (checker and planner, every tool call,    │
    │  written before its result is ever used)                        │
+   │  VERIFIER AUDIT DB: the shipped agent's tool_calls record       │
    └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -124,17 +128,19 @@ shown; this is structure only.
    jurisdiction.
 2. **Check** (agents, fan-out): COMPLIANT / VIOLATION / NOT_APPLICABLE per
    rule, with an evidence excerpt and a rationale.
-3. **Verify** (the shipped agent, as an adjudicator): re-derives each
-   VIOLATION finding from the rule text and the page alone, blind to the
-   checker's reasoning, to sibling findings and to the answer key.
-   `nodes/verifier_runner.py` sets its storage paths and settings isolation
-   at runtime; the pinned code is not edited.
-4. **Aggregate** (deterministic): ranks pages by a severity score computed
-   strictly from rule metadata. No LLM.
-5. **Plan** (agent): for every **CONFIRMED** finding only, drafts a
+3. **Verify** (the shipped agent, as an adjudicator): tests each VIOLATION
+   claim and its evidence excerpt against the rule text and a fresh read of
+   the page, blind to the checker's reasoning, to sibling findings and to
+   the answer key. `nodes/verifier_runner.py` sets its storage paths and
+   settings isolation at runtime; the pinned code is not edited.
+4. **Plan** (agent): for every **CONFIRMED** finding only, drafts a
    RemediationProposal: offending text → proposed compliant text.
-6. **Human gate** (deterministic CLI): approve and reject write ledger state
+5. **Human gate** (deterministic CLI): approve and reject write ledger state
    only, idempotently.
+
+**Severity ranking** (deterministic, outside this pass):
+`orchestrator/aggregation.py` ranks pages by a score computed strictly from
+rule metadata. No LLM.
 
 **The cage, every agent, no exceptions:** an explicit `allowed_tools`
 whitelist, a `max_turns` cap, a per-run budget ceiling plus an
@@ -201,8 +207,8 @@ The orchestration mechanics passed in that run, across 23 check, 17 verify
 and 32 plan tasks. The adjudicator ran the shipped agent unmodified across
 32 live findings with its own repo verified clean before and after; the
 failure-injection suite (`tests/test_failures.py`, FI-1 through FI-7)
-and every agent-cage and blindness bound (`tests/test_bounds.py`) passed,
-15 tests at the time, 0 skipped. The keyless suite is now 249 tests.
+and every agent-cage and blindness bound (`tests/test_bounds.py`) passed
+in a 15-test suite, 0 skipped. The keyless suite is now 249 tests.
 
 **Out of scope (deliberately, not yet):** real regulatory text
 ingestion, legal-accuracy claims of any kind, live-web fetching at
@@ -226,8 +232,8 @@ operator API integrations, multi-tenant anything.
 4. Gate v1.0 per-jurisdiction math at the July dataset size: frozen counts are
    MLT 7 / GBR 13 / DEU 10 violations (30 total,
    `evals/answer_key.yaml`). At recall ≥ 0.90 per jurisdiction, MLT
-   tolerates zero misses before failing gate; GBR and DEU each
-   tolerate exactly one miss — accepted 2026-07-08. MLT's zero-miss
+   tolerates zero misses before failing gate, an accepted baseline;
+   GBR and DEU each tolerate exactly one miss. MLT's zero-miss
    tolerance did not hold in the official run (1 FN + 2 FP) —
    consistent with the quantization risk at this dataset size.
 5. The November result is one series on one holdout. Its pages and keys
