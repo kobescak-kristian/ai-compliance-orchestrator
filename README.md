@@ -179,8 +179,21 @@ misses to the page reader, which dropped headings and list items. A repair
 program addressed ten defects (D1 to D10, `STATE.md`), including that
 reader, evidence-excerpt checks, timeouts and the prompt-injection
 boundary, and re-evaluated under a new gate on a new private test set with
-a new model and revised rule text. The two results are not directly
-comparable.
+a new model and revised rule text.
+
+**How to interpret the two evaluations**
+
+July v1.0 and November v2.1 are not directly comparable. July's gate was
+built around violation-detection precision and recall, with thresholds
+applied both overall and per jurisdiction. November used a new gate, written
+with knowledge of the July failure and frozen before its official run. It
+measures whether each scenario was right in all three runs, repeated errors
+on other rules, and deterministic reliability checks.
+
+Between the two evaluations the implementation was repaired, but the
+dataset, model, rules and evaluation criteria also changed. The November
+PASS shows success against the new gate. It does not show that the repaired
+system would pass July's original precision and recall thresholds.
 
 **Historical result: July 9, 2026, gate v1.0 FAIL** (Sonnet 4.6,
 `evals/EVAL_RESULTS.md`, run `gate-9328e564`, full 12-page corpus, 288
