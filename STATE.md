@@ -7,12 +7,11 @@ This file holds current status and open items. Change history is in Git. The
 earlier log, including the sections older records cite (open loops, P2 entry,
 development runs, change log), is at `git show 91105ca:STATE.md`.
 
-## Current status (2026-11-05)
+## Current status (2026-11-06)
 
-- **Repair program P-001:** at P5, publication of `repair/v2` (cut from `main` at
-  `62f5935`, not merged). Until P5 closes, model runs, a push or merge of
-  `repair/v2` and changes to other repositories each need separate authorization,
-  and the close ritual in `CLAUDE.md` does not apply to this branch.
+- **Repair program P-001:** CLOSED 2026-11-06. `repair/v2` merged into `main` as
+  `658448d232bda382bee485faf54e400c45fe7633` (parents `62f5935`, `e612e60`).
+  Post-merge CI passed on that commit: runs `42162147652` and `42162147565`.
 - **Official result:** gate v2.1 **PASS**, series `H2-2026-11-05-a7871a` at
   `91105ca`, runner exit 0, 29 of 30 synthetic compliance scenarios. Record:
   `evals/EVAL_RESULTS.md`, `evals/results/H2-2026-11-05-a7871a.json`.
@@ -51,7 +50,7 @@ development runs, change log), is at `git show 91105ca:STATE.md`.
   and stay, because the result's `config_sha256` binds to the file. `adr/0002` to
   `adr/0004` are historical. `CLAUDE.md` and the files under `.githooks/`, `.kos/`,
   `.codex/` and `.github/workflows/` are functional; only the `.kos/unit.json`
-  `status_line` changed (2026-11-05).
+  `status_line` changed (2026-11-05, 2026-11-06).
 
 ## Decisions
 
@@ -101,4 +100,4 @@ the unit status (ACTIVE | BLOCKED | DORMANT).
 
 | ID | Auth | Title | Date |
 |---|---|---|---|
-| P-001 | AUTH | Repair program: defects D1-D10 and Standard gate v2 re-evaluation, local branch repair/v2, phase by phase | 2026-11-02 |
+| P-001 | DONE | Repair program: defects D1-D10 and Standard gate v2 re-evaluation, local branch repair/v2, phase by phase | 2026-11-02 |
