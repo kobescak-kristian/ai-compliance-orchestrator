@@ -13,6 +13,7 @@ MAX_TURNS = 15
 MAX_BUDGET_USD = 0.20  # per-finding ceiling for Haiku dev runs
 EVAL_MAX_BUDGET_USD = 1.00  # per-finding ceiling for Sonnet gate runs, Phase 6
 MAX_TOOL_CALLS = 30  # circuit breaker: hard backstop independent of max_turns
+TIMEOUT_S = 300  # wall-clock cap per finding run (D6)
 
 MCP_SERVER_NAME = "planwork"
 TOOL_NAMES = ["read_finding", "read_rule", "emit_proposal"]

@@ -10,6 +10,7 @@ import sqlite3
 
 import anyio
 from claude_agent_sdk import (
+    AssistantMessage,
     ClaudeAgentOptions,
     HookMatcher,
     ResultMessage,
@@ -18,11 +19,12 @@ from claude_agent_sdk import (
 )
 
 from contracts.schemas import ComplianceRule, ViolationFinding
+from agents.outcome import raise_for_outcome
 from orchestrator.pipeline import BudgetExceededError
 
 from . import tools
 from .audit import audit_hook, init_audit_db, set_run_context
-from .config import MAX_BUDGET_USD, MAX_TURNS, MCP_SERVER_NAME, MODEL, QUALIFIED_TOOL_NAMES
+from .config import MAX_BUDGET_USD, MAX_TURNS, MCP_SERVER_NAME, MODEL, QUALIFIED_TOOL_NAMES, TIMEOUT_S
 from .prompts import build_system_prompt, build_user_prompt
 
 # Populated after each real_planner() call: the ResultMessage from the
@@ -56,6 +58,10 @@ def build_options(
         tools=[],  # disable all built-in tools (no Write, Bash, Edit, Read, ...)
         mcp_servers={MCP_SERVER_NAME: server},
         allowed_tools=list(QUALIFIED_TOOL_NAMES),  # exactly the 3 custom tools
+        # P3: no user/project/local settings, CLAUDE.md or other MCP server
+        # (same as the checker). Managed policy still applies.
+        setting_sources=[],
+        strict_mcp_config=True,
         max_turns=MAX_TURNS,
         max_budget_usd=max_budget_usd,  # SDK-level per-run cost ceiling
         hooks={
@@ -73,6 +79,7 @@ async def _run_planner_async(
     max_budget_usd: float,
 ) -> dict | None:
     global last_result
+    last_result = None  # RT2-11: a timed-out run must not report the previous run's cost
     init_audit_db()
     finding_id = f"{finding.task_id}::{finding.rule_id}"
     set_run_context(run_id, finding_id)
@@ -82,9 +89,14 @@ async def _run_planner_async(
     prompt = build_user_prompt(finding.rule_id)
 
     result: ResultMessage | None = None
-    async for msg in query(prompt=prompt, options=options):
-        if isinstance(msg, ResultMessage):
-            result = msg
+    assistant_errors: list[str] = []
+    # D6: wall-clock cap; TimeoutError ends the task in FAILED (TIMEOUT).
+    with anyio.fail_after(TIMEOUT_S):
+        async for msg in query(prompt=prompt, options=options):
+            if isinstance(msg, AssistantMessage) and msg.error:
+                assistant_errors.append(msg.error)
+            if isinstance(msg, ResultMessage):
+                result = msg
     last_result = result
     run_stats.append(
         {
@@ -96,8 +108,7 @@ async def _run_planner_async(
 
     if tools.circuit_breaker_tripped():
         raise BudgetExceededError(f"planner circuit breaker tripped for {finding_id}")
-    if result is not None and result.is_error:
-        raise BudgetExceededError(f"planner run ended in error for {finding_id}: {result.subtype}")
+    raise_for_outcome(f"planner run for {finding_id}", result, assistant_errors)
 
     return tools.proposal
 

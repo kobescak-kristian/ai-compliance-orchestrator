@@ -3,7 +3,7 @@
 *Sources: `evals/ADJUDICATION_LOG.md` §"Pre-blind filler sweep" (quoted
 verbatim below) and `git show fa5d6a1` (the actual fix, quoted below).
 No sweep script was committed to this repo — the sweep was a manual grep
-run in a prior session, before the blind-label pass began; its record
+run earlier, before the blind-label pass began; its record
 is exactly what `evals/ADJUDICATION_LOG.md` logged, no more.*
 
 ## Historical run (pre-blind, 2026-07-08)
@@ -72,7 +72,7 @@ Commit: `fa5d6a10c985e94262ab9161068a5dc60c6f12a5` — "P12: remove
 unintended free-bet/deposit collision in filler; SPEC: record §10.7
 resolution + 1b progress." Same commit also resolved SPEC.md §10.7 (the
 three-actor authorship split) from OPEN to RESOLVED — the sweep and the
-authorship-protocol resolution landed together, prior session.
+authorship-protocol resolution landed together.
 
 ## Why this belongs in the provenance record
 
@@ -104,7 +104,7 @@ committed test:
   8 hits outside `evals/check_pages.py`'s spec-string lists — titles,
   nav text, and elaboration prose on p03/p04/p10, none a new rule
   surface (hard-checked against the frozen key, none plausibly flip a
-  cell). Per Kristian's ruling, these were adjudicated into a separate
+  cell). By ruling, these were adjudicated into a separate
   allowlist rather than folded into `PAGE_SPECS` — spec strings stay
   exactly what was specified at page-construction time. The allowlist
   carries its own staleness guard: an entry whose text stops matching

@@ -6,7 +6,8 @@ away) as JSON on stdout. This script itself lives in this repo, not the
 shipped one; nothing is ever written into the shipped repo except the
 case's own data files (written by nodes/verifier.py, removed after the
 run -- see the git-status-clean check in tests/test_bounds.py and the
-Phase 4 dev-leg report).
+Phase 4 dev-leg report). With VERIFIER_DATASET_ROOT and
+VERIFIER_AUDIT_DB set (every runner series), not even those (P3).
 
 Usage:
     python nodes/verifier_runner.py <repo_path> <case_id> <run_id> <model> <max_budget_usd>
@@ -19,8 +20,28 @@ task-atomic FAILED, per policy/ADJUDICATION_POLICY.md §12.
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
+import os
 import sys
+
+
+def isolate_settings(build_options):
+    """R1 (decision 2026-11-03): the checker's and planner's settings
+    isolation (3A) for the shipped agent's session. No user, project or
+    local settings load (no permission mode, no user CLAUDE.md) and no MCP
+    server beyond the shipped agent's own (no claude.ai connectors). Only
+    these two options change; tools, whitelist, budget, turns and hooks
+    stay as the shipped build_options sets them."""
+
+    @functools.wraps(build_options)
+    def wrapper(*args, **kwargs):
+        options = build_options(*args, **kwargs)
+        options.setting_sources = []
+        options.strict_mcp_config = True
+        return options
+
+    return wrapper
 
 
 def main() -> None:
@@ -32,11 +53,42 @@ def main() -> None:
     sys.path.insert(0, repo_path)
 
     try:
-        from dotenv import load_dotenv
-
-        load_dotenv()
-
+        # Decision D1 (2026-11-03): no dotenv load. load_dotenv()
+        # searched upward from this folder and could pick up an API key
+        # outside the repository; the session uses the subscription login.
         from agent.harness import run_case_result  # noqa: E402 -- shipped repo, unmodified
+
+        # R1: run_case_result looks up build_options in agent.harness at
+        # call time, so the name is wrapped there. The shipped code on disk
+        # is not changed.
+        import agent.harness  # noqa: E402 -- shipped repo, unmodified
+
+        agent.harness.build_options = isolate_settings(agent.harness.build_options)
+
+        # D3: keep the shipped agent's audit DB out of its checkout. Its
+        # agent/audit.py does `from .config import AUDIT_DB_PATH`, so the
+        # name is patched on agent.audit itself (agent.config alone would
+        # not reach it). The shipped code on disk is not changed.
+        audit_db = os.environ.get("VERIFIER_AUDIT_DB")
+        if audit_db:
+            import agent.audit  # noqa: E402 -- shipped repo, unmodified
+
+            agent.audit.AUDIT_DB_PATH = audit_db
+
+        # P3: the case files (page text) live in a private folder, not in
+        # the checkout. DATASET_ROOT is copied into agent.pages and
+        # agent.harness by `from .config import DATASET_ROOT`, so all three
+        # names are patched; the shipped path cage then holds at this root.
+        dataset_root = os.environ.get("VERIFIER_DATASET_ROOT")
+        if dataset_root:
+            from pathlib import Path
+
+            import agent.config  # noqa: E402 -- shipped repo, unmodified
+            import agent.harness  # noqa: E402 -- shipped repo, unmodified
+            import agent.pages  # noqa: E402 -- shipped repo, unmodified
+
+            root = Path(dataset_root).resolve()
+            agent.config.DATASET_ROOT = agent.pages.DATASET_ROOT = agent.harness.DATASET_ROOT = root
 
         result, findings = asyncio.run(
             run_case_result(case_id, run_id=run_id, model=model, max_budget_usd=float(max_budget_usd))
@@ -46,7 +98,16 @@ def main() -> None:
         sys.exit(1)
 
     if result.is_error:
-        print(f"shipped agent run ended in error for case {case_id!r}: {result.subtype}", file=sys.stderr)
+        # api_error_status lets nodes/verifier.py tell a provider error
+        # (auth, rate limit, overload) from an agent error (D6); the error
+        # text lets it see a subscription usage-limit message (RT2-05).
+        status = getattr(result, "api_error_status", None)
+        print(
+            f"shipped agent run ended in error for case {case_id!r}: {result.subtype} "
+            f"api_error_status={status} error_text={(getattr(result, 'result', None) or '')[:300]!r} "
+            f"errors={(getattr(result, 'errors', None) or [])!r}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     payload = {

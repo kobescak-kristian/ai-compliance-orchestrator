@@ -46,6 +46,27 @@ class BudgetExceededError(Exception):
     budget or turn cap tripped mid-task."""
 
 
+class ProviderError(Exception):
+    """Raised by an agent callable when the provider reports an auth
+    failure, rate limit or overload (D6). The stage maps it to FAILED
+    with error_class PROVIDER_ERROR; the eval runner classifies a run
+    with such a row as INVALID RUN (evals/eval_config.yaml result_rules).
+    """
+
+
+def _error_class(exc: BaseException) -> str:
+    """Error class for an agent-callable failure (D6). Anything raised
+    inside the automation ends the task in FAILED; it never aborts the
+    run (evals/eval_config.yaml inside_the_automation_is_a_miss)."""
+    if isinstance(exc, BudgetExceededError):
+        return "BUDGET_EXCEEDED"
+    if isinstance(exc, ProviderError):
+        return "PROVIDER_ERROR"
+    if isinstance(exc, TimeoutError):
+        return "TIMEOUT"
+    return "AGENT_ERROR"
+
+
 class VerifierInvocationError(Exception):
     """Raised by a verifier callable (nodes.verifier.verify_finding or
     its stub) on a non-zero subprocess exit, schema-invalid output, or a
@@ -286,6 +307,10 @@ def run_check_stage(
     (valid or not) reach the findings table (BLUEPRINT.md §3, FI-2).
     A task whose jurisdiction's rule set failed to load -> FAILED with
     error_class=MISSING_RULESET, without ever calling checker_fn (FI-4).
+    A task without exactly one finding per assigned rule (a missing,
+    repeated or foreign rule_id) -> DEAD_LETTER with error_class=COVERAGE,
+    same atomic handoff (D4). Any exception from checker_fn -> FAILED with
+    the error class from _error_class (D6).
     """
     missing_rulesets = missing_rulesets or set()
     register_tasks([task_id_for(t) for t in tasks], conn, stage)
@@ -309,10 +334,10 @@ def run_check_stage(
 
         try:
             raw_payloads = checker_fn(task)
-        except BudgetExceededError as exc:
+        except Exception as exc:  # noqa: BLE001 -- every agent failure is a terminal FAILED (D6)
             _insert_ledger_row(
                 conn, item_id, stage, TaskState.FAILED.value, attempt,
-                started_at=started, ended_at=_now(), error_class="BUDGET_EXCEEDED",
+                started_at=started, ended_at=_now(), error_class=_error_class(exc),
                 payload_ref=str(exc),
             )
             continue
@@ -332,6 +357,19 @@ def run_check_stage(
                 started_at=started, ended_at=_now(), error_class="SCHEMA_INVALID",
             )
             continue  # atomic: no finding from this task reaches storage
+
+        emitted = sorted(f.rule_id for f in validated)
+        if emitted != sorted(task.assigned_rules):
+            for raw in raw_payloads:
+                _insert_dead_letter(
+                    conn, item_id, stage, raw,
+                    f"rule coverage: emitted {emitted}, assigned {sorted(task.assigned_rules)}",
+                )
+            _insert_ledger_row(
+                conn, item_id, stage, TaskState.DEAD_LETTER.value, attempt,
+                started_at=started, ended_at=_now(), error_class="COVERAGE",
+            )
+            continue  # atomic, as above (D4)
 
         for finding in validated:
             insert_finding(conn, finding)
@@ -381,19 +419,28 @@ def run_verify_stage(
 
         records: list[AdjudicationRecord] = []
         failure: str | None = None
+        error_class = "VERIFIER_FAILED"
         for finding in task_findings:
-            rule = rules_by_id[finding.rule_id]
+            rule = rules_by_id.get(finding.rule_id)
+            if rule is None:
+                failure = f"unknown rule_id {finding.rule_id!r}"
+                error_class = "UNKNOWN_RULE"
+                break
             try:
                 raw = verifier_fn(finding, rule, run_id)
                 records.append(AdjudicationRecord(**raw))
             except (VerifierInvocationError, ValidationError) as exc:
                 failure = str(exc)
                 break
+            except Exception as exc:  # noqa: BLE001 -- D6: provider error, timeout, anything else
+                failure = str(exc)
+                error_class = _error_class(exc)
+                break
 
         if failure is not None:
             _insert_ledger_row(
                 conn, item_id, stage, TaskState.FAILED.value, attempt,
-                started_at=started, ended_at=_now(), error_class="VERIFIER_FAILED",
+                started_at=started, ended_at=_now(), error_class=error_class,
                 payload_ref=failure,
             )
             continue  # atomic: no adjudication row from this task reaches storage
@@ -420,8 +467,9 @@ def run_plan_stage(
     """Drive every VIOLATION finding through planner_fn, same terminal-
     state / dead-letter / dedup mechanics as run_check_stage. A finding
     with verdict != VIOLATION is skipped entirely (nothing to remediate).
-    planner_fn may return None (no proposal drafted) or raise
-    BudgetExceededError.
+    planner_fn may return None (no proposal drafted) or raise; any
+    exception ends the item in FAILED with the error class from
+    _error_class (D6).
     """
     violations = [f for f in findings if f.verdict.value == "VIOLATION"]
     register_tasks([finding_id_for(f) for f in violations], conn, stage)
@@ -438,10 +486,10 @@ def run_plan_stage(
 
         try:
             raw = planner_fn(finding)
-        except BudgetExceededError as exc:
+        except Exception as exc:  # noqa: BLE001 -- every agent failure is a terminal FAILED (D6)
             _insert_ledger_row(
                 conn, item_id, stage, TaskState.FAILED.value, attempt,
-                started_at=started, ended_at=_now(), error_class="BUDGET_EXCEEDED",
+                started_at=started, ended_at=_now(), error_class=_error_class(exc),
                 payload_ref=str(exc),
             )
             continue

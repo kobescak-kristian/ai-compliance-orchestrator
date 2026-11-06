@@ -1,6 +1,6 @@
 # SWEEP_ALLOWLIST — adjudicated residual sweep hits
 
-*Adjudicated 2026-07-09 (Kristian, via session ruling); these residuals
+*Adjudicated 2026-07-09; these residuals
 predate the blind pass — the labeler saw the pages as-is, so the frozen
 key already reflects them.*
 
@@ -9,7 +9,7 @@ key already reflects them.*
 `evals/check_pages.py`'s `PAGE_SPECS["strings"]` — titles, nav text, and
 elaboration prose never enumerated there, because that list was only ever
 built to verify a brief's *required* elements are present, not to
-inventory every word on the page. Per Kristian's ruling: these are
+inventory every word on the page. Ruling: these are
 resolved as an **adjudicated allowlist**, not by extending `PAGE_SPECS` —
 spec strings stay exactly what was specified at page-construction time
 (`evals/provenance/PAGE_BRIEFS.md`); post-hoc residuals are a separate,

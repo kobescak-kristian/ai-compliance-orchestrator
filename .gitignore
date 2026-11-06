@@ -3,3 +3,7 @@
 __pycache__/
 *.pyc
 frozen-pages/
+config.local.yaml
+# Private holdouts never enter Git; only their SHA-256 manifests do (evals/v2/SCENARIO_SPEC.md §7).
+evals/v2/holdouts/*
+!evals/v2/holdouts/*.sha256
