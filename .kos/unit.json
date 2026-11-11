@@ -1,6 +1,6 @@
 {
   "class": "PROJECT",
-  "status_line": "P4 official gate v2.1 PASS, 29 of 30 synthetic compliance scenarios; published 2026-11-06",
+  "status_line": "Gate v2.1 PASS, 29 of 30 synthetic compliance scenarios; no work in progress",
   "open_count": 0,
   "connectors_declared": []
 }

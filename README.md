@@ -176,7 +176,7 @@ legal compliance or whole-page screening.
 
 **What changed after July.** A review on 2026-11-02 traced 6 of the 8 July
 misses to the page reader, which dropped headings and list items. A repair
-program addressed ten defects (D1 to D10, `STATE.md`), including that
+program addressed ten defects (D1 to D10, `git show ef46410:STATE.md`), including that
 reader, evidence-excerpt checks, timeouts and the prompt-injection
 boundary, and re-evaluated under a new gate on a new private test set with
 a new model and revised rule text.
