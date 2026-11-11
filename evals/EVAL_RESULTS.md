@@ -142,7 +142,7 @@ passed. The gated number is the case result above.
 Against the previous official entry (`gate-9328e564`): gate v1.0 to v2.1
 (case pass rate, 3 runs per case); July pages to private holdout H2; ruleset
 text to v1.1; model claude-sonnet-4-6 to claude-sonnet-5-5; repairs D1 to D9
-and the D10 development changes (`STATE.md`). The two results are not like
+and the D10 development changes (`git show ef46410:STATE.md`). The two results are not like
 for like, and the July v1.0 FAIL stands under its own gate.
 
 Newly broken cases: not applicable. This is the first series on H2.
@@ -174,6 +174,37 @@ Limits:
   (inference, not measured).
 - H2 is retired under `result_rules.holdout_retirement` and is now local
   development data. A later version needs a fresh holdout.
+
+#### Holdout provenance and run evidence (added 2026-11-11; moved from STATE.md)
+
+- H2 authors: fresh Claude contexts in a private folder, one spec author and
+  three page authors, none with access to H1 (`evals/v2/SCENARIO_SPEC.md` §6).
+- Isolation slip and recovery: the first batch-1 page author's check script
+  read the other 20 pages (numbers only; no page text, no H1, key or briefs).
+  A fresh page author with no directory access redid batch 1. The original
+  batch is kept privately as evidence.
+- Blind labels: GPT-6 (OpenAI) got only the 30 pages, the 24 effective v1.1
+  rules and the applicability semantics. Of 296 cells, 291 agreed with the
+  draft key and 5 disagreed, none primary. All five were adjudicated for the
+  labeler.
+- Raw run evidence: private copy made 2026-11-05, manifest SHA-256
+  `7c80135eb3ed4746687484757c97022bbd385ff28041898dec2b07c8e592cc82`. No
+  overall verification PASS: 421 of 422 files matched; one live index file
+  changed during the copy.
+- RT2-07 (residual, not resolved): the private run path appears in the CLI's
+  per-record `cwd` metadata. It was found in no message content in the
+  development runs where this was checked. The system prompt is not stored, so
+  it cannot be checked.
+
+## Development numbers, not results (gate v2 development)
+
+- p01 NO_OVERLAP (July page, dry runs 1 and 2): the first excerpt part was 13
+  characters inside a 31-character core span; the frozen grader needs 15. No
+  grader change and no tuning from this page. No separate assessment was
+  recorded.
+- D10 retest limit: the targeted trial at `bb6d475` covered d06 and d10 only.
+  The other 8 primaries passed earlier, in run `d10-2026-11-04-439347`, and
+  were not retested after that prompt change.
 
 ## Historical record: July 2026, gate v1.0 (FAIL)
 
@@ -438,7 +469,7 @@ are unaffected by it and stay as written. The adjudication table also needs
 this context: the verifier judged the same truncated page text, so its 32/32
 CONFIRMED does not show what it would do with the full page.
 
-The repair is planned in the 2026-11-02 repair program (STATE.md, P-001),
+The repair is planned in the 2026-11-02 repair program (P-001, `git show ef46410:STATE.md`),
 under a new gate. It does not change this v1.0 record.
 
 ## Dev runs (Phase 3 leg — Haiku 4.5, no thresholds enforced)

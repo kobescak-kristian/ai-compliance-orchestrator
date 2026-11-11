@@ -12,6 +12,8 @@ deterministic Python control plane with typed handoffs, a full audit
 trail, and a human approval gate. Rule sets are synthetic and no legal
 accuracy is claimed. Human overview: `README.md`.
 
+Classification: PROJECT.
+
 ## Authority and conflict handling
 
 | Question | Canonical source |
@@ -21,7 +23,7 @@ accuracy is claimed. Human overview: `README.md`.
 | Why a design decision was made, and what it superseded | `adr/` |
 | Verifier / adjudication behaviour, verdicts, scoring treatment | `policy/ADJUDICATION_POLICY.md` |
 | Eval thresholds, ground truth, official results | `evals/eval_config.yaml`, `evals/answer_key.yaml`, `evals/EVAL_RESULTS.md`, `evals/results/` |
-| Build status, open loops, change-history pointer | `STATE.md` |
+| Current status, latest result (verdict and pointer), open items | `STATE.md` |
 | What the implementation actually does | affected source, tests, configuration, and executable schemas inspected together |
 
 When sources disagree:
@@ -69,6 +71,13 @@ These are starting points, not exhaustive reading lists.
   without an explicit recorded decision.
 - Eval gates and scorers are frozen before a judged run and are not
   adjusted after seeing its result.
+- Earlier wording kept on purpose: `evals/eval_config.yaml`,
+  `evals/run_eval.py`, `evals/check_holdout.py`, `intake/textrule.py`,
+  `evals/v2/SCENARIO_SPEC.md`, `evals/v2/RULESET_V1_1.md`,
+  `evals/INJECTION_SPEC.md` and `evals/provenance/PAGE_AUTHOR_PROMPT.md`
+  are frozen, signed or verbatim. `budget.status` and
+  `datasets.holdout.current` in the gate file are out of date and stay,
+  because the result's `config_sha256` binds to the file.
 - Answer-key material such as `evals/answer_key.yaml` and
   `evals/INJECTION_SPEC.md` must never enter model-agent input or
   prompts.
@@ -110,3 +119,5 @@ These are starting points, not exhaustive reading lists.
 - Tool-specific instruction files such as `CLAUDE.md` contain
   tool/session mechanics and defer to this file for shared repository
   context.
+- The `STATE.md` sections that older files cite (open loops, P2 entry,
+  development runs, change log) are at `git show 91105ca:STATE.md`.
