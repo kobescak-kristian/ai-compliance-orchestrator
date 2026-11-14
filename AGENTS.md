@@ -19,7 +19,7 @@ Classification: PROJECT.
 | Question | Canonical source |
 |---|---|
 | What the system is and claims publicly | `README.md` |
-| Behavioural contract: invariants, agent tool boundaries, gate definition | `SPEC.md`; `BLUEPRINT.md` for full rationale |
+| Behavioural contract: invariants, agent tool boundaries, gate definition | `SPEC.md`; `adr/` for rationale |
 | Why a design decision was made, and what it superseded | `adr/` |
 | Verifier / adjudication behaviour, verdicts, scoring treatment | `policy/ADJUDICATION_POLICY.md` |
 | Eval thresholds, ground truth, official results | `evals/eval_config.yaml`, `evals/answer_key.yaml`, `evals/EVAL_RESULTS.md`, `evals/results/` |

@@ -1,10 +1,9 @@
 # SPEC — ai-compliance-orchestrator
 
-*Condensed from BLUEPRINT.md v1.1 (2026-07-07). Full context, architecture,
-and rationale live in BLUEPRINT.md — this file is the behavioral contract
-for execution.*
+*Behavioral contract for execution (v1.1, 2026-07-07). Design rationale:
+`adr/`.*
 
-## Non-negotiables (BLUEPRINT §3)
+## Non-negotiables
 
 - Orchestrator is deterministic Python — no LLM in the control plane.
   Bounded-AI rule v2: deterministic logic executes, routes, and ranks; AI
@@ -30,7 +29,7 @@ for execution.*
 - Secrets: `.env` local + gitignored only; placeholder-key trap applies —
   key-absent mode must be explicit and logged, never silently degrading.
 
-## Agent boundaries (BLUEPRINT §4)
+## Agent boundaries
 
 | Node | Type | Tools (whitelist) | May never |
 |---|---|---|---|
@@ -41,14 +40,14 @@ for execution.*
 | Aggregator | deterministic | ledger read/write | call any model |
 | Human gate | deterministic CLI | ledger read/write | modify any page content |
 
-## Phase discipline (BLUEPRINT §9)
+## Phase discipline
 
 Each phase stops at its acceptance criteria before the next phase starts.
 
 | Phase | Deliverable | Accept when |
 |---|---|---|
-| 0 | Private repo, scaffold, SPEC.md (condensed from this), CLAUDE.md, ADR-0001/0003 drafts, BLUEPRINT.md committed | Repo pushed; structure matches §8; §10 decisions recorded in SPEC |
-| 1 | Contracts (§5) + ledger schema + rule sets + full eval dataset + answer key + eval_config + FI test skeletons | Rule sets, dataset + gates approved; committed; **no agent code exists yet** |
+| 0 | Private repo, scaffold, SPEC.md, CLAUDE.md, ADR-0001/0003 drafts | Repo pushed; decisions recorded in SPEC |
+| 1 | Contracts + ledger schema + rule sets + full eval dataset + answer key + eval_config + FI test skeletons | Rule sets, dataset + gates approved; committed; **no agent code exists yet** |
 | 2 | Orchestrator core + intake + aggregation, end-to-end with **stub agents** (deterministic fakes returning fixture payloads) | Full pipeline green on stubs; FI-1..FI-4, FI-6, FI-7 pass with stubs; zero LLM calls so far |
 | 3 | Checker agent (caged, jurisdiction-parameterized) replacing its stubs | Checker gate leg green on dev model; bounds + rule-isolation tests green |
 | 4 | Verifier subprocess node (ADR-0002) replacing its stub | Shipped agent runs unmodified inside pipeline; FI-5 implemented + green |
@@ -59,7 +58,7 @@ Each phase stops at its acceptance criteria before the next phase starts.
 **Amendment (2026-07-07):** Phase 1 split into 1a
 (contracts + ledger schema + eval config + FI test skeletons,
 authorship-independent) and 1b (rule sets + seeded pages + answer key,
-per the §10.7 authorship split).
+per the authorship split in Decision 7 below).
 
 **Phase-tracking note (2026-07-09):** per-phase completion status does
 not live here. `STATE.md` holds phase and build status; SPEC stays the
@@ -78,7 +77,7 @@ resolves geo-applicability deterministically (one CheckTask per targeted
 page×jurisdiction); Phase 6 scoring reconstructs geo-N/A cells from
 intake skip records (184 judged + 104 derived = 288).
 
-## Decisions (BLUEPRINT §10, resolved 2026-07-07)
+## Decisions (resolved 2026-07-07)
 
 1. **Branch:** B — compliance surveillance.
 2. **Repo name:** `ai-compliance-orchestrator`.
@@ -93,7 +92,7 @@ intake skip records (184 judged + 104 derived = 288).
    strongest model; page author: Code; blind labeler: ChatGPT;
    adjudicator: human reviewer). Protocol in evals/INJECTION_SPEC.md.
 
-## Gate (BLUEPRINT §7, summary)
+## Gate (summary)
 
 VIOLATION detection: precision ≥ 0.95, recall ≥ 0.90 — pooled AND per
 jurisdiction. NOT_APPLICABLE handling ≥ 0.90. Orchestration invariants at
@@ -108,7 +107,7 @@ cases, at most 2 failing, 3 runs per case, on a private holdout. Official
 model: claude-sonnet-5-5. `evals/eval_config.yaml` has the exact rules
 and `evals/EVAL_RESULTS.md` the results.
 
-## Out of scope (BLUEPRINT §12 — README "production upgrades" section only)
+## Out of scope (README "production upgrades" section only)
 
 Real regulatory text ingestion · legal-accuracy claims of any kind ·
 live-web fetching at scale · CMS/publishing integration · scheduled
