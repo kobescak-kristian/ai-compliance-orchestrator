@@ -2,10 +2,10 @@
 RemediationProposal payloads for VIOLATION findings, standing in for the
 real caged LLM planner agent (Phase 5). Emits proposals only -- this
 stub cannot write, edit, or publish anything, matching the real agent's
-bound (BLUEPRINT.md §4).
+bound (SPEC.md Agent boundaries).
 
 Fixtures are invented for orchestration testing, independent of
-evals/answer_key.yaml (BLUEPRINT.md §7 bounds rule applies to stubs
+evals/answer_key.yaml (the answer-key bounds rule applies to stubs
 too).
 """
 from __future__ import annotations

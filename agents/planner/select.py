@@ -1,4 +1,4 @@
-"""Planner implementation switch (BLUEPRINT.md §9 Phase 2/5): selects the
+"""Planner implementation switch (SPEC.md Phase discipline Phase 2/5): selects the
 stub or the real (model-calling) planner for a pipeline run. Default is
 always stub -- the real planner is opt-in, explicit, never accidental,
 so the FI suite and Phase 2 pipeline tests stay green unchanged whether

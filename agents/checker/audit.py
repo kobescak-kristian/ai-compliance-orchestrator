@@ -1,4 +1,4 @@
-"""SQLite audit trail (BLUEPRINT.md §3: PreToolUse/PostToolUse hooks ->
+"""SQLite audit trail (SPEC.md Non-negotiables: PreToolUse/PostToolUse hooks ->
 audit.db before results are used). Reused directly from
 ai-claim-verification-agent's agent/audit.py pattern (SPEC.md
 non-negotiable: "Reuse agent/audit.py pattern directly").

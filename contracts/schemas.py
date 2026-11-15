@@ -1,11 +1,11 @@
-"""Pydantic v2 handoff contracts (BLUEPRINT.md §5): ComplianceRule,
+"""Pydantic v2 handoff contracts (SPEC.md Non-negotiables): ComplianceRule,
 CheckTask, ViolationFinding, AccuracyFinding, SeverityReport,
 RemediationProposal, and the ledger row schema. Enforced at every
 orchestrator boundary; a payload that fails validation is rejected into
 a dead-letter table, never silently coerced or dropped -- so every model
 here forbids extra fields.
 
-Frozen before any agent code exists (Phase 1a, BLUEPRINT.md §9).
+Frozen before any agent code exists (Phase 1a, SPEC.md Phase discipline).
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class StrictModel(BaseModel):
     """Base for every contract: unknown fields are a schema violation,
-    not a thing to silently coerce or drop (BLUEPRINT.md §3).
+    not a thing to silently coerce or drop (SPEC.md Non-negotiables).
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -72,7 +72,7 @@ class AdjudicationVerdict(str, Enum):
 
 
 class TaskState(str, Enum):
-    """Terminal-state machine (BLUEPRINT.md §3): QUEUED -> RUNNING ->
+    """Terminal-state machine (SPEC.md Non-negotiables): QUEUED -> RUNNING ->
     DONE | FAILED | DEAD_LETTER | ESCALATED.
     """
 
@@ -115,7 +115,7 @@ class AccuracyFinding(StrictModel):
     """Reuses the shipped verifier's existing verdict schema verbatim
     (claim, verdict, source, evidence) plus task linkage -- the contract
     adapts to the shipped agent, not the other way around
-    (BLUEPRINT.md §5).
+    (SPEC.md Non-negotiables).
 
     Superseded by AdjudicationRecord as of Phase 4 (policy/ADJUDICATION_
     POLICY.md): the verifier adjudicates checker VIOLATION findings
@@ -165,7 +165,7 @@ class RemediationProposal(StrictModel):
 
 
 class LedgerRow(StrictModel):
-    """Every task, every stage (BLUEPRINT.md §5). Mirrors the
+    """Every task, every stage (SPEC.md Non-negotiables). Mirrors the
     orchestrator/ledger.py task_ledger table column-for-column.
     """
 

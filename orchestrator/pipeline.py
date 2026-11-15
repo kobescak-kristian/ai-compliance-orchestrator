@@ -6,7 +6,7 @@ here -- process_fn is supplied by the caller (a stub in Phase 2, a caged
 agent from Phase 3 on).
 
 State machine: QUEUED -> RUNNING -> DONE | FAILED | DEAD_LETTER |
-ESCALATED (BLUEPRINT.md §3). Resume-from-ledger: a task whose (task_id,
+ESCALATED (SPEC.md Non-negotiables). Resume-from-ledger: a task whose (task_id,
 stage) already has a terminal row is skipped, not reprocessed, unless
 force=True (FI-6's deliberate re-run). Idempotency is enforced two ways:
 resume-skip (the common case) and, independently, a UNIQUE(content_hash,
@@ -304,7 +304,7 @@ def run_check_stage(
     as one atomic handoff per task: if any payload in the batch fails
     schema validation, the whole task -> DEAD_LETTER, all its raw
     payloads are preserved in dead_letter, and none of its findings
-    (valid or not) reach the findings table (BLUEPRINT.md §3, FI-2).
+    (valid or not) reach the findings table (SPEC.md Non-negotiables, FI-2).
     A task whose jurisdiction's rule set failed to load -> FAILED with
     error_class=MISSING_RULESET, without ever calling checker_fn (FI-4).
     A task without exactly one finding per assigned rule (a missing,

@@ -41,5 +41,5 @@ at evaluation time.
   Accepted: this build proves orchestration discipline, not routing
   intelligence.
 - This decision is the load-bearing one for every failure-injection test
-  in BLUEPRINT §6 (FI-1..FI-7): each asserts the control plane's
+  (FI-1..FI-7, `tests/test_failures.py`): each asserts the control plane's
   determinism holds under a specific adversarial or degraded condition.

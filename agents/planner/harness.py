@@ -1,4 +1,4 @@
-"""Real planner agent entry point (BLUEPRINT.md §4, §9 Phase 5): builds
+"""Real planner agent entry point (SPEC.md Agent boundaries, Phase discipline Phase 5): builds
 the caged ClaudeAgentOptions, runs one query() per finding, and returns
 its proposal (or None) as the same dict|None shape agents.planner.stub
 returns -- so it drops into orchestrator.pipeline.run_plan_stage
@@ -32,8 +32,8 @@ from .prompts import build_system_prompt, build_user_prompt
 last_result: ResultMessage | None = None
 
 # Populated by every real_planner() call: {finding_id, cost_usd,
-# num_turns} -- dev/eval-leg cost+turns reporting only (BLUEPRINT.md
-# §7), mirrors nodes/verifier.py's run_stats convention.
+# num_turns} -- dev/eval-leg cost+turns reporting only,
+# mirrors nodes/verifier.py's run_stats convention.
 run_stats: list[dict] = []
 
 

@@ -105,7 +105,7 @@ transcript (assert on the constructed prompt, not on trust).
 
 Dev leg: Haiku 4.5 verifier over the Phase 3 dev findings — expected
 outcome is a populated adjudication table, not gate-passing numbers.
-Official run: Sonnet 4.6 for both roles, per blueprint. Same-model
+Official run: Sonnet 4.6 for both roles, per the design. Same-model
 checker/verifier is a stated limitation (correlated errors — the
 verifier catches sloppiness, not blind spots); goes in the README
 honest-limitations section verbatim intent: "checker and verifier share
@@ -150,7 +150,7 @@ verify-stage terminal state (not a new per-finding task):
 
 This mapping governs `orchestrator/pipeline.py`'s verify stage exactly
 as the check/plan stages' terminal-state mapping is governed by
-BLUEPRINT.md §3.
+SPEC.md Non-negotiables.
 
 ## 12. Verifier identity (Phase 4 amendment)
 
@@ -215,7 +215,7 @@ adjudication verdicts (§3) as follows — fixed, not configurable per run:
 | UNVERIFIABLE | DISPUTED |
 
 This mapping is what "the contract adapts to the shipped agent, not the
-other way around" (BLUEPRINT.md §5) means concretely for Phase 4: the
+other way around" (SPEC.md Non-negotiables) means concretely for Phase 4: the
 assembler frames each VIOLATION finding as a claim the shipped agent can
 SUPPORT/CONTRADICT/find UNVERIFIABLE about, and this table is the only
 place that meaning gets translated back into CONFIRMED/REJECTED/DISPUTED.

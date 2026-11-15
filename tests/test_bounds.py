@@ -1,10 +1,10 @@
-"""Per-agent cage checks (BLUEPRINT.md §3, §4) and the rule-isolation
-check (FI-7 companion, BLUEPRINT.md §6). Extends the
+"""Per-agent cage checks (SPEC.md Non-negotiables, Agent boundaries) and the rule-isolation
+check (FI-7 companion). Extends the
 ai-claim-verification-agent bounds-test pattern to every agent in this
 system. test_checker_cage and test_rule_isolation_checker_cross_
 jurisdiction exercise the real checker agent's tools directly (Phase 3);
 verifier/planner cage tests stay skipped until their agents land
-(BLUEPRINT.md §9).
+(SPEC.md Phase discipline).
 
 Both implemented tests call tool handlers directly rather than through a
 live query() -- matching the shipped verifier's own bounds-test pattern
@@ -44,7 +44,7 @@ def conn():
 def test_checker_cage(conn):
     """Checker (x3) | LLM agent | Tools: fetch_page, read_ruleset (own
     jurisdiction only), emit_finding | May never: see other
-    jurisdictions' rules, write files, network. (BLUEPRINT.md §4) Caged
+    jurisdictions' rules, write files, network. (SPEC.md Agent boundaries) Caged
     per §3: allowed_tools whitelist, max_turns cap, per-run budget
     ceiling + call-count circuit breaker, PreToolUse/PostToolUse hooks ->
     audit.db before results are used.
@@ -96,7 +96,7 @@ def test_checker_cage(conn):
 def test_verifier_cage():
     """Verifier | LLM agent (shipped) | Tools: its existing 4 read-only
     tools | May never: anything outside its dataset dir (existing bounds
-    suite). (BLUEPRINT.md §4) Reused, not forked: subprocess node with
+    suite). (SPEC.md Agent boundaries) Reused, not forked: subprocess node with
     JSON stdin/stdout contract; the shipped repo stays untouched (§3).
 
     Blindness bounds (policy/ADJUDICATION_POLICY.md §2), asserted on the
@@ -150,7 +150,7 @@ def test_verifier_cage():
 def test_planner_cage():
     """Planner | LLM agent | Tools: read_finding, read_rule,
     emit_proposal | May never: fetch pages, write files, approve its own
-    proposal. (BLUEPRINT.md §4)
+    proposal. (SPEC.md Agent boundaries)
 
     Blindness (this Phase-5 instruction, mirroring the verifier's policy/
     ADJUDICATION_POLICY.md §2 bounds), asserted on the constructed tool

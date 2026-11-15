@@ -1,4 +1,4 @@
-# Verifier subprocess node config (BLUEPRINT.md ADR-0002, Phase 4).
+# Verifier subprocess node config (ADR-0002, Phase 4).
 # Repo path + pinned commit per policy/ADJUDICATION_POLICY.md §12: the
 # shipped ai-claim-verification-agent runs byte-literal unchanged. Every
 # invocation checks the repo's actual HEAD against pinned_commit and

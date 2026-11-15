@@ -1,7 +1,7 @@
 """Converts one checker VIOLATION finding into the shipped
 ai-claim-verification-agent's native case format (target.html + source
 pages) -- the contract adapts to the shipped agent, not the other way
-around (BLUEPRINT.md §5; policy/ADJUDICATION_POLICY.md §12, §14).
+around (SPEC.md Non-negotiables; policy/ADJUDICATION_POLICY.md §12, §14).
 
 Deliberately blind, per policy §2: the assembled case carries no answer-
 key markers, no checker rationale/transcript, and no sibling findings --

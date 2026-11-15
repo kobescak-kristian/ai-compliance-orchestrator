@@ -1,5 +1,5 @@
-"""The 3 in-process MCP tools available to the checker agent (BLUEPRINT.md
-§4): fetch_page, read_ruleset (own jurisdiction only), emit_finding.
+"""The 3 in-process MCP tools available to the checker agent (SPEC.md
+Agent boundaries): fetch_page, read_ruleset (own jurisdiction only), emit_finding.
 Built fresh per CheckTask via build_tools() so each run is bound to
 exactly one page/jurisdiction -- there is no way for a tool call to name
 a different task's data.
@@ -58,7 +58,7 @@ def _error(message: str) -> dict:
 
 def _check_circuit_breaker() -> dict | None:
     """Hard backstop on total tool calls for this run, independent of
-    max_turns (BLUEPRINT.md §3: "call-count circuit breaker")."""
+    max_turns (SPEC.md Non-negotiables: "call-count circuit breaker")."""
     global _tool_call_count, _circuit_breaker_tripped_flag
     _tool_call_count += 1
     if _tool_call_count > MAX_TOOL_CALLS:
@@ -202,7 +202,7 @@ def build_tools(task: CheckTask, ledger_conn: sqlite3.Connection):
         try:
             finding = ViolationFinding(**raw)
         except ValidationError as e:
-            # Tool-boundary validation (BLUEPRINT.md §3): reject immediately
+            # Tool-boundary validation (SPEC.md Non-negotiables): reject immediately
             # so the agent can retry within its turn budget. The orchestrator
             # re-validates independently and atomically dead-letters the
             # whole task if a bad payload reaches it anyway (SPEC.md
