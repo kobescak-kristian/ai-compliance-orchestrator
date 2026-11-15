@@ -2,6 +2,10 @@
 
 [![CI](https://github.com/kobescak-kristian/ai-compliance-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/kobescak-kristian/ai-compliance-orchestrator/actions/workflows/ci.yml)
 
+Multi-jurisdiction iGaming compliance review with bounded AI agents, an audit trail and a human gate.
+
+**Status:** Built, 2026-11-05. v0.10.
+
 Multi-jurisdiction iGaming compliance surveillance, built to demonstrate
 **orchestration**: bounded agents fanning out across a deterministic
 control plane, with contract-enforced handoffs, SQLite records of every
@@ -49,6 +53,85 @@ rejects it through a CLI. Everything around the agents — task state,
 severity ranking, schema enforcement, dead-lettering, resume-from-crash —
 is deterministic Python with no model in the loop. Nothing in the system
 can modify a page.
+
+## Outcome
+
+**Latest official result: November 5, 2026, gate v2.1 PASS**
+(`evals/EVAL_RESULTS.md`, `evals/results/H2-2026-11-05-a7871a.json`, series
+`H2-2026-11-05-a7871a` at commit `91105ca`, claude-sonnet-5-5, 3 runs per
+scenario):
+
+| Measure | Result | Gate limit | Outcome |
+|---|---|---|---|
+| Synthetic compliance scenarios passed in all 3 runs | 29 of 30 | at most 2 may fail | PASS |
+| Deterministic reliability and planner-integrity checks | 52 of 52 | all must pass | PASS |
+| Pages with a repeated material error on another rule | 0 of 30 | at most 6 | PASS |
+
+One scenario failed on evidence overlap: in `h2-22` (`DEU-PC-03`) the
+violation was found and CONFIRMED in all 3 runs, but the evidence excerpt
+did not overlap the key's core span. The cause was not examined.
+
+Under the predeclared binomial calculation, this supports a pass rate of
+at least 80% (one-sided 95%) for scenarios drawn under
+`evals/v2/SCENARIO_SPEC.md`, if those scenarios are a representative random
+sample. The 30 scenarios are a deliberately balanced, purpose-authored
+synthetic set, which does not establish representative random sampling.
+The result does not show 30 of 30, perfect accuracy, production readiness,
+legal compliance or whole-page screening.
+
+**What changed after July.** A review on 2026-11-02 traced 6 of the 8 July
+misses to the page reader, which dropped headings and list items. A repair
+program addressed ten defects (D1 to D10, `git show ef46410:STATE.md`), including that
+reader, evidence-excerpt checks, timeouts and the prompt-injection
+boundary, and re-evaluated under a new gate on a new private test set with
+a new model and revised rule text.
+
+**How to interpret the two evaluations**
+
+July v1.0 and November v2.1 are not directly comparable. July's gate was
+built around violation-detection precision and recall, with thresholds
+applied both overall and per jurisdiction. November used a new gate, written
+with knowledge of the July failure and frozen before its official run. It
+measures whether each scenario was right in all three runs, repeated errors
+on other rules, and deterministic reliability checks.
+
+Between the two evaluations the implementation was repaired, but the
+dataset, model, rules and evaluation criteria also changed. The November
+PASS shows success against the new gate. It does not show that the repaired
+system would pass July's original precision and recall thresholds.
+
+**Historical result: July 9, 2026, gate v1.0 FAIL** (Sonnet 4.6,
+`evals/EVAL_RESULTS.md`, run `gate-9328e564`, full 12-page corpus, 288
+scored cells):
+
+| Metric | Value | Threshold | Result |
+|---|---|---|---|
+| Precision (pooled) | 0.844 | ≥ 0.95 | **FAIL** |
+| Recall (pooled) | 0.900 | ≥ 0.90 | PASS (exactly at the line) |
+| Precision / Recall (DEU) | 1.000 / 1.000 | ≥ 0.95 / ≥ 0.90 | PASS |
+| Precision / Recall (GBR) | 0.786 / 0.846 | ≥ 0.95 / ≥ 0.90 | **FAIL** |
+| Precision / Recall (MLT) | 0.750 / 0.857 | ≥ 0.95 / ≥ 0.90 | **FAIL** |
+| NOT_APPLICABLE handling | 0.912 | ≥ 0.90 | PASS |
+| Orchestration invariants | 100% terminal, zero lost, zero dead-letter | 100% | PASS |
+
+**GATE RESULT: FAIL**, on violation-detection precision. Published as
+the result, not adjusted and not re-run for a better number. The miss
+analysis is in `evals/EVAL_RESULTS.md`, documented cell by cell. It first
+attributed the misses to checker anchoring; its dated 2026-11-02 note
+corrects the cause of 6 of the 8 misses to the page reader. DEU scored
+clean (10/0/0); GBR and MLT carried every miss.
+
+The orchestration mechanics passed in that run, across 23 check, 17 verify
+and 32 plan tasks. The adjudicator ran the shipped agent unmodified across
+32 live findings with its own repo verified clean before and after; the
+failure-injection suite (`tests/test_failures.py`, FI-1 through FI-7)
+and every agent-cage and blindness bound (`tests/test_bounds.py`) passed
+in a 15-test suite, 0 skipped. The keyless suite is now 249 tests.
+
+**Out of scope (deliberately, not yet):** real regulatory text
+ingestion, legal-accuracy claims of any kind, live-web fetching at
+scale, CMS/publishing integration, scheduled daemon runs, dashboards,
+operator API integrations, multi-tenant anything.
 
 ## System
 
@@ -149,84 +232,43 @@ writing to a SQLite audit trail *before* a result is ever used. Built on
 the same bounded-AI pattern as the shipped `ai-claim-verification-agent`
 this system reuses as its adjudicator.
 
-## Outcome
+## Run it
 
-**Latest official result: November 5, 2026, gate v2.1 PASS**
-(`evals/EVAL_RESULTS.md`, `evals/results/H2-2026-11-05-a7871a.json`, series
-`H2-2026-11-05-a7871a` at commit `91105ca`, claude-sonnet-5-5, 3 runs per
-scenario):
+Requirements: Python 3.12 or newer (CI runs 3.12 and 3.14).
 
-| Measure | Result | Gate limit | Outcome |
-|---|---|---|---|
-| Synthetic compliance scenarios passed in all 3 runs | 29 of 30 | at most 2 may fail | PASS |
-| Deterministic reliability and planner-integrity checks | 52 of 52 | all must pass | PASS |
-| Pages with a repeated material error on another rule | 0 of 30 | at most 6 | PASS |
+```bash
+python -m venv .venv
+.venv/Scripts/activate   # or: source .venv/bin/activate  (macOS/Linux)
+pip install -r requirements.txt
+```
 
-One scenario failed on evidence overlap: in `h2-22` (`DEU-PC-03`) the
-violation was found and CONFIRMED in all 3 runs, but the evidence excerpt
-did not overlap the key's core span. The cause was not examined.
+**Tests** (no model call, no key; CI runs them on every push):
 
-Under the predeclared binomial calculation, this supports a pass rate of
-at least 80% (one-sided 95%) for scenarios drawn under
-`evals/v2/SCENARIO_SPEC.md`, if those scenarios are a representative random
-sample. The 30 scenarios are a deliberately balanced, purpose-authored
-synthetic set, which does not establish representative random sampling.
-The result does not show 30 of 30, perfect accuracy, production readiness,
-legal compliance or whole-page screening.
+```bash
+pytest -v
+```
 
-**What changed after July.** A review on 2026-11-02 traced 6 of the 8 July
-misses to the page reader, which dropped headings and list items. A repair
-program addressed ten defects (D1 to D10, `git show ef46410:STATE.md`), including that
-reader, evidence-excerpt checks, timeouts and the prompt-injection
-boundary, and re-evaluated under a new gate on a new private test set with
-a new model and revised rule text.
+**One pipeline series on the July pages, with stub agents** (no model call). The run writes its
+databases to a folder you choose outside the repository; the runner refuses a folder inside it.
+Stub agents return fixed fixture findings, so the printed result checks the mechanics only, not
+compliance quality.
 
-**How to interpret the two evaluations**
+```bash
+python evals/run_eval.py --dataset july --runs 1 --holdout-root <folder outside the repo>
+```
 
-July v1.0 and November v2.1 are not directly comparable. July's gate was
-built around violation-detection precision and recall, with thresholds
-applied both overall and per jurisdiction. November used a new gate, written
-with knowledge of the July failure and frozen before its official run. It
-measures whether each scenario was right in all three runs, repeated errors
-on other rules, and deterministic reliability checks.
+**Human gate** on the ledger that run wrote (`<folder>/runs/july/<series_id>/run1/ledger.db`):
 
-Between the two evaluations the implementation was repaired, but the
-dataset, model, rules and evaluation criteria also changed. The November
-PASS shows success against the new gate. It does not show that the repaired
-system would pass July's original precision and recall thresholds.
+```bash
+python -m gate.cli --db <path to ledger.db> list
+python -m gate.cli --db <path to ledger.db> approve <proposal id>
+python -m gate.cli --db <path to ledger.db> disputed
+```
 
-**Historical result: July 9, 2026, gate v1.0 FAIL** (Sonnet 4.6,
-`evals/EVAL_RESULTS.md`, run `gate-9328e564`, full 12-page corpus, 288
-scored cells):
-
-| Metric | Value | Threshold | Result |
-|---|---|---|---|
-| Precision (pooled) | 0.844 | ≥ 0.95 | **FAIL** |
-| Recall (pooled) | 0.900 | ≥ 0.90 | PASS (exactly at the line) |
-| Precision / Recall (DEU) | 1.000 / 1.000 | ≥ 0.95 / ≥ 0.90 | PASS |
-| Precision / Recall (GBR) | 0.786 / 0.846 | ≥ 0.95 / ≥ 0.90 | **FAIL** |
-| Precision / Recall (MLT) | 0.750 / 0.857 | ≥ 0.95 / ≥ 0.90 | **FAIL** |
-| NOT_APPLICABLE handling | 0.912 | ≥ 0.90 | PASS |
-| Orchestration invariants | 100% terminal, zero lost, zero dead-letter | 100% | PASS |
-
-**GATE RESULT: FAIL**, on violation-detection precision. Published as
-the result, not adjusted and not re-run for a better number. The miss
-analysis is in `evals/EVAL_RESULTS.md`, documented cell by cell. It first
-attributed the misses to checker anchoring; its dated 2026-11-02 note
-corrects the cause of 6 of the 8 misses to the page reader. DEU scored
-clean (10/0/0); GBR and MLT carried every miss.
-
-The orchestration mechanics passed in that run, across 23 check, 17 verify
-and 32 plan tasks. The adjudicator ran the shipped agent unmodified across
-32 live findings with its own repo verified clean before and after; the
-failure-injection suite (`tests/test_failures.py`, FI-1 through FI-7)
-and every agent-cage and blindness bound (`tests/test_bounds.py`) passed
-in a 15-test suite, 0 skipped. The keyless suite is now 249 tests.
-
-**Out of scope (deliberately, not yet):** real regulatory text
-ingestion, legal-accuracy claims of any kind, live-web fetching at
-scale, CMS/publishing integration, scheduled daemon runs, dashboards,
-operator API integrations, multi-tenant anything.
+`--real` runs the caged agents and the pinned verifier instead of the stubs. It makes paid model
+calls and needs a Claude subscription login and a checkout of `ai-claim-verification-agent` at
+the pinned commit (`verifier_agent.repo_path` in [`config.yaml`](config.yaml)). The November
+holdout pages are private, so the official gated series cannot be re-run from a public clone.
 
 ## Limitations
 
@@ -261,13 +303,17 @@ operator API integrations, multi-tenant anything.
 
 | Version | Date | Change |
 |---|---|---|
-| v0.1 | 2026-07-07 | Phase 0 — scaffold, SPEC.md, ADR-0001/0003, branch lock (compliance surveillance). |
-| v0.2 | 2026-07-08 | Phase 1 — contracts, ledger schema, 3 rule sets, 12-page eval dataset, three-actor frozen answer key (30 violations, `adr/0004`). |
-| v0.3 | 2026-07-08 | Phase 2 — deterministic orchestrator core, intake, aggregation, end-to-end on stub agents; FI-1..4/6/7 green. |
-| v0.4 | 2026-07-08 | Phase 3 — real caged checker agent (Haiku dev leg): 12/12 terminal, pooled P 1.000 / R 0.941. |
-| v0.5 | 2026-07-08–09 | Phase 4 — verifier as subprocess adjudicator (`adr/0002`), `policy/ADJUDICATION_POLICY.md`, FI-5, dev-leg adjudication table. |
-| v0.6 | 2026-07-09 | Phase 5 — caged planner agent + human-gate CLI; dev leg: 15/15 proposals, CLI approve/reject round-trip. |
-| v0.7 | 2026-07-09 | Phase 6 — official gate run, Sonnet 4.6, full corpus: **GATE FAIL** on precision, published with full miss-pattern analysis. |
-| v0.8 | 2026-07-09 | Phase 7 — README, architecture diagram, Tier 0 documentation. |
+| v0.10 | 2026-11-05 | Repair round (10 defects, D1 to D10), gate v2.1 on private holdout H2: **PASS**, 29 of 30 scenarios, 1 failed. July FAIL retained as historical evidence. |
 | v0.9 | 2026-07-14 | Pre-publication README: FAIL statement first screen, Limitations (all four), reuse pin cited, per-jurisdiction gate rows. |
-| v0.10 | 2026-11-05 | Repair program P-001 (D1 to D10), gate v2.1 on private holdout H2: **PASS**, 29 of 30 scenarios, 1 failed. July FAIL retained as historical evidence. |
+| v0.8 | 2026-07-09 | Phase 7 — README, architecture diagram, core documentation. |
+| v0.7 | 2026-07-09 | Phase 6 — official gate run, Sonnet 4.6, full corpus: **GATE FAIL** on precision, published with full miss-pattern analysis. |
+| v0.6 | 2026-07-09 | Phase 5 — caged planner agent + human-gate CLI; dev leg: 15/15 proposals, CLI approve/reject round-trip. |
+| v0.5 | 2026-07-08–09 | Phase 4 — verifier as subprocess adjudicator (`adr/0002`), `policy/ADJUDICATION_POLICY.md`, FI-5, dev-leg adjudication table. |
+| v0.4 | 2026-07-08 | Phase 3 — real caged checker agent (Haiku dev leg): 12/12 terminal, pooled P 1.000 / R 0.941. |
+| v0.3 | 2026-07-08 | Phase 2 — deterministic orchestrator core, intake, aggregation, end-to-end on stub agents; FI-1..4/6/7 green. |
+| v0.2 | 2026-07-08 | Phase 1 — contracts, ledger schema, 3 rule sets, 12-page eval dataset, three-actor frozen answer key (30 violations, `adr/0004`). |
+| v0.1 | 2026-07-07 | Phase 0 — scaffold, SPEC.md, ADR-0001/0003, branch lock (compliance surveillance). |
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
