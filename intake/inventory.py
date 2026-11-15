@@ -2,7 +2,7 @@
 builds one contracts.schemas.CheckTask per (page x jurisdiction). No LLM.
 
 Also owns read_ruleset(): the checker-boundary tool a real checker agent
-will call in Phase 3 (BLUEPRINT.md §4 -- fetch_page, read_ruleset (own
+will call in Phase 3 (SPEC.md Agent boundaries -- fetch_page, read_ruleset (own
 jurisdiction only), emit_finding). Implemented here, deterministically,
 so the rule-isolation + path-escape rejection is enforced and audited
 (FI-7) before any agent exists to (mis)use it.
@@ -28,7 +28,7 @@ MARKETS_RE = re.compile(r"Markets:\s*([A-Z, ]+)")
 class RuleAccessDenied(Exception):
     """Raised when a jurisdiction requests a rule set it is not entitled
     to -- cross-jurisdiction access or a path-escape attempt in the
-    requested jurisdiction string (BLUEPRINT.md §4, §6 FI-7)."""
+    requested jurisdiction string (SPEC.md Agent boundaries; FI-7)."""
 
 
 def _now() -> str:
@@ -100,7 +100,7 @@ def read_ruleset(
     conn: sqlite3.Connection,
 ) -> list[ComplianceRule]:
     """A checker may only ever read its own jurisdiction's rule set
-    (BLUEPRINT.md §4: "may never see other jurisdictions' rules"). Every
+    (SPEC.md Agent boundaries: "may never see other jurisdictions' rules"). Every
     call -- allowed or rejected -- writes an audit_log row (FI-7).
     """
     allowed = (

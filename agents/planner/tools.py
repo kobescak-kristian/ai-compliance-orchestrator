@@ -1,5 +1,5 @@
 """The 3 in-process MCP tools available to the planner agent
-(BLUEPRINT.md §4): read_finding, read_rule, emit_proposal. Built fresh
+(SPEC.md Agent boundaries): read_finding, read_rule, emit_proposal. Built fresh
 per finding via build_tools() so each run is bound to exactly one
 CONFIRMED VIOLATION finding and its rule -- there is no way for a tool
 call to reach a sibling finding, another rule, a page, or the
@@ -59,7 +59,7 @@ def _error(message: str) -> dict:
 
 def _check_circuit_breaker() -> dict | None:
     """Hard backstop on total tool calls for this run, independent of
-    max_turns (BLUEPRINT.md §3: "call-count circuit breaker")."""
+    max_turns (SPEC.md Non-negotiables: "call-count circuit breaker")."""
     global _tool_call_count, _circuit_breaker_tripped_flag
     _tool_call_count += 1
     if _tool_call_count > MAX_TOOL_CALLS:
@@ -140,7 +140,7 @@ def build_tools(finding: ViolationFinding, rule: ComplianceRule, run_id: str):
         try:
             RemediationProposal(**raw)
         except ValidationError as e:
-            # Tool-boundary validation (BLUEPRINT.md §3): reject immediately
+            # Tool-boundary validation (SPEC.md Non-negotiables): reject immediately
             # so the agent can retry within its turn budget. The orchestrator
             # re-validates independently at the plan-stage boundary.
             return _error(f"Invalid proposal, not recorded: {e}")

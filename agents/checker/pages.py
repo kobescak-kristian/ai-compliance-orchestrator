@@ -1,6 +1,6 @@
 """Local-HTML-only page access, scoped to one cage root (default
 evals/dataset/pages/). Mirrors ai-claim-verification-agent's
-agent/pages.py path-containment pattern (BLUEPRINT.md §3 no-network +
+agent/pages.py path-containment pattern (SPEC.md Non-negotiables no-network +
 FI-7 path-escape rejection).
 
 The page text follows the shared text rule (intake/textrule.py, RT1-11):

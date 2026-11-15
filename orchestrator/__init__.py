@@ -5,5 +5,5 @@ and severity aggregation from rule metadata. No LLM calls originate here.
 Ledger states: QUEUED -> RUNNING -> DONE | FAILED | DEAD_LETTER | ESCALATED.
 
 Ledger schema and contracts land Phase 1; core + intake + aggregation
-against stub agents land Phase 2 (BLUEPRINT.md §9).
+against stub agents land Phase 2 (SPEC.md Phase discipline).
 """

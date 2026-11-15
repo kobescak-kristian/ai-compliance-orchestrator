@@ -1,8 +1,8 @@
-"""Failure-injection suite, FI-1..FI-7 (BLUEPRINT.md §6). Each row of that
-table is a test here, not a README promise. FI-1..FI-4, FI-6, FI-7 run
+"""Failure-injection suite, FI-1..FI-7. Each failure-injection
+case is a test here, not a README promise. FI-1..FI-4, FI-6, FI-7 run
 against the Phase 2 orchestrator core with stub agents; FI-5 needs the
 verifier subprocess node and stays skipped until Phase 4
-(BLUEPRINT.md §9).
+(SPEC.md Phase discipline).
 """
 import os
 import tempfile
@@ -277,7 +277,7 @@ def test_fi5_conflicting_findings(conn):
     ESCALATED, surfaced in human queue with both artifacts -- never
     auto-resolved
 
-    SUPERSEDED (policy/ADJUDICATION_POLICY.md §7): BLUEPRINT.md §6's
+    SUPERSEDED (policy/ADJUDICATION_POLICY.md §7): the
     original FI-5 wording predates the adjudication policy and describes
     a checker-vs-checker/verifier tie the orchestrator itself referees.
     Under the policy, the "conflict" is the verifier adjudicating a

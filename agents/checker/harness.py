@@ -1,4 +1,4 @@
-"""Real checker agent entry point (BLUEPRINT.md §4, §9 Phase 3): builds
+"""Real checker agent entry point (SPEC.md Agent boundaries, Phase discipline Phase 3): builds
 the caged ClaudeAgentOptions, runs one query() per CheckTask, and returns
 the collected findings in the same list[dict] shape agents.checker.stub
 returns -- so it drops into orchestrator.pipeline.run_check_stage

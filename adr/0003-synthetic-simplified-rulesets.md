@@ -26,7 +26,7 @@ architecture for compliance surveillance; it does not claim, and must
 never be represented as, legal accuracy or a production compliance tool.
 
 ## Consequences
-- The eval gate (precision/recall thresholds, BLUEPRINT §7) measures the
+- The eval gate (precision/recall thresholds, SPEC.md Gate) measures the
   system's ability to apply *a* rule set correctly and consistently — not
   the correctness of real-world regulatory content. This distinction must
   be stated wherever gate results are reported.
@@ -38,6 +38,6 @@ never be represented as, legal accuracy or a production compliance tool.
   about how it would perform against real regulatory text, and this must
   not be implied in any external-facing material (README, demo,
   positioning).
-- BLUEPRINT §12 (out of scope) is the forward enforcement of this ADR:
+- The SPEC.md "Out of scope" section is the forward enforcement of this ADR:
   real regulatory text ingestion and legal-accuracy claims of any kind
   are explicitly excluded from this build.

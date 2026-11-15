@@ -1,5 +1,5 @@
 """Model routing, caps, and paths for the caged checker agent
-(BLUEPRINT.md §3, §4). Numbers reused from ai-claim-verification-agent's
+(SPEC.md Non-negotiables, Agent boundaries). Numbers reused from ai-claim-verification-agent's
 agent/config.py -- SPEC.md non-negotiable: "Reuse agent/audit.py pattern
 directly," applied to the whole cage, not just the audit table.
 """

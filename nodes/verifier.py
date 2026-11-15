@@ -1,7 +1,7 @@
 """Subprocess wrapper around the shipped ai-claim-verification-agent, run
 as the adjudicator over checker VIOLATION findings (policy/
 ADJUDICATION_POLICY.md, superseding the earlier "4th checker" framing in
-BLUEPRINT.md §2 step 3 -- see BLUEPRINT.md's Phase 4 amendment note).
+the original design's pipeline step 3 -- see adr/0002).
 
 Assembles one case per finding (nodes/assembler.py), writes it into the
 shipped repo's evals/dataset/ by default, or into a private case_root
@@ -13,7 +13,7 @@ AdjudicationRecord, and always removes the case directory afterward --
 the shipped repo's working tree is checked clean before and after every
 run (tests/test_bounds.py::test_verifier_cage, Phase 4 dev-leg report).
 
-Implemented Phase 4, replacing its stub from Phase 2 (BLUEPRINT.md §9).
+Implemented Phase 4, replacing its stub from Phase 2 (SPEC.md Phase discipline).
 """
 from __future__ import annotations
 
@@ -64,8 +64,8 @@ _API_STATUS_RE = re.compile(r"api_error_status=(\d+)")
 BUDGET_STOP_RE = re.compile(r"Reached maximum budget|error_max_budget_usd")
 
 # Populated by every verify_finding() call: {finding_id, cost_usd,
-# num_turns} -- for dev/eval-leg cost+turns reporting only (BLUEPRINT.md
-# §7), never part of the strict AdjudicationRecord contract. Mirrors
+# num_turns} -- for dev/eval-leg cost+turns reporting only,
+# never part of the strict AdjudicationRecord contract. Mirrors
 # agents/checker/harness.py's last_result convention. R2 (ruling
 # 2026-11-03, option B): a budget stop has no result, so its row is
 # {finding_id, cost_usd: None, cost_usd_estimated: <the budget cap>,

@@ -1,5 +1,5 @@
-"""SQLite DDL for the task ledger and its companion tables (BLUEPRINT.md
-§5, §3). Schema + create_db() only -- state-machine logic (transitions,
+"""SQLite DDL for the task ledger and its companion tables (SPEC.md
+Non-negotiables). Schema + create_db() only -- state-machine logic (transitions,
 resume-from-ledger, dedup) lives in orchestrator/pipeline.py (Phase 2).
 
 task_ledger holds one row per (task_id, stage, attempt): every task,

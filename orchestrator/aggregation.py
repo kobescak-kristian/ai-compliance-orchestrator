@@ -1,4 +1,4 @@
-"""Deterministic severity aggregation (BLUEPRINT.md §2 step 4, §3):
+"""Deterministic severity aggregation (SPEC.md Non-negotiables):
 collects findings per page and ranks pages by a severity score computed
 strictly from rule metadata (each ComplianceRule's severity class) --
 never decided by a model. No LLM calls originate here.

@@ -1,4 +1,4 @@
-"""SQLite audit trail (BLUEPRINT.md §3: PreToolUse/PostToolUse hooks ->
+"""SQLite audit trail (SPEC.md Non-negotiables: PreToolUse/PostToolUse hooks ->
 audit.db before results are used). Own copy of the pattern established
 in agents/checker/audit.py -- same physical audit.db, same tool_calls
 schema, independent module state so checker and planner runs never share

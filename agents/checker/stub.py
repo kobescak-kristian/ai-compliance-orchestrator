@@ -4,7 +4,7 @@ CheckTasks, standing in for the real caged LLM checker agent (Phase 3).
 Fixture verdicts below are invented for orchestration testing and are
 NOT derived from evals/answer_key.yaml -- the bounds rule (the answer
 key must never appear in any agent's input or output) applies to stubs
-too (BLUEPRINT.md §7). They will not match the frozen key and are not
+too. They will not match the frozen key and are not
 meant to.
 
 Configurable failure injection lets FI-1/FI-2 exercise the orchestrator's

@@ -1,5 +1,5 @@
 """Model routing, caps, and paths for the caged planner agent
-(BLUEPRINT.md §3, §4). Mirrors agents/checker/config.py -- same house
+(SPEC.md Non-negotiables, Agent boundaries). Mirrors agents/checker/config.py -- same house
 pattern, own copy per agent so each stays independently cageable.
 """
 from pathlib import Path

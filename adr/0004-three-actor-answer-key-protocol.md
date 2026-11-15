@@ -10,14 +10,14 @@ what was actually executed — not a new decision.
 ## Date: 2026-07-08 (executed) / 2026-07-09 (recorded)
 
 ## Context
-BLUEPRINT.md §7 named the answer-key authorship split as an open item
+The original design named the answer-key authorship split as an open item
 ("the model that writes the seeded pages must not author the answer
 key") that had to be resolved before Phase 1 kickoff — SPEC.md §10.7
 tracked it as `OPEN`, explicitly "Not Code's decision." A single model
 authoring both the injected violations and the eval dataset it's later
 scored against is the same shared-author-leakage limitation the
 ai-claim-verification-agent's own eval named and accepted; this project
-fixes it by construction rather than by caveat (BLUEPRINT.md §7).
+fixes it by construction rather than by caveat (SPEC.md Decisions, item 7).
 
 ## Decision
 SPEC.md §10.7, resolved 2026-07-07: a four-role split, no role

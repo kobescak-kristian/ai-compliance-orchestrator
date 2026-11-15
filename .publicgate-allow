@@ -1,3 +1,4 @@
-adr/0002-verifier-as-adjudication-node.md |   named, tracked gate on publication (kristian-os), not a blocker on | owner ruling 2026-08-04 (entry-exact migration, canary-resolve-a)
+adr/0002-verifier-as-adjudication-node.md |   named, tracked gate on publication (kristian-os), not a blocker on | reviewed 2026-08-04: design history in an ADR, kept as written
+# The entry below is a line that lists the key formats a scan searched for. It holds no key.
 # adjudicated-secrets
 STATE.md |   re-gate — clean: zero hits for `sk-ant|sk-proj|...|AKIA...` and for the | STATE.md:195 |   re-gate — clean: zero hits for `sk-ant|sk-proj|...|AKIA...` and for the | owner ruling 2026-08-04

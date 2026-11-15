@@ -6,7 +6,7 @@ Accepted (2026-07-08, Phase 4)
 ## Date: 2026-07-08
 
 ## Context
-BLUEPRINT.md §2 step 3 originally framed the shipped
+The original design (pipeline step 3) framed the shipped
 ai-claim-verification-agent as an independent fourth checker, running
 its own claim-vs-source-pages verification and emitting AccuracyFinding
 records into the same finding flow as the three jurisdiction checkers.
@@ -65,8 +65,8 @@ dev-leg report, `evals/EVAL_RESULTS.md`).
   agent-invocation failure rather than a content-payload failure). A
   task's terminal state is otherwise ESCALATED if any adjudication came
   back DISPUTED, else DONE, whatever the mix of CONFIRMED/REJECTED
-  (policy §11) — this is FI-5's new behavior, superseding BLUEPRINT §6's
-  original wording (noted in the test's own docstring).
+  (policy §11) — this is FI-5's new behavior, superseding the
+  original FI-5 wording (noted in the test's own docstring).
 - **Publication dependency:** the reuse claim ("we didn't fork the
   shipped agent, we reused it in a new role, unmodified") only holds up
   publicly once a reader can actually verify it — which requires the

@@ -1,5 +1,5 @@
 """End-to-end acceptance test for the Phase 2 stub pipeline
-(BLUEPRINT.md §9 row 2): intake -> check (stub) -> aggregate, producing
+(SPEC.md Phase discipline row 2): intake -> check (stub) -> aggregate, producing
 SeverityReports, with every task reaching a terminal state and zero
 lost. Plan stage (stub) is exercised too, though its acceptance owner is
 Phase 5.

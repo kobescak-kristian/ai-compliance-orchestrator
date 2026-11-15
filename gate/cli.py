@@ -3,14 +3,14 @@ contracts.schemas.RemediationProposal rows, plus a disputed section for
 ESCALATED verify-stage tasks (policy/ADJUDICATION_POLICY.md §3). Fully
 deterministic; approve/reject update ledger state (proposals.status)
 only -- nothing in this module, or anywhere in the system, can modify a
-page (BLUEPRINT.md §2 step 6, §4 human-gate row).
+page (SPEC.md Agent boundaries, human-gate row).
 
 Idempotent: re-approving or re-rejecting a proposal already in a
 terminal status (APPROVED/REJECTED/ESCALATED) is a no-op -- the UPDATE
 is scoped to status='PENDING', so a second call touches zero rows and
 the original decision stands.
 
-Implemented Phase 5, alongside the planner agent (BLUEPRINT.md §9).
+Implemented Phase 5, alongside the planner agent (SPEC.md Phase discipline).
 """
 from __future__ import annotations
 
