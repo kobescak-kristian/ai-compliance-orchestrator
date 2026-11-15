@@ -308,7 +308,7 @@ holdout pages are private, so the official gated series cannot be re-run from a 
 | v0.8 | 2026-07-09 | Phase 7 — README, architecture diagram, core documentation. |
 | v0.7 | 2026-07-09 | Phase 6 — official gate run, Sonnet 4.6, full corpus: **GATE FAIL** on precision, published with full miss-pattern analysis. |
 | v0.6 | 2026-07-09 | Phase 5 — caged planner agent + human-gate CLI; dev leg: 15/15 proposals, CLI approve/reject round-trip. |
-| v0.5 | 2026-07-08–09 | Phase 4 — verifier as subprocess adjudicator (`adr/0002`), `policy/ADJUDICATION_POLICY.md`, FI-5, dev-leg adjudication table. |
+| v0.5 | 2026-07-09 | Phase 4 — verifier as subprocess adjudicator (`adr/0002`), `policy/ADJUDICATION_POLICY.md`, FI-5, dev-leg adjudication table. |
 | v0.4 | 2026-07-08 | Phase 3 — real caged checker agent (Haiku dev leg): 12/12 terminal, pooled P 1.000 / R 0.941. |
 | v0.3 | 2026-07-08 | Phase 2 — deterministic orchestrator core, intake, aggregation, end-to-end on stub agents; FI-1..4/6/7 green. |
 | v0.2 | 2026-07-08 | Phase 1 — contracts, ledger schema, 3 rule sets, 12-page eval dataset, three-actor frozen answer key (30 violations, `adr/0004`). |
